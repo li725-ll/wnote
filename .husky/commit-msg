@@ -1,0 +1,4 @@
+# 移除 Claude Code 自动附加的 Co-authored-by 行
+sed -i '' '/^Co-Authored-By:.*[Cc]laude.*/d' "$1"
+
+pnpm exec commitlint --edit "$1"
