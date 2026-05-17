@@ -1,0 +1,115 @@
+:root {
+  --editor-max-width: clamp(480px, 95%, 1080px);
+  --editor-font:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    sans-serif;
+  --editor-mono-font: "JetBrains Mono", "Fira Code", monospace;
+  --editor-font-size: 16px;
+  --editor-line-height: 1.75;
+  color-scheme: light dark;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme="light"] {
+  --color-bg: #ffffff;
+  --color-text: #1a1a1a;
+  --color-code-bg: #f5f5f5;
+  --color-blockquote-border: #d0d0d0;
+  --color-blockquote-bg: #fafafa;
+  --color-focus-ring: #4a90d9;
+  --color-hover-bg: rgba(0, 0, 0, 0.02);
+  --color-placeholder: #999;
+  --color-hr: #e0e0e0;
+  --color-table-border: #ddd;
+  --color-table-header-bg: #f5f5f5;
+  --color-link: #4a90d9;
+  --sidebar-bg: #f8f8f8;
+  --sidebar-border: #e5e5e5;
+
+  --hl-keyword: #d73a49;
+  --hl-name: #24292e;
+  --hl-function: #6f42c1;
+  --hl-constant: #005cc5;
+  --hl-type: #e36209;
+  --hl-number: #005cc5;
+  --hl-operator: #d73a49;
+  --hl-string: #22863a;
+  --hl-comment: #6a737d;
+  --hl-property: #005cc5;
+  --hl-punctuation: #24292e;
+}
+
+[data-theme="dark"] {
+  --color-bg: #1e1e1e;
+  --color-text: #d4d4d4;
+  --color-code-bg: #2d2d2d;
+  --color-blockquote-border: #555;
+  --color-blockquote-bg: #252525;
+  --color-focus-ring: #569cd6;
+  --color-hover-bg: rgba(255, 255, 255, 0.03);
+  --color-placeholder: #666;
+  --color-hr: #444;
+  --color-table-border: #444;
+  --color-table-header-bg: #2d2d2d;
+  --color-link: #569cd6;
+  --sidebar-bg: #252525;
+  --sidebar-border: #333;
+
+  --hl-keyword: #c586c0;
+  --hl-name: #9cdcfe;
+  --hl-function: #dcdcaa;
+  --hl-constant: #4fc1ff;
+  --hl-type: #4ec9b0;
+  --hl-number: #b5cea8;
+  --hl-operator: #d4d4d4;
+  --hl-string: #ce9178;
+  --hl-comment: #6a9955;
+  --hl-property: #9cdcfe;
+  --hl-punctuation: #d4d4d4;
+}
+
+.katex-display,
+.katex {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  scrollbar-width: none;
+}
+
+.katex-display::-webkit-scrollbar,
+.katex::-webkit-scrollbar {
+  display: none;
+}

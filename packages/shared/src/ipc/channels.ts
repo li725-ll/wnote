@@ -1,0 +1,50 @@
+export enum IpcChannel {
+  WindowNew = "window:new",
+  WindowMinimize = "window:minimize",
+  WindowMaximize = "window:maximize",
+  WindowClose = "window:close",
+  WindowTitleSet = "window:title-set",
+
+  ImageSave = "image:save",
+
+  Navigate = "navigate",
+  ToggleSidebar = "toggle-sidebar",
+
+  SettingsGet = "settings:get",
+  SettingsSet = "settings:set",
+  SettingsChanged = "settings:changed",
+
+  LayoutGet = "layout:get",
+  LayoutSet = "layout:set",
+
+  FileNew = "file:new",
+  FileClose = "file:close",
+  FileOpen = "file:open",
+  FileOpened = "file:opened",
+  FileSave = "file:save",
+  FileSaveTrigger = "file:save-trigger",
+  FileSaveAsTrigger = "file:save-as-trigger",
+
+  RecentFilesGet = "recent-files:get",
+  RecentFilesClear = "recent-files:clear",
+  LastOpenedFileGet = "last-opened-file:get",
+
+  FormatBold = "format:bold",
+  FormatItalic = "format:italic",
+  FormatStrikethrough = "format:strikethrough",
+  FormatInlineCode = "format:inline-code",
+  FormatMath = "format:math",
+  FormatLink = "format:link",
+  FormatImage = "format:image",
+  FormatCodeBlock = "format:code-block",
+  FormatBlockquote = "format:blockquote",
+  FormatUnorderedList = "format:unordered-list",
+  FormatOrderedList = "format:ordered-list",
+  FormatTaskList = "format:task-list",
+  FormatHorizontalRule = "format:horizontal-rule",
+  FormatHeading1 = "format:heading-1",
+  FormatHeading2 = "format:heading-2",
+  FormatHeading3 = "format:heading-3",
+  FormatHeading4 = "format:heading-4",
+  FormatHeadingClear = "format:heading-clear",
+}

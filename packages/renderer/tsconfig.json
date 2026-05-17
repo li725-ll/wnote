@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": [],
+    "noEmit": true,
+    "paths": {
+      "@wnote/shared": ["../shared/src/index.ts"],
+      "@wnote/shared/*": ["../shared/src/*.ts"],
+      "@wnote/ui": ["../ui/src/index.ts"],
+      "@wnote/ui/*": ["../ui/src/*.ts"],
+      "@wnote/md-parser": ["../md-parser/src/index.ts"],
+      "@wnote/md-parser/*": ["../md-parser/src/*.ts"],
+      "@wnote/logger/renderer": ["../logger/src/renderer.ts"]
+    }
+  },
+  "include": ["src"]
+}

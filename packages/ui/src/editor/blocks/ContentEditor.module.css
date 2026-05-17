@@ -1,0 +1,63 @@
+.content {
+  outline: none;
+  min-height: 1.5em;
+  line-height: var(--editor-line-height, 1.75);
+  color: var(--color-text);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-placeholder);
+  pointer-events: none;
+}
+
+.content code {
+  font-family: var(--editor-mono-font);
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  background: var(--color-code-bg);
+}
+
+.content a {
+  color: var(--color-link);
+  text-decoration: underline;
+}
+
+.h1 {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0.67em 0 0.3em;
+}
+
+.h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0.5em 0 0.25em;
+}
+
+.h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0.4em 0 0.2em;
+}
+
+.h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.h5 {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.h6 {
+  font-size: 0.9em;
+  font-weight: 600;
+}

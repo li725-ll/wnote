@@ -1,0 +1,22 @@
+{
+  "name": "@wnote/main",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wnote/logger": "workspace:*",
+    "@wnote/md-parser": "workspace:*",
+    "better-sqlite3": "^12.10.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "vite": "^6.3.5",
+    "vite-plugin-electron": "^0.29.0"
+  }
+}

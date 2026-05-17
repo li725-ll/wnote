@@ -1,0 +1,20 @@
+.wrapper {
+  position: relative;
+  border-radius: 4px;
+  transition: background 0.15s;
+  overflow: hidden;
+  margin: 0.5em 0;
+}
+
+.wrapper > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.wrapper:hover:not([data-focused]) {
+  background: var(--color-hover-bg, rgba(0, 0, 0, 0.02));
+}
+
+.wrapper[data-focused] {
+  outline: none;
+}

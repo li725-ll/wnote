@@ -1,0 +1,44 @@
+.layout {
+  display: grid;
+  grid-template-columns: var(--left-width) 1px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layout.dragging {
+  transition: none;
+  user-select: none;
+}
+
+.center {
+  overflow-y: auto;
+  height: 100%;
+  scrollbar-width: none;
+}
+
+.center::-webkit-scrollbar {
+  display: none;
+}
+
+.resizer {
+  position: relative;
+  width: 1px;
+  cursor: col-resize;
+  background: var(--sidebar-border);
+  transition: background 0.15s;
+}
+
+.resizer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}
+
+.resizer:hover,
+.resizer:active {
+  background: var(--color-focus-ring);
+}

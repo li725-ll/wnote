@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "back": "Back",
+    "general": "General",
+    "update": "Update",
+    "about": "About",
+    "language": "Language",
+    "languageDesc": "Interface display language",
+    "theme": "Theme",
+    "themeDesc": "Application appearance theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "autoUpdate": "Auto check updates",
+    "autoUpdateDesc": "Check for new versions on startup",
+    "checkUpdate": "Check for updates",
+    "checkUpdateDesc": "Manually check if a new version is available",
+    "version": "Version",
+    "sourceCode": "Source code"
+  },
+  "fileTree": {
+    "title": "Files"
+  },
+  "outline": {
+    "title": "Outline",
+    "empty": "No headings"
+  },
+  "welcome": {
+    "subtitle": "A clean and elegant Markdown writing tool",
+    "feature1": "WYSIWYG Markdown editing experience",
+    "feature2": "Slash commands for quick formatting",
+    "feature3": "Light and dark theme support",
+    "start": "Start Writing"
+  }
+}

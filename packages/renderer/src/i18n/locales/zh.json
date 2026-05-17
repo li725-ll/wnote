@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "back": "返回",
+    "general": "通用",
+    "update": "更新",
+    "about": "关于",
+    "language": "语言",
+    "languageDesc": "界面显示语言",
+    "theme": "主题",
+    "themeDesc": "应用外观主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "autoUpdate": "自动检查更新",
+    "autoUpdateDesc": "启动时自动检查新版本",
+    "checkUpdate": "检查更新",
+    "checkUpdateDesc": "手动检查是否有新版本可用",
+    "version": "版本",
+    "sourceCode": "源代码"
+  },
+  "fileTree": {
+    "title": "文件"
+  },
+  "outline": {
+    "title": "文档大纲",
+    "empty": "暂无标题"
+  },
+  "welcome": {
+    "subtitle": "一款简洁优雅的 Markdown 写作工具",
+    "feature1": "所见即所得的 Markdown 编辑体验",
+    "feature2": "斜杠命令快速插入格式与块",
+    "feature3": "支持浅色 / 深色主题切换",
+    "start": "开始写作"
+  }
+}

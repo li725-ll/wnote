@@ -1,0 +1,32 @@
+.editor {
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 0.5em 0;
+  border: 1px solid var(--color-table-border);
+}
+
+.preview {
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-table-border);
+  background: var(--color-bg);
+}
+
+.source {
+  display: block;
+  width: 100%;
+  min-height: 2em;
+  padding: 0.8em 1em;
+  margin: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  background: var(--color-code-bg);
+  color: var(--color-text);
+  font-family: var(--editor-mono-font, "JetBrains Mono", monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

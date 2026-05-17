@@ -1,0 +1,24 @@
+packages:
+  - packages/*
+
+onlyBuiltDependencies:
+  - ' '
+  - '-'
+  - '3'
+  - '@swc/core'
+  - b
+  - better-sqlite3
+  - c
+  - d
+  - e
+  - electron
+  - esbuild
+  - i
+  - l
+  - p
+  - q
+  - r
+  - s
+  - t
+  - u
+  - y

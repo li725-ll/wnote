@@ -1,0 +1,49 @@
+.codeBlock {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.codeBlock pre {
+  margin: 0;
+  padding: 1em;
+  overflow-x: auto;
+  background: var(--color-code-bg) !important;
+  font-family: var(--editor-mono-font, "JetBrains Mono", monospace);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.codeBlock code {
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+}
+
+.lang {
+  position: absolute;
+  right: 0.75em;
+  bottom: 0.5em;
+  font-size: 0.75em;
+  color: var(--color-placeholder);
+  font-family: var(--editor-mono-font, monospace);
+  pointer-events: none;
+  user-select: none;
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1em;
+  background: var(--color-code-bg);
+  border-radius: 6px;
+}
+
+.math {
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 0.5em 0;
+}

@@ -1,0 +1,58 @@
+{
+  "name": "wnote",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "pnpm --filter @wnote/preload build && pnpm --filter @wnote/ui build && pnpm --filter @wnote/renderer build && pnpm --filter @wnote/main build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r run typecheck",
+    "prepare": "husky",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "changelog:first": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
+    "release": "node scripts/release.mjs",
+    "pack": "pnpm build && electron-builder --config electron-builder.config.mjs --dir",
+    "dist": "pnpm build && electron-builder --config electron-builder.config.mjs",
+    "dist:mac": "pnpm build && electron-builder --config electron-builder.config.mjs --mac",
+    "dist:win": "pnpm build && electron-builder --config electron-builder.config.mjs --win",
+    "dist:linux": "pnpm build && electron-builder --config electron-builder.config.mjs --linux"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "@eslint-react/eslint-plugin": "^5.7.9",
+    "@eslint/js": "^10.0.1",
+    "conventional-changelog-cli": "^5.0.0",
+    "electron": "35.7.5",
+    "electron-builder": "25.1.8",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.4",
+    "node-gyp": "^12.3.0",
+    "prettier": "^3.8.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.59.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts,cts,mjs,cjs,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml,css,html}": [
+      "prettier --write"
+    ]
+  }
+}
