@@ -1,8 +1,8 @@
 import log from "@wnote/logger/main";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol } from "electron";
-import { join } from "path";
+import { join, basename, extname } from "path";
 import { pathToFileURL } from "url";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, readFile } from "fs/promises";
 import { existsSync } from "fs";
 import { randomUUID } from "crypto";
 import {
@@ -22,6 +22,61 @@ import {
   setLastOpenedFile,
 } from "./recent-files";
 import { loadSettings, saveSettings, getDataDirectory } from "./settings";
+
+const SUPPORTED_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
+
+let pendingFilePath: string | null = null;
+
+function extractFilePathFromArgs(args: string[]): string | null {
+  for (const arg of args) {
+    if (arg.startsWith("-")) continue;
+    const ext = extname(arg).toLowerCase();
+    if (SUPPORTED_EXTENSIONS.has(ext) && existsSync(arg)) return arg;
+  }
+  return null;
+}
+
+async function openFileInWindow(filePath: string, win?: BrowserWindow) {
+  const target = win ?? windowManager.getFocused();
+  if (!target) {
+    pendingFilePath = filePath;
+    return;
+  }
+  const content = await readFile(filePath, "utf-8");
+  addRecentFile(filePath);
+  setLastOpenedFile(filePath);
+  target.webContents.send(IpcChannel.FileOpened, {
+    filePath,
+    name: basename(filePath),
+    content,
+  });
+}
+
+// 单实例锁 — Windows/Linux 通过 second-instance 接收文件路径
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (_event, argv) => {
+    const filePath = extractFilePathFromArgs(argv.slice(1));
+    if (filePath) openFileInWindow(filePath);
+    const win = windowManager.getFocused();
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+}
+
+// macOS 通过 open-file 事件接收文件路径
+app.on("open-file", (event, filePath) => {
+  event.preventDefault();
+  if (!app.isReady()) {
+    pendingFilePath = filePath;
+    return;
+  }
+  openFileInWindow(filePath);
+});
 
 ipcMain.handle(IpcChannel.SettingsGet, () => loadSettings());
 ipcMain.handle(IpcChannel.SettingsSet, async (_event, partial: Partial<AppSettings>) => {
@@ -58,9 +113,7 @@ ipcMain.handle(IpcChannel.RecentFilesClear, async () => {
 ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
   const filePath = getLastOpenedFile();
   if (!filePath || !existsSync(filePath)) return null;
-  const { readFile } = await import("fs/promises");
   const content = await readFile(filePath, "utf-8");
-  const { basename } = await import("path");
   return { filePath, name: basename(filePath), content };
 });
 
@@ -73,9 +126,7 @@ ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   const filePath = result.filePaths[0];
-  const { readFile } = await import("fs/promises");
   const content = await readFile(filePath, "utf-8");
-  const { basename } = await import("path");
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
   const settings = await loadSettings();
@@ -102,7 +153,6 @@ ipcMain.handle(
     setLastOpenedFile(targetPath);
     const settings = await loadSettings();
     for (const w of windowManager.getAll()) createAppMenu(w, settings);
-    const { basename } = await import("path");
     return { filePath: targetPath, name: basename(targetPath) };
   },
 );
@@ -163,6 +213,16 @@ app.whenReady().then(async () => {
   nativeTheme.themeSource = settings.theme;
   const win = windowManager.create();
   createAppMenu(win, settings);
+
+  // 处理启动时传入的文件（命令行参数或 macOS open-file）
+  const startupFile =
+    pendingFilePath ?? extractFilePathFromArgs(process.argv.slice(1));
+  if (startupFile) {
+    pendingFilePath = null;
+    win.webContents.once("did-finish-load", () => {
+      openFileInWindow(startupFile, win);
+    });
+  }
 
   app.on("activate", async () => {
     if (windowManager.count === 0) {

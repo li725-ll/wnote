@@ -17,6 +17,22 @@ export default {
   extraMetadata: {
     main: "packages/main/dist/index.js",
   },
+  fileAssociations: [
+    {
+      ext: "md",
+      name: "Markdown Document",
+      description: "Markdown Document",
+      mimeType: "text/markdown",
+      role: "Editor",
+    },
+    {
+      ext: "markdown",
+      name: "Markdown Document",
+      description: "Markdown Document",
+      mimeType: "text/markdown",
+      role: "Editor",
+    },
+  ],
   mac: {
     target: [
       { target: "dmg", arch: ["arm64"] },
@@ -36,6 +52,7 @@ export default {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
     shortcutName: "WNote",
+    perMachine: true,
   },
   linux: {
     target: [
@@ -43,6 +60,7 @@ export default {
       { target: "deb", arch: ["x64"] },
     ],
     category: "Office",
+    mimeTypes: ["text/markdown"],
     artifactName: "${productName}-${version}-linux-${arch}.${ext}",
   },
   asar: true,
