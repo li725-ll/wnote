@@ -151,7 +151,7 @@ export default function App() {
   }, [handleSave]);
   // Format commands from menu
   useEffect(() => {
-    const formatMap: Record<string, (v: unknown) => boolean> = {
+    const formatMap = {
       [IpcChannel.FormatBold]: formatCommands.bold,
       [IpcChannel.FormatItalic]: formatCommands.italic,
       [IpcChannel.FormatStrikethrough]: formatCommands.strikethrough,

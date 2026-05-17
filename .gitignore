@@ -1,6 +1,7 @@
 node_modules
 dist
 out
+release
 *.node
 .DS_Store
 Thumbs.db
