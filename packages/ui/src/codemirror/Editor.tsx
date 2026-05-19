@@ -7,7 +7,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
 import { wnoteTheme, codeHighlightStyle } from "./theme";
-import { markdownPreview } from "./markdown-preview";
+import { markdownPreview, tablePreview } from "./markdown-preview";
 import { codeBlockCompletion } from "./code-block";
 import { markdownKeybindings } from "./keybindings";
 import { extractHeadings, type HeadingItem } from "./headings";
@@ -126,6 +126,7 @@ export function Editor({
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         markdownPreview,
+        tablePreview,
         imagePaste((file) => onImageSaveRef.current?.(file) ?? Promise.resolve(null)),
         slashCommands(),
         cmPlaceholder(placeholder),

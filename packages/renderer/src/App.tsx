@@ -82,7 +82,11 @@ export default function App() {
   useEffect(() => {
     const handler = (...args: unknown[]) => {
       const data = args[0] as { filePath: string; name: string; content: string };
-      openFileRef.current(data.filePath, data.content);
+      const tabId = openFileRef.current(data.filePath, data.content);
+      if (tabId === activeTabIdRef.current) {
+        editorRef.current?.setContent(data.content);
+        window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
+      }
     };
     window.electronAPI.on(IpcChannel.FileOpened, handler);
     return () => window.electronAPI.off(IpcChannel.FileOpened, handler);
@@ -104,7 +108,12 @@ export default function App() {
     window.electronAPI.invoke<{ filePath: string; name: string; content: string } | null>(
       IpcChannel.LastOpenedFileGet,
     ).then((data) => {
-      if (data) openFileRef.current(data.filePath, data.content);
+      if (!data) return;
+      const tabId = openFileRef.current(data.filePath, data.content);
+      if (tabId === activeTabIdRef.current) {
+        editorRef.current?.setContent(data.content);
+        window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
+      }
     });
   }, []);
 

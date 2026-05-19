@@ -181,6 +181,13 @@ export const wnoteTheme = EditorView.theme({
     fontFamily: "var(--editor-mono-font)",
     fontSize: "0.9em",
   },
+  ".cm-md-table-hidden-line": {
+    fontSize: "0",
+    lineHeight: "0",
+    height: "0",
+    overflow: "hidden",
+    padding: "0 !important",
+  },
 
   // Fenced code block
   ".cm-md-codeblock-line": {

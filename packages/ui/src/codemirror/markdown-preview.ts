@@ -7,7 +7,7 @@ import {
   WidgetType,
 } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
-import type { Range } from "@codemirror/state";
+import { type Range, StateField } from "@codemirror/state";
 import { slugify } from "./headings";
 
 class TableWidget extends WidgetType {
@@ -306,6 +306,8 @@ function buildDecorations(view: EditorView): DecorationSet {
         if (isActive) {
           decos.push(syntaxMark.range(node.from, node.to));
         } else {
+          const endLineNum = doc.lineAt(node.to).number;
+          if (endLineNum !== lineNum) return false;
           const text = doc.sliceString(node.from, node.to);
           const altMatch = text.match(/!\[([^\]]*)\]/);
           const urlMatch = text.match(/\]\((.+)\)\s*$/);
@@ -408,7 +410,7 @@ function buildDecorations(view: EditorView): DecorationSet {
         return false;
       }
 
-      // --- Table (render when not editing) ---
+      // --- Table (line styling when editing) ---
       if (node.name === "Table") {
         const active = isCursorInRange(view, node.from, node.to);
         if (active) {
@@ -417,11 +419,6 @@ function buildDecorations(view: EditorView): DecorationSet {
           for (let i = startLine; i <= endLine; i++) {
             decos.push(Decoration.line({ class: "cm-md-table-line" }).range(doc.line(i).from));
           }
-        } else {
-          const content = doc.sliceString(node.from, node.to);
-          decos.push(
-            Decoration.replace({ widget: new TableWidget(content) }).range(node.from, node.to),
-          );
         }
         return false;
       }
@@ -502,3 +499,44 @@ export const markdownPreview = ViewPlugin.fromClass(
   },
   { decorations: (v) => v.decorations },
 );
+
+function buildTableDecorations(state: import("@codemirror/state").EditorState): DecorationSet {
+  const decos: Range<Decoration>[] = [];
+  const doc = state.doc;
+
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name === "Table") {
+        let cursorInTable = false;
+        for (const range of state.selection.ranges) {
+          if (range.from <= node.to && range.to >= node.from) {
+            cursorInTable = true;
+            break;
+          }
+        }
+        if (!cursorInTable) {
+          const content = doc.sliceString(node.from, node.to);
+          decos.push(
+            Decoration.replace({ widget: new TableWidget(content) }).range(node.from, node.to),
+          );
+        }
+        return false;
+      }
+    },
+  });
+
+  return Decoration.set(decos, true);
+}
+
+export const tablePreview = StateField.define<DecorationSet>({
+  create(state) {
+    return buildTableDecorations(state);
+  },
+  update(value, tr) {
+    if (tr.docChanged || tr.selection) {
+      return buildTableDecorations(tr.state);
+    }
+    return value;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
