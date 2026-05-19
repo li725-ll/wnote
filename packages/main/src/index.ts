@@ -230,9 +230,8 @@ app.whenReady().then(async () => {
   if (startupFile) {
     log.info("Startup file:", startupFile);
     pendingFilePath = null;
-    win.webContents.once("did-finish-load", () => {
-      openFileInWindow(startupFile, win);
-    });
+    addRecentFile(startupFile);
+    setLastOpenedFile(startupFile);
   }
 
   app.on("activate", async () => {
