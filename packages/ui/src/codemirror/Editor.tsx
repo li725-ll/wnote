@@ -3,7 +3,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, placeholder as cmPlaceholder } from "@codemirror/view";
 import { keymap, highlightActiveLine } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
+import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
 import { wnoteTheme, codeHighlightStyle } from "./theme";
@@ -124,7 +124,7 @@ export function Editor({
         markdownKeybindings,
         codeBlockCompletion,
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-        markdown({ codeLanguages: languages }),
+        markdown({ base: markdownLanguage, codeLanguages: languages }),
         markdownPreview,
         imagePaste((file) => onImageSaveRef.current?.(file) ?? Promise.resolve(null)),
         slashCommands(),

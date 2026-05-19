@@ -233,7 +233,7 @@ impl<'a> ParseContext<'a> {
             }
         }
 
-        let raw = String::new(); // 表格 raw 由渲染层重建
+        let raw = rebuild_table_raw(&headers, &rows, &alignments);
         BlockNode::Table { headers, rows, alignments, raw }
     }
 
@@ -405,6 +405,32 @@ pub fn inlines_to_text(nodes: &[InlineNode]) -> String {
         }
     }
     out
+}
+
+fn rebuild_table_raw(headers: &[TableCell], rows: &[Vec<TableCell>], alignments: &[Alignment]) -> String {
+    let mut lines = Vec::new();
+
+    let header_line = headers.iter()
+        .map(|c| inlines_to_text(&c.children))
+        .collect::<Vec<_>>();
+    lines.push(format!("| {} |", header_line.join(" | ")));
+
+    let sep: Vec<String> = alignments.iter().map(|a| match a {
+        Alignment::Left => ":---".to_string(),
+        Alignment::Center => ":---:".to_string(),
+        Alignment::Right => "---:".to_string(),
+        Alignment::None => "---".to_string(),
+    }).collect();
+    lines.push(format!("| {} |", sep.join(" | ")));
+
+    for row in rows {
+        let cells: Vec<String> = row.iter()
+            .map(|c| inlines_to_text(&c.children))
+            .collect();
+        lines.push(format!("| {} |", cells.join(" | ")));
+    }
+
+    lines.join("\n")
 }
 
 fn blocks_to_raw_text(blocks: &[BlockNode]) -> String {

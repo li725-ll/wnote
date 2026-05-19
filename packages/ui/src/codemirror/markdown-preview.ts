@@ -10,6 +10,61 @@ import { syntaxTree } from "@codemirror/language";
 import type { Range } from "@codemirror/state";
 import { slugify } from "./headings";
 
+class TableWidget extends WidgetType {
+  constructor(private content: string) {
+    super();
+  }
+  toDOM() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-md-table-wrapper";
+    const table = document.createElement("table");
+    table.className = "cm-md-table";
+
+    const lines = this.content.split("\n").filter((l) => l.trim());
+    if (lines.length < 2) return wrapper;
+
+    const parseRow = (line: string): string[] =>
+      line
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map((c) => c.trim());
+
+    const headers = parseRow(lines[0]);
+    const aligns = parseRow(lines[1]).map((c) => {
+      if (c.startsWith(":") && c.endsWith(":")) return "center";
+      if (c.endsWith(":")) return "right";
+      return "left";
+    });
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    for (let i = 0; i < headers.length; i++) {
+      const th = document.createElement("th");
+      th.textContent = headers[i];
+      th.style.textAlign = aligns[i] ?? "left";
+      hr.appendChild(th);
+    }
+
+    const tbody = table.createTBody();
+    for (let r = 2; r < lines.length; r++) {
+      const cells = parseRow(lines[r]);
+      const tr = tbody.insertRow();
+      for (let i = 0; i < headers.length; i++) {
+        const td = tr.insertCell();
+        td.textContent = cells[i] ?? "";
+        td.style.textAlign = aligns[i] ?? "left";
+      }
+    }
+
+    wrapper.appendChild(table);
+    return wrapper;
+  }
+  eq(other: TableWidget) {
+    return this.content === other.content;
+  }
+}
+
 class HrWidget extends WidgetType {
   toDOM() {
     const hr = document.createElement("div");
@@ -349,6 +404,24 @@ function buildDecorations(view: EditorView): DecorationSet {
               decos.push(Decoration.replace({}).range(line.from, line.from + match[1].length));
             }
           }
+        }
+        return false;
+      }
+
+      // --- Table (render when not editing) ---
+      if (node.name === "Table") {
+        const active = isCursorInRange(view, node.from, node.to);
+        if (active) {
+          const startLine = doc.lineAt(node.from).number;
+          const endLine = doc.lineAt(node.to).number;
+          for (let i = startLine; i <= endLine; i++) {
+            decos.push(Decoration.line({ class: "cm-md-table-line" }).range(doc.line(i).from));
+          }
+        } else {
+          const content = doc.sliceString(node.from, node.to);
+          decos.push(
+            Decoration.replace({ widget: new TableWidget(content) }).range(node.from, node.to),
+          );
         }
         return false;
       }

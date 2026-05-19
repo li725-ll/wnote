@@ -158,6 +158,30 @@ export const wnoteTheme = EditorView.theme({
     opacity: "0.9",
   },
 
+  // Table
+  ".cm-md-table-wrapper": {
+    margin: "0.5em 0",
+    overflowX: "auto",
+  },
+  ".cm-md-table": {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "0.9em",
+    "& th, & td": {
+      border: "1px solid var(--color-table-border)",
+      padding: "0.4em 0.8em",
+    },
+    "& th": {
+      backgroundColor: "var(--color-table-header-bg)",
+      fontWeight: "600",
+    },
+  },
+  ".cm-md-table-line": {
+    backgroundColor: "var(--color-code-bg)",
+    fontFamily: "var(--editor-mono-font)",
+    fontSize: "0.9em",
+  },
+
   // Fenced code block
   ".cm-md-codeblock-line": {
     backgroundColor: "var(--color-code-bg)",
