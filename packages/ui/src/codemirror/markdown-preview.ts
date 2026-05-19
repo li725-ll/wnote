@@ -208,7 +208,6 @@ function buildDecorations(view: EditorView): DecorationSet {
             decos.push(Decoration.replace({}).range(node.from, node.from + hashEnd));
           }
         }
-        return false;
       }
 
       // --- Bold (per-node) ---
