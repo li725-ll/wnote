@@ -125,7 +125,7 @@ export default function App() {
         : "未命名";
       window.electronAPI.send(IpcChannel.WindowTitleSet, title);
     }
-  }, [activeTabId]); // eslint-disable-line
+  }, [activeTabId, activeTab?.path]); // eslint-disable-line
 
   const handleSave = useCallback(
     async (saveAs = false) => {
