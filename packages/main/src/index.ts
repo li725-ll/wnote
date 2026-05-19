@@ -1,4 +1,4 @@
-import log from "@wnote/logger/main";
+import { createLog } from "@wnote/logger/main";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol } from "electron";
 import { join, basename, extname } from "path";
 import { pathToFileURL } from "url";
@@ -23,6 +23,8 @@ import {
 } from "./recent-files";
 import { loadSettings, saveSettings, getDataDirectory } from "./settings";
 
+const log = createLog("app");
+
 const SUPPORTED_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
 
 let pendingFilePath: string | null = null;
@@ -39,9 +41,11 @@ function extractFilePathFromArgs(args: string[]): string | null {
 async function openFileInWindow(filePath: string, win?: BrowserWindow) {
   const target = win ?? windowManager.getFocused();
   if (!target) {
+    log.info("No window available, queuing file:", filePath);
     pendingFilePath = filePath;
     return;
   }
+  log.info("Opening file:", filePath);
   const content = await readFile(filePath, "utf-8");
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
@@ -52,12 +56,13 @@ async function openFileInWindow(filePath: string, win?: BrowserWindow) {
   });
 }
 
-// 单实例锁 — Windows/Linux 通过 second-instance 接收文件路径
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
+  log.warn("Another instance is running, quitting");
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
+    log.info("Second instance detected, argv:", argv.slice(1).join(" "));
     const filePath = extractFilePathFromArgs(argv.slice(1));
     if (filePath) openFileInWindow(filePath);
     const win = windowManager.getFocused();
@@ -68,9 +73,9 @@ if (!gotLock) {
   });
 }
 
-// macOS 通过 open-file 事件接收文件路径
 app.on("open-file", (event, filePath) => {
   event.preventDefault();
+  log.info("open-file event:", filePath);
   if (!app.isReady()) {
     pendingFilePath = filePath;
     return;
@@ -80,6 +85,7 @@ app.on("open-file", (event, filePath) => {
 
 ipcMain.handle(IpcChannel.SettingsGet, () => loadSettings());
 ipcMain.handle(IpcChannel.SettingsSet, async (_event, partial: Partial<AppSettings>) => {
+  log.info("Settings update:", Object.keys(partial).join(", "));
   const settings = await saveSettings(partial);
   if (partial.locale || partial.autoSave !== undefined) {
     for (const win of windowManager.getAll()) {
@@ -88,6 +94,7 @@ ipcMain.handle(IpcChannel.SettingsSet, async (_event, partial: Partial<AppSettin
   }
   if (partial.theme) {
     nativeTheme.themeSource = partial.theme;
+    log.info("Theme changed to:", partial.theme);
   }
   return settings;
 });
@@ -126,6 +133,7 @@ ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   });
   if (result.canceled || result.filePaths.length === 0) return null;
   const filePath = result.filePaths[0];
+  log.info("File opened via dialog:", filePath);
   const content = await readFile(filePath, "utf-8");
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
@@ -149,6 +157,7 @@ ipcMain.handle(
       targetPath = result.filePath;
     }
     await writeFile(targetPath, payload.content, "utf-8");
+    log.info("File saved:", targetPath);
     addRecentFile(targetPath);
     setLastOpenedFile(targetPath);
     const settings = await loadSettings();
@@ -164,6 +173,7 @@ ipcMain.handle(IpcChannel.ImageSave, async (_event, payload: { buffer: ArrayBuff
   const fileName = `${randomUUID()}.${payload.ext}`;
   const filePath = join(imgDir, fileName);
   await writeFile(filePath, Buffer.from(payload.buffer));
+  log.info("Image saved:", filePath);
   return filePath;
 });
 
@@ -201,7 +211,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 app.whenReady().then(async () => {
-  log.info("App ready");
+  log.info("App ready, platform:", process.platform, "version:", app.getVersion());
 
   protocol.handle("wnote-asset", (request) => {
     const url = new URL(request.url);
@@ -211,13 +221,14 @@ app.whenReady().then(async () => {
 
   const settings = await loadSettings();
   nativeTheme.themeSource = settings.theme;
+  log.info("Theme:", settings.theme, "| Locale:", settings.locale);
   const win = windowManager.create();
   createAppMenu(win, settings);
 
-  // 处理启动时传入的文件（命令行参数或 macOS open-file）
   const startupFile =
     pendingFilePath ?? extractFilePathFromArgs(process.argv.slice(1));
   if (startupFile) {
+    log.info("Startup file:", startupFile);
     pendingFilePath = null;
     win.webContents.once("did-finish-load", () => {
       openFileInWindow(startupFile, win);
@@ -226,6 +237,7 @@ app.whenReady().then(async () => {
 
   app.on("activate", async () => {
     if (windowManager.count === 0) {
+      log.info("Activate: creating new window");
       const s = await loadSettings();
       const newWin = windowManager.create();
       createAppMenu(newWin, s);
@@ -234,5 +246,6 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  log.info("All windows closed");
   if (process.platform !== "darwin") app.quit();
 });

@@ -1,6 +1,8 @@
 import { BrowserWindow } from "electron";
 import { join } from "path";
+import { createLog } from "@wnote/logger/main";
 
+const log = createLog("window");
 const isDev = process.env.NODE_ENV === "development";
 
 export interface WindowOptions {
@@ -24,9 +26,11 @@ class WindowManager {
     });
 
     this.windows.set(win.id, win);
+    log.info(`Window created id=${win.id} (total: ${this.windows.size})`);
 
     win.on("closed", () => {
       this.windows.delete(win.id);
+      log.info(`Window closed id=${win.id} (total: ${this.windows.size})`);
     });
 
     if (isDev) {

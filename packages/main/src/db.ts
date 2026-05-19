@@ -2,7 +2,9 @@ import Database from "better-sqlite3";
 import { join } from "path";
 import { app } from "electron";
 import { mkdirSync } from "fs";
+import { createLog } from "@wnote/logger/main";
 
+const log = createLog("db");
 const isDev = process.env.NODE_ENV === "development";
 
 function getDataDir(): string {
@@ -18,7 +20,9 @@ export function getDb(): Database.Database {
   if (db) return db;
   const dir = getDataDir();
   mkdirSync(dir, { recursive: true });
-  db = new Database(join(dir, "wnote.db"));
+  const dbPath = join(dir, "wnote.db");
+  log.info("Opening database:", dbPath);
+  db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS kv (
@@ -26,6 +30,7 @@ export function getDb(): Database.Database {
       value TEXT NOT NULL
     )
   `);
+  log.info("Database ready (WAL mode)");
   return db;
 }
 
