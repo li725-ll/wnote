@@ -1,9 +1,7 @@
 :root {
   --editor-max-width: clamp(480px, 95%, 1080px);
-  --editor-font:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-    sans-serif;
-  --editor-mono-font: "JetBrains Mono", "Fira Code", monospace;
+  --editor-font: "HarmonyOS Sans SC", sans-serif;
+  --editor-mono-font: "JetBrains Mono", monospace;
   --editor-font-size: 16px;
   --editor-line-height: 1.75;
   color-scheme: light dark;
