@@ -453,8 +453,13 @@ function buildDecorations(view: EditorView): DecorationSet {
         const lineNum = doc.lineAt(node.from).number;
         const text = doc.sliceString(node.from, node.to).trim();
         if (text === "-" || text === "*" || text === "+") {
+          const line = doc.line(lineNum);
+          const afterMark = doc.sliceString(node.to, line.to);
+          const isTask = /^\s*\[[ xX]\]/.test(afterMark);
           if (activeLines.has(lineNum)) {
             decos.push(syntaxMark.range(node.from, node.to));
+          } else if (isTask) {
+            decos.push(Decoration.replace({}).range(node.from, node.to));
           } else {
             decos.push(
               Decoration.replace({ widget: new BulletWidget() }).range(node.from, node.to),
