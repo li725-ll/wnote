@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 2rem 1.5rem 3rem;
   min-height: 100vh;
-  font-family: var(--editor-font, "Georgia", serif);
+  font-family: var(--editor-font, "HarmonyOS Sans SC", sans-serif);
   font-size: var(--editor-font-size, 16px);
   line-height: var(--editor-line-height, 1.75);
   color: var(--color-text);

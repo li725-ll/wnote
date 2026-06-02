@@ -56,10 +56,17 @@ body,
 }
 
 body {
-  font-family: "HarmonyOS Sans SC", sans-serif;
+  font-family: var(--editor-font, "HarmonyOS Sans SC", sans-serif);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
