@@ -4,6 +4,8 @@ import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from "path";
 
+const devPort = Number(process.env.WNOTE_RENDERER_PORT ?? 5190);
+
 export default defineConfig({
   plugins: [react(), wasm(), topLevelAwait()],
   base: "./",
@@ -18,7 +20,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 5173,
+    port: devPort,
     strictPort: true,
   },
 });

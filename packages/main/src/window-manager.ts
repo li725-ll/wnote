@@ -4,6 +4,7 @@ import { createLog } from "@wnote/logger/main";
 
 const log = createLog("window");
 const isDev = process.env.NODE_ENV === "development";
+const rendererDevPort = process.env.WNOTE_RENDERER_PORT ?? "5190";
 
 export interface WindowOptions {
   width?: number;
@@ -34,7 +35,7 @@ class WindowManager {
     });
 
     if (isDev) {
-      win.loadURL(`http://localhost:5173${opts.isNew ? "#new" : ""}`);
+      win.loadURL(`http://localhost:${rendererDevPort}${opts.isNew ? "#new" : ""}`);
       win.webContents.openDevTools();
     } else {
       win.loadFile(join(__dirname, "../../renderer/dist/index.html"), {

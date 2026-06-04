@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const children = [];
+const rendererPort = process.env.WNOTE_RENDERER_PORT ?? "5190";
 
 function run(cmd, opts = {}) {
   console.log(`> ${cmd}`);
@@ -17,7 +18,12 @@ function spawnProcess(cmd, args, name) {
     cwd: root,
     stdio: "pipe",
     shell: true,
-    env: { ...process.env, NODE_ENV: "development", FORCE_COLOR: "1" },
+    env: {
+      ...process.env,
+      NODE_ENV: "development",
+      FORCE_COLOR: "1",
+      WNOTE_RENDERER_PORT: rendererPort,
+    },
   });
   child.stdout.on("data", (d) => process.stdout.write(`[${name}] ${d}`));
   child.stderr.on("data", (d) => process.stderr.write(`[${name}] ${d}`));
@@ -57,7 +63,7 @@ const electron = spawn("npx", ["electron", "packages/main/dist/index.js"], {
   cwd: root,
   stdio: "inherit",
   shell: true,
-  env: { ...process.env, NODE_ENV: "development" },
+  env: { ...process.env, NODE_ENV: "development", WNOTE_RENDERER_PORT: rendererPort },
 });
 children.push(electron);
 

@@ -1,7 +1,10 @@
 :root {
   --editor-max-width: clamp(480px, 95%, 1080px);
-  --editor-font: "HarmonyOS Sans SC", sans-serif;
-  --editor-mono-font: "JetBrains Mono", monospace;
+  --editor-font:
+    "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
+    "Helvetica Neue", Arial, sans-serif;
+  --editor-mono-font:
+    "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --editor-font-size: 16px;
   --editor-line-height: 1.75;
   color-scheme: light dark;
