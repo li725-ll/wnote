@@ -22,6 +22,7 @@ interface AssetReferenceMatch {
   targetEnd: number;
   target: string;
   wrapped: boolean;
+  kind: "markdown" | "html";
 }
 
 export function buildAssetIndex(
@@ -78,7 +79,7 @@ export function deleteAssetReference(
 ): string {
   const match = findAssetReferenceMatch(markdown, reference);
   if (!match) return markdown;
-  const range = expandDeleteRange(markdown, match.fullStart, match.fullEnd);
+  const range = expandDeleteRange(markdown, match.fullStart, match.fullEnd, match.kind);
   return `${markdown.slice(0, range.start)}${markdown.slice(range.end)}`;
 }
 
@@ -89,7 +90,10 @@ export function replaceAssetReference(
 ): string {
   const match = findAssetReferenceMatch(markdown, reference);
   if (!match) return markdown;
-  const target = match.wrapped || shouldWrapMarkdownUrl(nextSrc) ? `<${nextSrc}>` : nextSrc;
+  const target =
+    match.kind === "markdown" && (match.wrapped || shouldWrapMarkdownUrl(nextSrc))
+      ? `<${nextSrc}>`
+      : nextSrc;
   return `${markdown.slice(0, match.targetStart)}${target}${markdown.slice(match.targetEnd)}`;
 }
 
@@ -234,6 +238,7 @@ function findAssetReferenceMatch(
       targetEnd: fullStart + targetOffset + rawTarget.length,
       target,
       wrapped: rawTarget.startsWith("<") && rawTarget.endsWith(">"),
+      kind: "markdown",
     };
   }
 
@@ -250,6 +255,7 @@ function findAssetReferenceMatch(
       targetEnd: fullStart + targetOffset + rawTarget.length,
       target: rawTarget,
       wrapped: false,
+      kind: "html",
     };
   }
 
@@ -260,13 +266,34 @@ function expandDeleteRange(
   markdown: string,
   start: number,
   end: number,
+  kind: AssetReferenceMatch["kind"],
 ): { start: number; end: number } {
+  if (kind === "html") {
+    const figureRange = enclosingFigureRange(markdown, start, end);
+    if (figureRange)
+      return expandDeleteRange(markdown, figureRange.start, figureRange.end, "markdown");
+  }
   const lineStart = markdown.lastIndexOf("\n", start - 1) + 1;
   const nextLineBreak = markdown.indexOf("\n", end);
   const lineEnd = nextLineBreak === -1 ? markdown.length : nextLineBreak + 1;
   const lineWithoutReference = `${markdown.slice(lineStart, start)}${markdown.slice(end, lineEnd)}`;
   if (lineWithoutReference.trim() === "") return { start: lineStart, end: lineEnd };
   return { start, end };
+}
+
+function enclosingFigureRange(
+  markdown: string,
+  start: number,
+  end: number,
+): { start: number; end: number } | null {
+  const before = markdown.slice(0, start);
+  const figureStart = before.lastIndexOf("<figure");
+  if (figureStart === -1) return null;
+  const previousFigureEnd = before.lastIndexOf("</figure>");
+  if (previousFigureEnd > figureStart) return null;
+  const figureEnd = markdown.indexOf("</figure>", end);
+  if (figureEnd === -1) return null;
+  return { start: figureStart, end: figureEnd + "</figure>".length };
 }
 
 function shouldWrapMarkdownUrl(src: string): boolean {

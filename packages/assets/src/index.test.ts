@@ -63,6 +63,22 @@ describe("assets", () => {
     });
   });
 
+  it("extracts figure html images without losing their source position", () => {
+    const markdown =
+      'before\n<figure data-wnote-image="true"><img src="note.assets/a.png" alt="A"><figcaption>A</figcaption></figure>\nafter';
+    const index = buildAssetIndex(markdown, {
+      documentPath: "/docs/note.md",
+      exists: (path) => path === "/docs/note.assets/a.png",
+    });
+
+    expect(index.references[0]).toMatchObject({
+      src: "note.assets/a.png",
+      absolutePath: "/docs/note.assets/a.png",
+      status: "ok",
+      position: markdown.indexOf("<img"),
+    });
+  });
+
   it("builds Typora-style asset directory names", () => {
     expect(defaultAssetDirectory("/docs/My Note.md")).toBe("/docs/My Note.assets");
   });
@@ -86,6 +102,14 @@ describe("assets", () => {
     const reference = buildAssetIndex(markdown).references[0]!;
 
     expect(deleteAssetReference(markdown, reference)).toBe("before  after");
+  });
+
+  it("deletes an enclosing figure for figure image references", () => {
+    const markdown =
+      'before\n<figure data-wnote-image="true"><img src="old.png" alt="A"><figcaption>A</figcaption></figure>\nafter';
+    const reference = buildAssetIndex(markdown).references[0]!;
+
+    expect(deleteAssetReference(markdown, reference)).toBe("before\nafter");
   });
 
   it("replaces markdown image targets and preserves title", () => {
@@ -113,12 +137,31 @@ describe("assets", () => {
     );
   });
 
+  it("replaces figure image targets without changing figure metadata", () => {
+    const markdown =
+      '<figure data-wnote-image="true" data-align="right"><img src="old.png" alt="A" width="320px"><figcaption>A</figcaption></figure>';
+    const reference = buildAssetIndex(markdown).references[0]!;
+
+    expect(replaceAssetReference(markdown, reference, "new image.png")).toBe(
+      '<figure data-wnote-image="true" data-align="right"><img src="new image.png" alt="A" width="320px"><figcaption>A</figcaption></figure>',
+    );
+  });
+
   it("uses position to replace duplicate image targets", () => {
     const markdown = "![A](same.png)\n![B](same.png)";
     const references = buildAssetIndex(markdown).references;
 
     expect(replaceAssetReference(markdown, references[1]!, "next.png")).toBe(
       "![A](same.png)\n![B](next.png)",
+    );
+  });
+
+  it("uses position to replace duplicate html image targets", () => {
+    const markdown = '<img src="same.png" alt="A">\n<img src="same.png" alt="B">';
+    const references = buildAssetIndex(markdown).references;
+
+    expect(replaceAssetReference(markdown, references[1]!, "next.png")).toBe(
+      '<img src="same.png" alt="A">\n<img src="next.png" alt="B">',
     );
   });
 
