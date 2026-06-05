@@ -101,6 +101,11 @@ export default function App() {
     setContentSnapshot(() => editorRef.current?.getContent() ?? "");
   }, [setContentSnapshot]);
 
+  const getEditorContent = useCallback(async () => {
+    const tab = activeTabRef.current;
+    return editorRef.current?.getContentAsync() ?? tab.content;
+  }, []);
+
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -186,19 +191,25 @@ export default function App() {
     }
   }, [activeTabId, activeTab?.path]); // eslint-disable-line
 
-  const handleSave = useCallback(async (saveAs = false) => {
-    const tab = activeTabRef.current;
-    const content = editorRef.current?.getContent() ?? tab.content;
-    const result = await window.electronAPI.invoke<SaveDocumentResult | null>(IpcChannel.FileSave, {
-      filePath: saveAs ? undefined : tab.path,
-      content,
-      defaultName: tab.path?.split(/[/\\]/).pop() ?? "untitled.md",
-    });
-    if (result) {
-      markSavedRef.current(result.filePath, result.assets);
-      window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
-    }
-  }, []);
+  const handleSave = useCallback(
+    async (saveAs = false) => {
+      const tab = activeTabRef.current;
+      const content = await getEditorContent();
+      const result = await window.electronAPI.invoke<SaveDocumentResult | null>(
+        IpcChannel.FileSave,
+        {
+          filePath: saveAs ? undefined : tab.path,
+          content,
+          defaultName: tab.path?.split(/[/\\]/).pop() ?? "untitled.md",
+        },
+      );
+      if (result) {
+        markSavedRef.current(result.filePath, result.assets);
+        window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
+      }
+    },
+    [getEditorContent],
+  );
 
   const openExportDialog = useCallback((format: ExportFormat) => {
     if (exportingRef.current) return;
@@ -214,7 +225,7 @@ export default function App() {
       setExportFormat(format);
       setExportOptions(options);
       const tab = activeTabRef.current;
-      const content = editorRef.current?.getContent() ?? tab.content;
+      const content = await getEditorContent();
       const baseName =
         tab.path
           ?.split(/[/\\]/)
@@ -288,13 +299,13 @@ export default function App() {
         exportingRef.current = false;
       }
     },
-    [showToast],
+    [getEditorContent, showToast],
   );
 
   const handleExportPreview = useCallback(
     async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
       const tab = activeTabRef.current;
-      const content = editorRef.current?.getContent() ?? tab.content;
+      const content = await getEditorContent();
       const baseName =
         tab.path
           ?.split(/[/\\]/)
@@ -328,7 +339,7 @@ export default function App() {
         );
       }
     },
-    [showToast],
+    [getEditorContent, showToast],
   );
 
   const handleOpenFile = useCallback(async () => {
@@ -460,15 +471,15 @@ export default function App() {
   }, []);
 
   const handleResourceDelete = useCallback(
-    (reference: AssetReference) => {
-      const current = editorRef.current?.getContent() ?? activeTabRef.current.content;
+    async (reference: AssetReference) => {
+      const current = await getEditorContent();
       const next = deleteAssetReference(current, reference);
       if (next === current) return;
       editorRef.current?.setContent(next);
       handleChange(next);
       editorRef.current?.focus();
     },
-    [handleChange],
+    [getEditorContent, handleChange],
   );
 
   const handleResourceRelocate = useCallback(
@@ -482,49 +493,57 @@ export default function App() {
         documentPath,
       });
       if (!asset) return;
-      const current = editorRef.current?.getContent() ?? activeTabRef.current.content;
+      const current = await getEditorContent();
       const next = replaceAssetReference(current, reference, asset.markdownPath);
       if (next === current) return;
       editorRef.current?.setContent(next);
       handleChange(next);
       editorRef.current?.focus();
     },
-    [handleChange],
+    [getEditorContent, handleChange],
   );
 
-  const handleUnusedDelete = useCallback(async (asset: AssetRef) => {
-    const tab = activeTabRef.current;
-    if (!tab.path) return;
-    const ok = window.confirm(`删除未引用资源？\n${asset.markdownPath}`);
-    if (!ok) return;
-    const content = editorRef.current?.getContent() ?? tab.content;
-    const result = await window.electronAPI.invoke<DeleteAssetResult>(IpcChannel.AssetDelete, {
-      documentPath: tab.path,
-      absolutePath: asset.absolutePath,
-      content,
-    });
-    setAssetsRef.current(result.assets);
-  }, []);
-
-  const handleUnusedDeleteAll = useCallback(async (assets: AssetRef[]) => {
-    const tab = activeTabRef.current;
-    if (!tab.path || assets.length === 0) return;
-    const ok = window.confirm(`清理 ${assets.length} 个未引用资源？此操作会删除文件。`);
-    if (!ok) return;
-    const content = editorRef.current?.getContent() ?? tab.content;
-    const result = await window.electronAPI.invoke<DeleteManyAssetsResult>(
-      IpcChannel.AssetDeleteMany,
-      {
+  const handleUnusedDelete = useCallback(
+    async (asset: AssetRef) => {
+      const tab = activeTabRef.current;
+      if (!tab.path) return;
+      const ok = window.confirm(`删除未引用资源？\n${asset.markdownPath}`);
+      if (!ok) return;
+      const content = await getEditorContent();
+      const result = await window.electronAPI.invoke<DeleteAssetResult>(IpcChannel.AssetDelete, {
         documentPath: tab.path,
-        absolutePaths: assets.map((asset) => asset.absolutePath),
+        absolutePath: asset.absolutePath,
         content,
-      },
-    );
-    setAssetsRef.current(result.assets);
-    if (result.failed.length > 0) {
-      window.alert(`已删除 ${result.deleted.length} 个资源，${result.failed.length} 个删除失败。`);
-    }
-  }, []);
+      });
+      setAssetsRef.current(result.assets);
+    },
+    [getEditorContent],
+  );
+
+  const handleUnusedDeleteAll = useCallback(
+    async (assets: AssetRef[]) => {
+      const tab = activeTabRef.current;
+      if (!tab.path || assets.length === 0) return;
+      const ok = window.confirm(`清理 ${assets.length} 个未引用资源？此操作会删除文件。`);
+      if (!ok) return;
+      const content = await getEditorContent();
+      const result = await window.electronAPI.invoke<DeleteManyAssetsResult>(
+        IpcChannel.AssetDeleteMany,
+        {
+          documentPath: tab.path,
+          absolutePaths: assets.map((asset) => asset.absolutePath),
+          content,
+        },
+      );
+      setAssetsRef.current(result.assets);
+      if (result.failed.length > 0) {
+        window.alert(
+          `已删除 ${result.deleted.length} 个资源，${result.failed.length} 个删除失败。`,
+        );
+      }
+    },
+    [getEditorContent],
+  );
 
   const handleSwitchTab = useCallback(
     (id: string) => {

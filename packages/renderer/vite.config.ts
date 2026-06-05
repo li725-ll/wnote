@@ -36,9 +36,6 @@ export default defineConfig({
           if (id.includes("/@tiptap/") || id.includes("/prosemirror-")) {
             return "vendor-tiptap";
           }
-          if (id.includes("/mermaid/") || id.includes("/cytoscape") || id.includes("/dagre")) {
-            return "vendor-mermaid";
-          }
           if (id.includes("/katex/")) {
             return "vendor-katex";
           }

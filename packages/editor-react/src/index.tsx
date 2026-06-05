@@ -12,7 +12,6 @@ import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
 import Underline from "@tiptap/extension-underline";
 import type { EditorCommandId, HeadingItem } from "@wnote/contracts";
-import { htmlToMarkdown, markdownToHtml } from "@wnote/markdown";
 import { BlockHandle } from "./BlockHandle";
 import { CodeBlock } from "./code-block";
 import { runEditorCommand } from "./editor-commands";
@@ -47,6 +46,7 @@ export interface EditorProps {
 
 export interface EditorRef {
   getContent(): string;
+  getContentAsync(): Promise<string>;
   setContent(md: string): void;
   replaceRange(from: number, to: number, text: string): void;
   insertAt(pos: number, text: string): void;
@@ -68,6 +68,9 @@ export function Editor({
   ref,
 }: EditorProps) {
   const markdownRef = useRef(initialContent);
+  const latestHtmlRef = useRef("");
+  const contentVersionRef = useRef(0);
+  const conversionPromiseRef = useRef<Promise<string> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const suppressUpdateRef = useRef(false);
   const onChangeRef = useRef(onChange);
@@ -112,7 +115,7 @@ export function Editor({
 
   const editor = useEditor({
     extensions,
-    content: markdownToHtml(initialContent),
+    content: "",
     editorProps: {
       attributes: {
         class: styles.editor,
@@ -134,9 +137,7 @@ export function Editor({
     },
     onUpdate({ editor }) {
       if (suppressUpdateRef.current) return;
-      const markdown = htmlToMarkdown(editor.getHTML());
-      markdownRef.current = markdown;
-      onChangeRef.current?.(markdown);
+      void convertEditorHtml(editor.getHTML());
       onHeadingsChangeRef.current?.(extractHeadings(editor));
     },
     onCreate({ editor }) {
@@ -144,68 +145,113 @@ export function Editor({
     },
   });
 
-  useImperativeHandle(ref, () => ({
-    getContent() {
-      return markdownRef.current;
-    },
-    setContent(md: string) {
-      markdownRef.current = md;
-      if (!editor) return;
+  const convertEditorHtml = useCallback((html: string) => {
+    latestHtmlRef.current = html;
+    const version = ++contentVersionRef.current;
+    const promise = loadMarkdownModule()
+      .then(({ htmlToMarkdown }) => htmlToMarkdown(html))
+      .then((markdown) => {
+        if (version === contentVersionRef.current) {
+          markdownRef.current = markdown;
+          onChangeRef.current?.(markdown);
+        }
+        return markdown;
+      });
+    conversionPromiseRef.current = promise;
+    return promise;
+  }, []);
+
+  const applyMarkdownContent = useCallback(async (md: string, target: TiptapEditor) => {
+    const version = ++contentVersionRef.current;
+    const { markdownToHtml } = await loadMarkdownModule();
+    if (version !== contentVersionRef.current) return md;
+
+    try {
       suppressUpdateRef.current = true;
-      editor.commands.setContent(markdownToHtml(md), { emitUpdate: false });
+      target.commands.setContent(markdownToHtml(md), { emitUpdate: false });
+    } finally {
       suppressUpdateRef.current = false;
-      onHeadingsChangeRef.current?.(extractHeadings(editor));
-    },
-    replaceRange(from: number, to: number, text: string) {
-      if (!editor) return;
-      editor
-        .chain()
-        .focus()
-        .setTextSelection({ from: clampPosition(editor, from), to: clampPosition(editor, to) })
-        .insertContent(text)
-        .run();
-    },
-    insertAt(pos: number, text: string) {
-      if (!editor) return;
-      const position = clampPosition(editor, pos);
-      editor.chain().focus().setTextSelection(position).insertContent(text).run();
-    },
-    getSelection() {
-      const selection = editor?.state.selection;
-      if (!editor || !selection) return { from: 0, to: 0, text: "" };
-      return {
-        from: selection.from,
-        to: selection.to,
-        text: editor.state.doc.textBetween(selection.from, selection.to, "\n", "\n"),
-      };
-    },
-    replaceSelection(text: string) {
-      editor?.commands.insertContent(text);
-    },
-    scrollToPos(pos: number) {
-      const heading = editor?.view.dom.querySelector<HTMLElement>(`[data-heading-pos="${pos}"]`);
-      if (heading) {
-        heading.scrollIntoView({ block: "start" });
-        return;
-      }
-      if (!editor) return;
-      const position = clampPosition(editor, pos);
-      editor.commands.setTextSelection(position);
-      const coords = editor.view.coordsAtPos(position);
-      const target = document.elementFromPoint(coords.left, coords.top);
-      target?.scrollIntoView({ block: "center" });
-    },
-    focus() {
-      editor?.commands.focus();
-    },
-    getView() {
-      return editor;
-    },
-    runCommand(command, payload) {
-      if (!editor) return false;
-      return runCommand(editor, command, payload);
-    },
-  }));
+    }
+    latestHtmlRef.current = target.getHTML();
+    markdownRef.current = md;
+    onHeadingsChangeRef.current?.(extractHeadings(target));
+    return md;
+  }, []);
+
+  useEffect(() => {
+    if (!editor) return;
+    conversionPromiseRef.current = applyMarkdownContent(markdownRef.current, editor);
+  }, [applyMarkdownContent, editor]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getContent() {
+        return markdownRef.current;
+      },
+      async getContentAsync() {
+        const pending = conversionPromiseRef.current;
+        if (pending) return pending;
+        if (!editor) return markdownRef.current;
+        return convertEditorHtml(latestHtmlRef.current || editor.getHTML());
+      },
+      setContent(md: string) {
+        markdownRef.current = md;
+        if (!editor) return;
+        conversionPromiseRef.current = applyMarkdownContent(md, editor);
+      },
+      replaceRange(from: number, to: number, text: string) {
+        if (!editor) return;
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from: clampPosition(editor, from), to: clampPosition(editor, to) })
+          .insertContent(text)
+          .run();
+      },
+      insertAt(pos: number, text: string) {
+        if (!editor) return;
+        const position = clampPosition(editor, pos);
+        editor.chain().focus().setTextSelection(position).insertContent(text).run();
+      },
+      getSelection() {
+        const selection = editor?.state.selection;
+        if (!editor || !selection) return { from: 0, to: 0, text: "" };
+        return {
+          from: selection.from,
+          to: selection.to,
+          text: editor.state.doc.textBetween(selection.from, selection.to, "\n", "\n"),
+        };
+      },
+      replaceSelection(text: string) {
+        editor?.commands.insertContent(text);
+      },
+      scrollToPos(pos: number) {
+        const heading = editor?.view.dom.querySelector<HTMLElement>(`[data-heading-pos="${pos}"]`);
+        if (heading) {
+          heading.scrollIntoView({ block: "start" });
+          return;
+        }
+        if (!editor) return;
+        const position = clampPosition(editor, pos);
+        editor.commands.setTextSelection(position);
+        const coords = editor.view.coordsAtPos(position);
+        const target = document.elementFromPoint(coords.left, coords.top);
+        target?.scrollIntoView({ block: "center" });
+      },
+      focus() {
+        editor?.commands.focus();
+      },
+      getView() {
+        return editor;
+      },
+      runCommand(command, payload) {
+        if (!editor) return false;
+        return runCommand(editor, command, payload);
+      },
+    }),
+    [applyMarkdownContent, convertEditorHtml, editor],
+  );
 
   useEffect(() => {
     if (!editor) return;
@@ -319,4 +365,13 @@ function slugify(value: string): string {
       .replace(/[^\p{L}\p{N}\s-]/gu, "")
       .replace(/\s+/g, "-") || "heading"
   );
+}
+
+type MarkdownModule = typeof import("@wnote/markdown");
+
+let markdownModulePromise: Promise<MarkdownModule> | null = null;
+
+function loadMarkdownModule(): Promise<MarkdownModule> {
+  markdownModulePromise ??= import("@wnote/markdown");
+  return markdownModulePromise;
 }
