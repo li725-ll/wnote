@@ -1,10 +1,4 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import {
-  buildAssetIndex,
-  deleteAssetReference,
-  replaceAssetReference,
-  resolveAssetPreviewSrc,
-} from "@wnote/assets";
 import { Editor, formatCommands } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import {
@@ -34,6 +28,12 @@ import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast, type ToastState } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
 import { defaultExportOptions, describeExport } from "./export/export-state";
+import {
+  buildDocumentAssetIndex,
+  relocateDocumentAssetReference,
+  removeDocumentAssetReference,
+  resolveDocumentAssetPreview,
+} from "./assets/asset-state";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -409,10 +409,7 @@ export default function App() {
   // Auto-save
   const handleChange = useCallback(
     (content: string) => {
-      updateContent(
-        content,
-        buildAssetIndex(content, { documentPath: activeTabRef.current.path ?? undefined }),
-      );
+      updateContent(content, buildDocumentAssetIndex(content, activeTabRef.current.path));
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       if (autoSaveRef.current && activeTabRef.current.path) {
         autoSaveTimerRef.current = setTimeout(() => {
@@ -441,9 +438,7 @@ export default function App() {
   }, []);
 
   const resolveEditorAsset = useCallback((src: string) => {
-    const reference = activeTabRef.current.assets?.references.find((item) => item.src === src);
-    if (reference?.status === "missing") return null;
-    return resolveAssetPreviewSrc(src, activeTabRef.current.path ?? undefined);
+    return resolveDocumentAssetPreview(src, activeTabRef.current.assets, activeTabRef.current.path);
   }, []);
 
   const handleResourceClick = useCallback((reference: AssetReference) => {
@@ -454,8 +449,8 @@ export default function App() {
   const handleResourceDelete = useCallback(
     async (reference: AssetReference) => {
       const current = await getEditorContent();
-      const next = deleteAssetReference(current, reference);
-      if (next === current) return;
+      const next = removeDocumentAssetReference(current, reference);
+      if (!next) return;
       editorRef.current?.setContent(next);
       handleChange(next);
       editorRef.current?.focus();
@@ -475,8 +470,8 @@ export default function App() {
       });
       if (!asset) return;
       const current = await getEditorContent();
-      const next = replaceAssetReference(current, reference, asset.markdownPath);
-      if (next === current) return;
+      const next = relocateDocumentAssetReference(current, reference, asset.markdownPath);
+      if (!next) return;
       editorRef.current?.setContent(next);
       handleChange(next);
       editorRef.current?.focus();

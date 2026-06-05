@@ -1,0 +1,66 @@
+import { describe, expect, it } from "vitest";
+import type { AssetIndex, AssetReference } from "@wnote/contracts";
+import {
+  buildDocumentAssetIndex,
+  relocateDocumentAssetReference,
+  removeDocumentAssetReference,
+  resolveDocumentAssetPreview,
+} from "./asset-state";
+
+describe("asset state", () => {
+  it("builds an asset index for the active document path", () => {
+    const index = buildDocumentAssetIndex("![A](assets/a.png)", "/docs/note.md");
+
+    expect(index.documentPath).toBe("/docs/note.md");
+    expect(index.references[0]).toMatchObject({
+      src: "assets/a.png",
+      absolutePath: "/docs/assets/a.png",
+    });
+  });
+
+  it("resolves previews unless the active asset index marks the source missing", () => {
+    const missing = reference("assets/missing.png", "missing");
+    const assets: AssetIndex = {
+      references: [missing],
+      missing: [missing],
+      unused: [],
+    };
+
+    expect(resolveDocumentAssetPreview("assets/missing.png", assets, "/docs/note.md")).toBeNull();
+    expect(resolveDocumentAssetPreview("assets/a.png", assets, "/docs/note.md")).toBe(
+      "wnote-asset:///docs/assets/a.png",
+    );
+    expect(resolveDocumentAssetPreview("https://example.com/a.png", assets, "/docs/note.md")).toBe(
+      "https://example.com/a.png",
+    );
+  });
+
+  it("removes document asset references and returns null when nothing changes", () => {
+    const content = "before\n![A](old.png)\nafter";
+    const target = buildDocumentAssetIndex(content, null).references[0]!;
+    const stale = reference("missing.png", "unknown");
+
+    expect(removeDocumentAssetReference(content, target)).toBe("before\nafter");
+    expect(removeDocumentAssetReference(content, stale)).toBeNull();
+  });
+
+  it("relocates document asset references and returns null when nothing changes", () => {
+    const content = "![A](old.png)";
+    const target = buildDocumentAssetIndex(content, null).references[0]!;
+    const stale = reference("missing.png", "unknown");
+
+    expect(relocateDocumentAssetReference(content, target, "new.png")).toBe("![A](new.png)");
+    expect(relocateDocumentAssetReference(content, stale, "new.png")).toBeNull();
+  });
+});
+
+function reference(src: string, status: AssetReference["status"]): AssetReference {
+  return {
+    src,
+    kind: "local",
+    position: 0,
+    status,
+    absolutePath: `/docs/${src}`,
+    previewSrc: `wnote-asset:///docs/${src}`,
+  };
+}
