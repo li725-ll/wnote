@@ -3,7 +3,6 @@ import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import {
   IpcChannel,
-  type AppSettings,
   type AssetRef,
   type AssetReference,
   type DeleteAssetResult,
@@ -53,6 +52,8 @@ import {
 } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
+import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
+import { useNavigationIpc } from "./hooks/useNavigationIpc";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -118,30 +119,15 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
-    window.electronAPI.invoke<AppSettings>(IpcChannel.SettingsGet).then((s) => {
-      setAutoSave(s.autoSave);
-    });
-  }, []);
+  useAppSettingsSync({
+    onAutoSaveChange: setAutoSave,
+    onThemeChange: setTheme,
+  });
 
-  useEffect(() => {
-    const handler = (...args: unknown[]) => {
-      const s = args[0] as AppSettings;
-      setAutoSave(s.autoSave);
-      setTheme(s.theme);
-    };
-    window.electronAPI.on(IpcChannel.SettingsChanged, handler);
-    return () => window.electronAPI.off(IpcChannel.SettingsChanged, handler);
-  }, [setTheme]);
-
-  useEffect(() => {
-    const handler = (...args: unknown[]) => {
-      const page = args[0] as string;
-      if (page === "settings") setView("settings");
-    };
-    window.electronAPI.on(IpcChannel.Navigate, handler);
-    return () => window.electronAPI.off(IpcChannel.Navigate, handler);
+  const handleNavigate = useCallback((page: string) => {
+    if (page === "settings") setView("settings");
   }, []);
+  useNavigationIpc(handleNavigate);
 
   useEffect(() => {
     const handler = (...args: unknown[]) => {
