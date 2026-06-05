@@ -23,7 +23,6 @@ import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
 import { CommandPalette } from "./components/CommandPalette";
-import { isCommandPaletteToggleKey } from "./components/command-palette-state";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
@@ -56,6 +55,7 @@ import { useNavigationIpc } from "./hooks/useNavigationIpc";
 import { useFileIpc } from "./hooks/useFileIpc";
 import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
 import { useFormatIpc } from "./hooks/useFormatIpc";
+import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -305,16 +305,10 @@ export default function App() {
   const getFormatEditorView = useCallback(() => editorRef.current?.getView() ?? null, []);
   useFormatIpc(getFormatEditorView);
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (isCommandPaletteToggleKey(event)) {
-        event.preventDefault();
-        setPaletteOpen((open) => !open);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+  const toggleCommandPalette = useCallback(() => {
+    setPaletteOpen((open) => !open);
   }, []);
+  useCommandPaletteShortcut(toggleCommandPalette);
 
   // Auto-save
   const handleChange = useCallback(
