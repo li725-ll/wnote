@@ -91,7 +91,8 @@ export const Image = ImageExtension.extend({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { align, caption, previewSrc, ...imageAttributes } = HTMLAttributes;
+    const imageAttributes = imageHtmlAttrs(HTMLAttributes);
+    const { align, caption } = HTMLAttributes;
     const figureAttributes = imageFigureAttrs({
       src: String(imageAttributes.src ?? ""),
       align,
@@ -113,6 +114,14 @@ export const Image = ImageExtension.extend({
     });
   },
 });
+
+function imageHtmlAttrs(attributes: Record<string, unknown>) {
+  const result = { ...attributes };
+  delete result.align;
+  delete result.caption;
+  delete result.previewSrc;
+  return result;
+}
 
 function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewProps) {
   const [loaded, setLoaded] = useState(true);

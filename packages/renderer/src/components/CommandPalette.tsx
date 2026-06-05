@@ -28,6 +28,17 @@ const paletteId = "wnote-command-palette";
 const listId = `${paletteId}-list`;
 
 export function CommandPalette({ open, commands, onClose }: CommandPaletteProps) {
+  if (!open) return null;
+  return <CommandPaletteContent key="open" commands={commands} onClose={onClose} />;
+}
+
+function CommandPaletteContent({
+  commands,
+  onClose,
+}: {
+  commands: PaletteCommand[];
+  onClose: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const previousQueryRef = useRef(query);
@@ -39,12 +50,8 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
   const activeOptionId = filtered.length ? `${listId}-option-${clampedSelected}` : undefined;
 
   useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setSelected(0);
-    previousQueryRef.current = "";
     requestAnimationFrame(() => inputRef.current?.focus());
-  }, [open]);
+  }, []);
 
   useEffect(() => {
     const previousQuery = previousQueryRef.current;
@@ -59,13 +66,10 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
   }, [filtered.length, query]);
 
   useEffect(() => {
-    if (!open) return;
     listRef.current
       ?.querySelector<HTMLElement>('[data-active="true"]')
       ?.scrollIntoView({ block: "nearest" });
-  }, [open, query, selected]);
-
-  if (!open) return null;
+  }, [query, selected]);
 
   const runCommand = (command: PaletteCommand | undefined) => {
     if (!command) return;

@@ -1,6 +1,5 @@
 import { createLog } from "@wnote/logger/main";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, shell } from "electron";
-import { basename } from "path";
 import { pathToFileURL } from "url";
 import { existsSync } from "fs";
 import {

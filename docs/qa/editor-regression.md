@@ -83,3 +83,17 @@ pnpm -r run typecheck
 pnpm build
 git diff --check
 ```
+
+## 2026-06-05 Automated Pass
+
+- `pnpm dev` started Electron successfully.
+- Confirmed main process app ready, window creation, and database open logs.
+- Confirmed DevTools Autofill protocol errors are browser noise, not app-level failures.
+- Closed the dev process cleanly with `Ctrl+C`.
+- `pnpm lint` completed with warnings only; unused import noise was reduced in this pass.
+- `pnpm test` passed.
+- `pnpm -r run typecheck` passed.
+- `pnpm build` passed with existing large chunk warnings.
+- `git diff --check` passed.
+
+Manual window interaction still needs a human pass for file save/reopen, rich node editing, asset panel actions, and PDF/HTML preview inspection.

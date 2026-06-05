@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { existsSync } from "fs";
 import { copyFile, mkdir, readFile, readdir, stat, unlink, writeFile } from "fs/promises";
-import { basename, dirname, extname, join, relative, resolve } from "path";
+import { basename, extname, join, relative, resolve } from "path";
 import {
   buildAssetIndex,
   defaultAssetDirectory,
