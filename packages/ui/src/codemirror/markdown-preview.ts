@@ -8,6 +8,7 @@ import {
 } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { type Range, StateField } from "@codemirror/state";
+import { renderDiagram } from "../editor/enhancers/mermaid";
 import { parseAtxHeadingLine, slugify } from "./headings";
 
 function appendInlineMarkdown(parent: HTMLElement, text: string) {
@@ -120,6 +121,52 @@ class CodeBlockLangWidget extends WidgetType {
   }
 }
 
+class MermaidWidget extends WidgetType {
+  constructor(
+    private source: string,
+    private theme: "default" | "dark",
+    private pos: number,
+  ) {
+    super();
+  }
+
+  toDOM() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-md-mermaid";
+
+    const status = document.createElement("div");
+    status.className = "cm-md-mermaid-loading";
+    status.textContent = "Rendering Mermaid...";
+    wrapper.appendChild(status);
+
+    const id = hashString(`${this.pos}\n${this.theme}\n${this.source}`);
+    renderDiagram(this.source, id, this.theme)
+      .then((svg) => {
+        wrapper.innerHTML = svg;
+      })
+      .catch((error: unknown) => {
+        wrapper.classList.add("cm-md-mermaid-error");
+        wrapper.innerHTML = "";
+
+        const message = document.createElement("div");
+        message.className = "cm-md-mermaid-error-message";
+        message.textContent = getErrorMessage(error);
+
+        const code = document.createElement("pre");
+        code.textContent = this.source;
+
+        wrapper.appendChild(message);
+        wrapper.appendChild(code);
+      });
+
+    return wrapper;
+  }
+
+  eq(other: MermaidWidget) {
+    return this.source === other.source && this.theme === other.theme && this.pos === other.pos;
+  }
+}
+
 class CheckboxWidget extends WidgetType {
   constructor(private checked: boolean) {
     super();
@@ -204,6 +251,43 @@ function getActiveLines(view: EditorView): Set<number> {
 
 function isBlockquoteLine(view: EditorView, pos: number): boolean {
   return /^\s*>\s?/.test(view.state.doc.lineAt(pos).text);
+}
+
+function getMermaidTheme(view: EditorView): "default" | "dark" {
+  const themed = view.dom.closest("[data-theme]");
+  return themed?.getAttribute("data-theme") === "dark" ? "dark" : "default";
+}
+
+function getFenceLang(lineText: string): string {
+  return (
+    lineText
+      .replace(/^[`~]{3,}\s*/, "")
+      .trim()
+      .split(/\s+/)[0]
+      ?.toLowerCase() ?? ""
+  );
+}
+
+function getFencedCodeContent(view: EditorView, startLine: number, endLine: number): string {
+  const lines: string[] = [];
+  for (let i = startLine + 1; i < endLine; i++) {
+    lines.push(view.state.doc.line(i).text);
+  }
+  return lines.join("\n");
+}
+
+function hashString(value: string): string {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 33) ^ value.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error) return error;
+  return "Mermaid diagram failed to render.";
 }
 
 const syntaxMark = Decoration.mark({ class: "cm-md-syntax" });
@@ -376,6 +460,26 @@ function buildDecorations(view: EditorView): DecorationSet {
 
         // Committed: full code block rendering
         const isActualFence = /^(`{3,}|~{3,})\s*$/.test(endLine.text);
+        const lang = getFenceLang(startLine.text);
+        const isMermaid = lang === "mermaid";
+        const blockActive =
+          isCursorInRange(view, node.from, node.to) || startActive || endActive || !isActualFence;
+
+        if (isMermaid && !blockActive && endLine.number > startLine.number) {
+          const content = getFencedCodeContent(view, startLine.number, endLine.number);
+          decos.push(
+            Decoration.replace({
+              widget: new MermaidWidget(content, getMermaidTheme(view), node.from),
+            }).range(startLine.from, startLine.to),
+          );
+          for (let i = startLine.number + 1; i <= endLine.number; i++) {
+            decos.push(
+              Decoration.line({ class: "cm-md-mermaid-hidden-line" }).range(doc.line(i).from),
+            );
+          }
+          return false;
+        }
+
         const lastCodeLine =
           !endActive && endLine.number !== startLine.number && isActualFence
             ? endLine.number - 1
@@ -401,7 +505,6 @@ function buildDecorations(view: EditorView): DecorationSet {
         if (startActive) {
           decos.push(syntaxMark.range(startLine.from, startLine.to));
         } else {
-          const lang = startLine.text.replace(/^[`~]{3,}\s*/, "").trim();
           decos.push(
             Decoration.replace({ widget: new CodeBlockLangWidget(lang) }).range(
               startLine.from,

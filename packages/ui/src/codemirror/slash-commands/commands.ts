@@ -108,6 +108,15 @@ export const slashCommandRegistry: SlashCommand[] = [
     action: { type: "format", run: formatCommands.codeBlock },
   },
   {
+    id: "mermaid",
+    trigger: "mermaid",
+    label: "Mermaid 图表",
+    keywords: ["diagram", "flowchart", "liuchengtu"],
+    icon: "◇",
+    category: "block",
+    action: { type: "format", run: formatCommands.mermaid },
+  },
+  {
     id: "blockquote",
     trigger: "quote",
     label: "引用",

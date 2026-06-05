@@ -408,6 +408,13 @@ export default function App() {
         run: () => runFormat(formatCommands.codeBlock),
       },
       {
+        id: "mermaid",
+        label: "Mermaid 图表",
+        keywords: ["mermaid", "diagram", "flowchart", "liuchengtu"],
+        group: "格式",
+        run: () => runFormat(formatCommands.mermaid),
+      },
+      {
         id: "blockquote",
         label: "引用",
         keywords: ["quote", "blockquote", "yinyong"],

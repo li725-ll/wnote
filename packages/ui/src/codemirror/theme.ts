@@ -235,6 +235,53 @@ export const wnoteTheme = EditorView.theme({
     padding: "0",
   },
 
+  // Mermaid diagram
+  ".cm-md-mermaid-hidden-line": {
+    fontSize: "0",
+    lineHeight: "0",
+    height: "0",
+    overflow: "hidden",
+    padding: "0 !important",
+  },
+  ".cm-md-mermaid": {
+    display: "flex",
+    justifyContent: "center",
+    maxWidth: "100%",
+    margin: "0.5em 0",
+    padding: "1em",
+    overflowX: "auto",
+    backgroundColor: "var(--color-code-bg)",
+    borderRadius: "8px",
+  },
+  ".cm-md-mermaid svg": {
+    maxWidth: "100%",
+    height: "auto",
+  },
+  ".cm-md-mermaid-loading": {
+    color: "var(--color-placeholder)",
+    fontSize: "0.85em",
+    fontFamily: "var(--editor-mono-font)",
+  },
+  ".cm-md-mermaid-error": {
+    display: "block",
+    color: "var(--color-text)",
+  },
+  ".cm-md-mermaid-error-message": {
+    marginBottom: "0.75em",
+    color: "var(--color-placeholder)",
+    fontFamily: "var(--editor-mono-font)",
+    fontSize: "0.85em",
+    whiteSpace: "pre-wrap",
+  },
+  ".cm-md-mermaid-error pre": {
+    margin: "0",
+    overflowX: "auto",
+    fontFamily: "var(--editor-mono-font)",
+    fontSize: "0.85em",
+    lineHeight: "1.5",
+    whiteSpace: "pre-wrap",
+  },
+
   // Task list checkbox
   ".cm-md-checkbox": {
     width: "1em",

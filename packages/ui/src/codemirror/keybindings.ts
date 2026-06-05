@@ -113,6 +113,19 @@ function insertCodeBlock(view: EditorView): boolean {
   return true;
 }
 
+function insertMermaidBlock(view: EditorView): boolean {
+  const { from } = view.state.selection.main;
+  const line = view.state.doc.lineAt(from);
+  const template = "```mermaid\ngraph TD\n  A[开始] --> B[结束]\n```";
+  const insert = line.text.length === 0 ? template : "\n" + template;
+  const offset = line.text.length === 0 ? 11 : 12;
+  view.dispatch({
+    changes: { from: line.to, insert },
+    selection: { anchor: line.to + offset, head: line.to + offset + 8 },
+  });
+  return true;
+}
+
 function insertHorizontalRule(view: EditorView): boolean {
   const { from } = view.state.selection.main;
   const line = view.state.doc.lineAt(from);
@@ -134,6 +147,7 @@ export const formatCommands = {
   link: insertLink,
   image: insertImage,
   codeBlock: insertCodeBlock,
+  mermaid: insertMermaidBlock,
   blockquote: (v: EditorView) => toggleLinePrefix(v, "> "),
   unorderedList: (v: EditorView) => toggleLinePrefix(v, "- "),
   orderedList: (v: EditorView) => toggleLinePrefix(v, "1. "),
