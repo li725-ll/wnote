@@ -42,6 +42,7 @@ import {
   shouldApplyOpenedDocument,
 } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
+import { useAutoSave } from "./hooks/useAutoSave";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -60,9 +61,6 @@ export default function App() {
   const { setTheme } = useTheme();
   const { toast, showToast, closeToast } = useToastController();
   const [autoSave, setAutoSave] = useState(true);
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoSaveRef = useRef(autoSave);
-  autoSaveRef.current = autoSave;
 
   const {
     tabs,
@@ -191,6 +189,7 @@ export default function App() {
     },
     [getEditorContent],
   );
+  const { scheduleAutoSave } = useAutoSave(autoSave, () => handleSave(false));
 
   const openExportDialog = useCallback((format: ExportFormat) => {
     if (exportingRef.current) return;
@@ -378,14 +377,9 @@ export default function App() {
   const handleChange = useCallback(
     (content: string) => {
       updateContent(content, buildDocumentAssetIndex(content, activeTabRef.current.path));
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-      if (autoSaveRef.current && activeTabRef.current.path) {
-        autoSaveTimerRef.current = setTimeout(() => {
-          handleSave(false);
-        }, 2000);
-      }
+      scheduleAutoSave(activeTabRef.current.path);
     },
-    [updateContent, handleSave],
+    [updateContent, scheduleAutoSave],
   );
 
   const handleNewTab = useCallback(() => {
