@@ -43,11 +43,7 @@ import {
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
-import {
-  getDocumentTitle,
-  getSaveDefaultName,
-  shouldApplyOpenedDocument,
-} from "./files/file-state";
+import { getSaveDefaultName, shouldApplyOpenedDocument } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
@@ -56,6 +52,7 @@ import { useFileIpc } from "./hooks/useFileIpc";
 import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
 import { useFormatIpc } from "./hooks/useFormatIpc";
 import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
+import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -139,12 +136,7 @@ export default function App() {
     onClose: handleIpcCloseFile,
   });
 
-  useEffect(() => {
-    if (activeTab) {
-      editorRef.current?.setContent(activeTab.content);
-      window.electronAPI.send(IpcChannel.WindowTitleSet, getDocumentTitle(activeTab.path));
-    }
-  }, [activeTabId, activeTab?.path]); // eslint-disable-line
+  useActiveTabEditorSync({ activeTab, activeTabId, editorRef });
 
   const handleSave = useCallback(
     async (saveAs = false) => {
