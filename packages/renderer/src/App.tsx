@@ -23,7 +23,7 @@ import { WelcomePage } from "./pages/WelcomePage";
 import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
-import { CommandPalette, type PaletteCommand } from "./components/CommandPalette";
+import { CommandPalette } from "./components/CommandPalette";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast, type ToastState } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
@@ -34,6 +34,7 @@ import {
   removeDocumentAssetReference,
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
+import { buildPaletteCommands } from "./commands/palette-commands";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -546,295 +547,19 @@ export default function App() {
     editorRef.current?.focus();
   }, []);
 
-  const commands = useMemo<PaletteCommand[]>(
-    () => [
-      {
-        id: "new-file",
-        label: "新建文档",
-        keywords: ["new", "file", "xinjian", "wendang"],
-        group: "文件",
-        shortcut: "⌘N",
-        run: () => {
+  const commands = useMemo(
+    () =>
+      buildPaletteCommands({
+        newFile: () => {
           newTabRef.current();
           editorRef.current?.focus();
         },
-      },
-      {
-        id: "open-file",
-        label: "打开文件",
-        keywords: ["open", "file", "dakai"],
-        group: "文件",
-        shortcut: "⌘O",
-        run: handleOpenFile,
-      },
-      {
-        id: "save",
-        label: "保存",
-        keywords: ["save", "baocun"],
-        group: "文件",
-        shortcut: "⌘S",
-        run: () => handleSave(false),
-      },
-      {
-        id: "save-as",
-        label: "另存为",
-        keywords: ["save as", "lingcun"],
-        group: "文件",
-        shortcut: "⇧⌘S",
-        run: () => handleSave(true),
-      },
-      {
-        id: "export-html",
-        label: "导出为 HTML",
-        keywords: ["export", "html", "daochu"],
-        group: "文件",
-        shortcut: "⇧⌘E",
-        run: () => openExportDialog("html"),
-      },
-      {
-        id: "export-pdf",
-        label: "导出为 PDF",
-        keywords: ["export", "pdf", "daochu"],
-        group: "文件",
-        shortcut: "⇧⌘P",
-        run: () => openExportDialog("pdf"),
-      },
-      {
-        id: "toggle-outline",
-        label: "显示/隐藏大纲",
-        keywords: ["outline", "sidebar", "dagang", "cebian"],
-        group: "视图",
-        shortcut: "⌘\\",
-        run: toggleOutline,
-      },
-      {
-        id: "heading1",
-        label: "标题 1",
-        keywords: ["h1", "heading", "biaoti"],
-        group: "格式",
-        shortcut: "⌘1",
-        run: () => runFormat(formatCommands.heading1),
-      },
-      {
-        id: "heading2",
-        label: "标题 2",
-        keywords: ["h2", "heading", "biaoti"],
-        group: "格式",
-        shortcut: "⌘2",
-        run: () => runFormat(formatCommands.heading2),
-      },
-      {
-        id: "heading3",
-        label: "标题 3",
-        keywords: ["h3", "heading", "biaoti"],
-        group: "格式",
-        shortcut: "⌘3",
-        run: () => runFormat(formatCommands.heading3),
-      },
-      {
-        id: "heading4",
-        label: "标题 4",
-        keywords: ["h4", "heading", "biaoti"],
-        group: "格式",
-        shortcut: "⌘4",
-        run: () => runFormat(formatCommands.heading4),
-      },
-      {
-        id: "heading-clear",
-        label: "清除标题",
-        keywords: ["heading clear", "biaoti"],
-        group: "格式",
-        shortcut: "⌘0",
-        run: () => runFormat(formatCommands.headingClear),
-      },
-      {
-        id: "bold",
-        label: "粗体",
-        keywords: ["bold", "strong", "cuti"],
-        group: "格式",
-        shortcut: "⌘B",
-        run: () => runFormat(formatCommands.bold),
-      },
-      {
-        id: "italic",
-        label: "斜体",
-        keywords: ["italic", "xieti"],
-        group: "格式",
-        shortcut: "⌘I",
-        run: () => runFormat(formatCommands.italic),
-      },
-      {
-        id: "strike",
-        label: "删除线",
-        keywords: ["strike", "del", "shanchu"],
-        group: "格式",
-        shortcut: "⇧⌘X",
-        run: () => runFormat(formatCommands.strikethrough),
-      },
-      {
-        id: "link",
-        label: "链接",
-        keywords: ["link", "url", "lianjie"],
-        group: "格式",
-        run: () => runFormat(formatCommands.link),
-      },
-      {
-        id: "inline-code",
-        label: "行内代码",
-        keywords: ["code", "inline", "daima"],
-        group: "格式",
-        shortcut: "⌘E",
-        run: () => runFormat(formatCommands.inlineCode),
-      },
-      {
-        id: "code-block",
-        label: "代码块",
-        keywords: ["codeblock", "fence", "daimakuai"],
-        group: "格式",
-        shortcut: "⇧⌘`",
-        run: () => runFormat(formatCommands.codeBlock),
-      },
-      {
-        id: "mermaid",
-        label: "Mermaid 图表",
-        keywords: ["mermaid", "diagram", "flowchart", "liuchengtu"],
-        group: "格式",
-        run: () => runFormat(formatCommands.mermaid),
-      },
-      {
-        id: "blockquote",
-        label: "引用",
-        keywords: ["quote", "blockquote", "yinyong"],
-        group: "格式",
-        shortcut: "⇧⌘B",
-        run: () => runFormat(formatCommands.blockquote),
-      },
-      {
-        id: "unordered-list",
-        label: "无序列表",
-        keywords: ["ul", "list", "bullet", "wuxu"],
-        group: "格式",
-        shortcut: "⇧⌘U",
-        run: () => runFormat(formatCommands.unorderedList),
-      },
-      {
-        id: "ordered-list",
-        label: "有序列表",
-        keywords: ["ol", "list", "ordered", "youxu"],
-        group: "格式",
-        shortcut: "⇧⌘O",
-        run: () => runFormat(formatCommands.orderedList),
-      },
-      {
-        id: "task-list",
-        label: "任务列表",
-        keywords: ["task", "todo", "renwu"],
-        group: "格式",
-        shortcut: "⇧⌘T",
-        run: () => runFormat(formatCommands.taskList),
-      },
-      {
-        id: "horizontal-rule",
-        label: "分割线",
-        keywords: ["hr", "divider", "fengexian"],
-        group: "格式",
-        shortcut: "⌘↵",
-        run: () => runFormat(formatCommands.horizontalRule),
-      },
-      {
-        id: "table-insert",
-        label: "插入表格",
-        keywords: ["table", "insert", "biaoge"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableInsert),
-      },
-      {
-        id: "table-add-row-before",
-        label: "上方插入行",
-        keywords: ["table", "row", "before", "shangfang"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableAddRowBefore),
-      },
-      {
-        id: "table-add-row-after",
-        label: "下方插入行",
-        keywords: ["table", "row", "after", "xiafang"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableAddRowAfter),
-      },
-      {
-        id: "table-delete-row",
-        label: "删除当前行",
-        keywords: ["table", "row", "delete", "shanchu"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableDeleteRow),
-      },
-      {
-        id: "table-add-column-before",
-        label: "左侧插入列",
-        keywords: ["table", "column", "before", "zuoce"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableAddColumnBefore),
-      },
-      {
-        id: "table-add-column-after",
-        label: "右侧插入列",
-        keywords: ["table", "column", "after", "youce"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableAddColumnAfter),
-      },
-      {
-        id: "table-delete-column",
-        label: "删除当前列",
-        keywords: ["table", "column", "delete", "shanchu"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableDeleteColumn),
-      },
-      {
-        id: "table-toggle-header-row",
-        label: "切换表头行",
-        keywords: ["table", "header", "biaotou"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableToggleHeaderRow),
-      },
-      {
-        id: "table-merge-cells",
-        label: "合并单元格",
-        keywords: ["table", "merge", "hebing"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableMergeCells),
-      },
-      {
-        id: "table-split-cell",
-        label: "拆分单元格",
-        keywords: ["table", "split", "chaifen"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableSplitCell),
-      },
-      {
-        id: "table-delete",
-        label: "删除表格",
-        keywords: ["table", "delete", "shanchu"],
-        group: "表格",
-        run: () => runFormat(formatCommands.tableDelete),
-      },
-      {
-        id: "image",
-        label: "图片",
-        keywords: ["image", "img", "tupian"],
-        group: "格式",
-        shortcut: "⇧⌘I",
-        run: () => runFormat(formatCommands.image),
-      },
-      {
-        id: "math",
-        label: "数学公式",
-        keywords: ["math", "formula", "shuxue"],
-        group: "格式",
-        shortcut: "⌘M",
-        run: () => runFormat(formatCommands.math),
-      },
-    ],
+        openFile: handleOpenFile,
+        save: handleSave,
+        openExportDialog,
+        toggleOutline,
+        runFormat,
+      }),
     [handleOpenFile, handleSave, openExportDialog, runFormat, toggleOutline],
   );
 
