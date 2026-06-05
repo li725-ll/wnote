@@ -4,6 +4,15 @@ import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useRef, useState } from "react";
 import type { AssetResolver } from "./index";
+import {
+  clampImageWidth,
+  imageDisplaySource,
+  imageFigureAttrs,
+  imageStyle,
+  normalizeImageAlign,
+  normalizeImageWidth,
+  normalizeNullableText,
+} from "./image-utils";
 import styles from "./Image.module.css";
 
 declare module "@tiptap/extension-image" {
@@ -31,15 +40,14 @@ export const Image = ImageExtension.extend({
         default: null,
         parseHTML: (element) => {
           const image = imageElement(element);
-          return image?.getAttribute("data-width") ?? image?.getAttribute("width");
+          return normalizeImageWidth(
+            image?.getAttribute("data-width") ?? image?.getAttribute("width"),
+          );
         },
-        renderHTML: (attributes) =>
-          attributes.width
-            ? {
-                "data-width": attributes.width,
-                style: `width: ${attributes.width};`,
-              }
-            : {},
+        renderHTML: (attributes) => {
+          const width = normalizeImageWidth(attributes.width);
+          return width ? { "data-width": width, style: `width: ${width};` } : {};
+        },
       },
       previewSrc: {
         default: null,
@@ -84,12 +92,13 @@ export const Image = ImageExtension.extend({
 
   renderHTML({ HTMLAttributes }) {
     const { align, caption, previewSrc, ...imageAttributes } = HTMLAttributes;
-    if (!align && !caption) return ["img", mergeAttributes(imageAttributes)];
+    const figureAttributes = imageFigureAttrs({
+      src: String(imageAttributes.src ?? ""),
+      align,
+      caption,
+    });
+    if (!figureAttributes) return ["img", mergeAttributes(imageAttributes)];
 
-    const figureAttributes = {
-      "data-wnote-image": "true",
-      ...(align ? { "data-align": align } : {}),
-    };
     return [
       "figure",
       figureAttributes,
@@ -114,11 +123,11 @@ function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewPro
   const previewSrc = String(node.attrs.previewSrc ?? "");
   const alt = String(node.attrs.alt ?? "");
   const title = String(node.attrs.title ?? "");
-  const width = String(node.attrs.width ?? "");
-  const align = imageAlignValue(node.attrs.align);
+  const width = normalizeImageWidth(node.attrs.width);
+  const align = normalizeImageAlign(node.attrs.align);
   const caption = String(node.attrs.caption ?? "");
   const assetResolver = node.type.spec.config.options.assetResolver as AssetResolver | undefined;
-  const displaySrc = previewSrc || assetResolver?.(src) || src;
+  const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
 
   return (
     <NodeViewWrapper
@@ -135,136 +144,141 @@ function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewPro
           if (target?.closest("button,input")) event.stopPropagation();
         }}
       >
-        {loaded ? (
-          <div className={styles.imageWrap}>
-            {selected ? (
-              <div className={styles.toolbar}>
-                <button
-                  className={styles.toolButton}
-                  data-active={!align ? "true" : "false"}
-                  title="自动对齐"
-                  type="button"
-                  onClick={() => updateAttributes({ align: null })}
-                >
-                  Auto
-                </button>
-                <button
-                  className={styles.toolButton}
-                  data-active={align === "left" ? "true" : "false"}
-                  title="左对齐"
-                  type="button"
-                  onClick={() => updateAttributes({ align: "left" })}
-                >
-                  L
-                </button>
-                <button
-                  className={styles.toolButton}
-                  data-active={align === "center" ? "true" : "false"}
-                  title="居中"
-                  type="button"
-                  onClick={() => updateAttributes({ align: "center" })}
-                >
-                  C
-                </button>
-                <button
-                  className={styles.toolButton}
-                  data-active={align === "right" ? "true" : "false"}
-                  title="右对齐"
-                  type="button"
-                  onClick={() => updateAttributes({ align: "right" })}
-                >
-                  R
-                </button>
-                <span className={styles.divider} />
-                <button
-                  className={styles.toolButton}
-                  title="适应页面宽度"
-                  type="button"
-                  onClick={() => updateAttributes({ width: "100%" })}
-                >
-                  Fit
-                </button>
-                <button
-                  className={styles.toolButton}
-                  disabled={!width}
-                  title="清除固定宽度"
-                  type="button"
-                  onClick={() => updateAttributes({ width: null })}
-                >
-                  Reset
-                </button>
-                <span className={styles.divider} />
-                <button
-                  className={styles.toolButton}
-                  title="删除图片"
-                  type="button"
-                  onClick={deleteNode}
-                >
-                  Del
-                </button>
-              </div>
-            ) : null}
+        <div className={styles.imageWrap}>
+          {selected ? (
+            <div className={styles.toolbar}>
+              <button
+                className={styles.toolButton}
+                data-active={!align ? "true" : "false"}
+                title="自动对齐"
+                type="button"
+                onClick={() => updateAttributes({ align: null })}
+              >
+                A
+              </button>
+              <button
+                className={styles.toolButton}
+                data-active={align === "left" ? "true" : "false"}
+                title="左对齐"
+                type="button"
+                onClick={() => updateAttributes({ align: "left" })}
+              >
+                L
+              </button>
+              <button
+                className={styles.toolButton}
+                data-active={align === "center" ? "true" : "false"}
+                title="居中"
+                type="button"
+                onClick={() => updateAttributes({ align: "center" })}
+              >
+                C
+              </button>
+              <button
+                className={styles.toolButton}
+                data-active={align === "right" ? "true" : "false"}
+                title="右对齐"
+                type="button"
+                onClick={() => updateAttributes({ align: "right" })}
+              >
+                R
+              </button>
+              <span className={styles.divider} />
+              <button
+                className={styles.toolButton}
+                title="适应页面宽度"
+                type="button"
+                onClick={() => updateAttributes({ width: "100%" })}
+              >
+                Fit
+              </button>
+              <button
+                className={styles.toolButton}
+                disabled={!width}
+                title="清除固定宽度"
+                type="button"
+                onClick={() => updateAttributes({ width: null })}
+              >
+                Rst
+              </button>
+              <span className={styles.divider} />
+              <button
+                className={styles.toolButton}
+                title="删除图片"
+                type="button"
+                onClick={deleteNode}
+              >
+                Del
+              </button>
+            </div>
+          ) : null}
+          {loaded ? (
             <img
               ref={imageRef}
               className={styles.image}
               src={displaySrc}
               alt={alt}
               title={title || undefined}
-              style={dragWidth || width ? { width: dragWidth ?? width } : undefined}
+              style={dragWidth ? { width: dragWidth } : imageStyle(width)}
               onError={() => setLoaded(false)}
             />
-            {selected ? (
-              <button
-                className={styles.resizeHandle}
-                type="button"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const image = imageRef.current;
-                  if (!image) return;
-                  const startX = event.clientX;
-                  const startWidth = image.getBoundingClientRect().width;
-                  const maxWidth =
-                    figureRef.current?.parentElement?.getBoundingClientRect().width ?? startWidth;
-                  const target = event.currentTarget;
-                  target.setPointerCapture(event.pointerId);
+          ) : (
+            <div className={styles.error} style={imageStyle(width)}>
+              <span>图片无法加载</span>
+              <code>{src}</code>
+            </div>
+          )}
+          {selected && loaded ? (
+            <button
+              className={styles.resizeHandle}
+              type="button"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const image = imageRef.current;
+                if (!image) return;
+                const startX = event.clientX;
+                const startWidth = image.getBoundingClientRect().width;
+                const maxWidth =
+                  figureRef.current?.parentElement?.getBoundingClientRect().width ?? startWidth;
+                const target = event.currentTarget;
+                target.setPointerCapture(event.pointerId);
 
-                  const onMove = (moveEvent: PointerEvent) => {
-                    const nextWidth = clamp(startWidth + moveEvent.clientX - startX, 80, maxWidth);
-                    setDragWidth(`${Math.round(nextWidth)}px`);
-                  };
-                  const onUp = (upEvent: PointerEvent) => {
-                    try {
-                      target.releasePointerCapture(upEvent.pointerId);
-                    } catch {
-                      // Pointer may already be released if the drag ends outside the handle.
-                    }
-                    window.removeEventListener("pointermove", onMove);
-                    window.removeEventListener("pointerup", onUp);
-                    const nextWidth = imageRef.current?.getBoundingClientRect().width ?? startWidth;
-                    const value = `${Math.round(clamp(nextWidth, 80, maxWidth))}px`;
-                    setDragWidth(null);
-                    updateAttributes({ width: value });
-                  };
+                const onMove = (moveEvent: PointerEvent) => {
+                  const nextWidth = clampImageWidth(
+                    startWidth + moveEvent.clientX - startX,
+                    maxWidth,
+                  );
+                  setDragWidth(`${nextWidth}px`);
+                };
+                const onUp = (upEvent: PointerEvent) => {
+                  try {
+                    target.releasePointerCapture(upEvent.pointerId);
+                  } catch {
+                    // Pointer may already be released if the drag ends outside the handle.
+                  }
+                  window.removeEventListener("pointermove", onMove);
+                  window.removeEventListener("pointerup", onUp);
+                  const nextWidth = imageRef.current?.getBoundingClientRect().width ?? startWidth;
+                  const value = `${clampImageWidth(nextWidth, maxWidth)}px`;
+                  setDragWidth(null);
+                  updateAttributes({ width: value });
+                };
 
-                  window.addEventListener("pointermove", onMove);
-                  window.addEventListener("pointerup", onUp);
-                }}
-              />
-            ) : null}
-          </div>
-        ) : (
-          <div className={styles.error}>
-            <span>图片无法加载</span>
-            <code>{src}</code>
-          </div>
-        )}
+                window.addEventListener("pointermove", onMove);
+                window.addEventListener("pointerup", onUp);
+              }}
+            />
+          ) : null}
+        </div>
         {selected ? (
           <input
             className={styles.captionEditor}
             value={caption}
             placeholder="添加图片说明"
-            onChange={(event) => updateAttributes({ caption: event.target.value || null })}
+            onChange={(event) =>
+              updateAttributes({ caption: normalizeNullableText(event.target.value) })
+            }
           />
         ) : caption ? (
           <figcaption className={styles.caption}>{caption}</figcaption>
@@ -291,10 +305,6 @@ function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewPro
   );
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
 function imageElement(element: HTMLElement): HTMLImageElement | null {
   if (element instanceof HTMLImageElement) return element;
   return element.querySelector("img");
@@ -310,12 +320,7 @@ function imageAlign(element: HTMLElement): string | null {
     element.getAttribute("data-align") ??
     element.getAttribute("align") ??
     styleTextAlign(element.getAttribute("style") ?? "");
-  return imageAlignValue(value);
-}
-
-function imageAlignValue(value: unknown): "left" | "center" | "right" | null {
-  if (value === "left" || value === "center" || value === "right") return value;
-  return null;
+  return normalizeImageAlign(value);
 }
 
 function styleTextAlign(style: string): string | null {
