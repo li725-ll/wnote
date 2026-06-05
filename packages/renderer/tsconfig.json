@@ -6,12 +6,15 @@
     "types": [],
     "noEmit": true,
     "paths": {
-      "@wnote/shared": ["../shared/src/index.ts"],
-      "@wnote/shared/*": ["../shared/src/*.ts"],
-      "@wnote/ui": ["../ui/src/index.ts"],
-      "@wnote/ui/*": ["../ui/src/*.ts"],
-      "@wnote/md-parser": ["../md-parser/src/index.ts"],
-      "@wnote/md-parser/*": ["../md-parser/src/*.ts"],
+      "@wnote/assets": ["../assets/src/index.ts"],
+      "@wnote/contracts": ["../contracts/src/index.ts"],
+      "@wnote/document": ["../document/src/index.ts"],
+      "@wnote/editor-react": ["../editor-react/src/index.tsx"],
+      "@wnote/markdown": ["../markdown/src/index.ts"],
+      "@wnote/renderers": ["../renderers/src/index.ts"],
+      "@wnote/renderers/katex": ["../renderers/src/katex.ts"],
+      "@wnote/renderers/mermaid": ["../renderers/src/mermaid.ts"],
+      "@wnote/renderers/shiki": ["../renderers/src/shiki.ts"],
       "@wnote/logger/renderer": ["../logger/src/renderer.ts"]
     }
   },

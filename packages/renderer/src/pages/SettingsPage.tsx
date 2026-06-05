@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IpcChannel, type AppSettings, defaultSettings } from "@wnote/shared";
+import { IpcChannel, type AppSettings, defaultSettings } from "@wnote/contracts";
 import styles from "./SettingsPage.module.css";
 
 type Section = "general" | "update" | "about";

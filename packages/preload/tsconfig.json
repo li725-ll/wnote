@@ -7,8 +7,7 @@
     "types": ["node"],
     "noEmit": true,
     "paths": {
-      "@wnote/shared": ["../shared/src/index.ts"],
-      "@wnote/shared/*": ["../shared/src/*.ts"]
+      "@wnote/contracts": ["../contracts/src/index.ts"]
     }
   },
   "include": ["src"]

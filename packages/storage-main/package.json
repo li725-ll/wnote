@@ -1,0 +1,26 @@
+{
+  "name": "@wnote/storage-main",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wnote/assets": "workspace:*",
+    "@wnote/contracts": "workspace:*",
+    "@wnote/markdown": "workspace:*",
+    "@wnote/renderers": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.3"
+  }
+}

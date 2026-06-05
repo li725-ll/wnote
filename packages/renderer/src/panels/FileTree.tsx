@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { HeadingItem } from "@wnote/ui";
+import type { HeadingItem } from "@wnote/editor-react";
 import styles from "./FileTree.module.css";
 
 interface DocumentOutlineProps {

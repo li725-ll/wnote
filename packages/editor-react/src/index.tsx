@@ -1,0 +1,322 @@
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { EditorContent, useEditor, type Editor as TiptapEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
+import Placeholder from "@tiptap/extension-placeholder";
+import { Table } from "@tiptap/extension-table";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
+import TableRow from "@tiptap/extension-table-row";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
+import Typography from "@tiptap/extension-typography";
+import Underline from "@tiptap/extension-underline";
+import type { EditorCommandId, HeadingItem } from "@wnote/contracts";
+import { htmlToMarkdown, markdownToHtml } from "@wnote/markdown";
+import { BlockHandle } from "./BlockHandle";
+import { CodeBlock } from "./code-block";
+import { runEditorCommand } from "./editor-commands";
+import styles from "./Editor.module.css";
+import { FloatingToolbar } from "./FloatingToolbar";
+import { Image } from "./image";
+import { MarkdownShortcuts } from "./markdown-shortcuts";
+import { BlockMath, InlineMath } from "./math";
+import { MermaidBlock } from "./mermaid";
+import { SlashMenu } from "./SlashMenu";
+import { TableToolbar } from "./TableToolbar";
+
+export type { HeadingItem } from "@wnote/contracts";
+
+export interface SavedImageRef {
+  src: string;
+  previewSrc?: string;
+}
+
+export type ImageSaveHandler = (file: File) => Promise<SavedImageRef | null>;
+export type AssetResolver = (src: string) => string;
+
+export interface EditorProps {
+  initialContent?: string;
+  onChange?: (markdown: string) => void;
+  onHeadingsChange?: (headings: HeadingItem[]) => void;
+  onImageSave?: ImageSaveHandler;
+  assetResolver?: AssetResolver;
+  placeholder?: string;
+  ref?: React.Ref<EditorRef>;
+}
+
+export interface EditorRef {
+  getContent(): string;
+  setContent(md: string): void;
+  replaceRange(from: number, to: number, text: string): void;
+  insertAt(pos: number, text: string): void;
+  getSelection(): { from: number; to: number; text: string };
+  replaceSelection(text: string): void;
+  scrollToPos(pos: number): void;
+  focus(): void;
+  getView(): TiptapEditor | null;
+  runCommand(command: EditorCommandId, payload?: unknown): boolean;
+}
+
+export function Editor({
+  initialContent = "",
+  onChange,
+  onHeadingsChange,
+  onImageSave,
+  assetResolver,
+  placeholder = "开始写作...",
+  ref,
+}: EditorProps) {
+  const markdownRef = useRef(initialContent);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const suppressUpdateRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  const onHeadingsChangeRef = useRef(onHeadingsChange);
+  const onImageSaveRef = useRef(onImageSave);
+  onChangeRef.current = onChange;
+  onHeadingsChangeRef.current = onHeadingsChange;
+  onImageSaveRef.current = onImageSave;
+
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({
+        codeBlock: false,
+        link: false,
+      }),
+      CodeBlock,
+      InlineMath,
+      BlockMath,
+      MermaidBlock,
+      MarkdownShortcuts,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: "https",
+      }),
+      Image.configure({
+        allowBase64: true,
+        assetResolver,
+      }),
+      Placeholder.configure({ placeholder }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Typography,
+      Underline,
+    ],
+    [assetResolver, placeholder],
+  );
+
+  const editor = useEditor({
+    extensions,
+    content: markdownToHtml(initialContent),
+    editorProps: {
+      attributes: {
+        class: styles.editor,
+      },
+      handlePaste(view, event) {
+        const files = getImageFiles(event.clipboardData);
+        if (!files.length || !onImageSaveRef.current) return false;
+        event.preventDefault();
+        void insertSavedImages(editor, files, onImageSaveRef.current);
+        return true;
+      },
+      handleDrop(view, event) {
+        const files = getImageFiles(event.dataTransfer);
+        if (!files.length || !onImageSaveRef.current) return false;
+        event.preventDefault();
+        void insertSavedImages(editor, files, onImageSaveRef.current);
+        return true;
+      },
+    },
+    onUpdate({ editor }) {
+      if (suppressUpdateRef.current) return;
+      const markdown = htmlToMarkdown(editor.getHTML());
+      markdownRef.current = markdown;
+      onChangeRef.current?.(markdown);
+      onHeadingsChangeRef.current?.(extractHeadings(editor));
+    },
+    onCreate({ editor }) {
+      onHeadingsChangeRef.current?.(extractHeadings(editor));
+    },
+  });
+
+  useImperativeHandle(ref, () => ({
+    getContent() {
+      return markdownRef.current;
+    },
+    setContent(md: string) {
+      markdownRef.current = md;
+      if (!editor) return;
+      suppressUpdateRef.current = true;
+      editor.commands.setContent(markdownToHtml(md), { emitUpdate: false });
+      suppressUpdateRef.current = false;
+      onHeadingsChangeRef.current?.(extractHeadings(editor));
+    },
+    replaceRange(from: number, to: number, text: string) {
+      if (!editor) return;
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: clampPosition(editor, from), to: clampPosition(editor, to) })
+        .insertContent(text)
+        .run();
+    },
+    insertAt(pos: number, text: string) {
+      if (!editor) return;
+      const position = clampPosition(editor, pos);
+      editor.chain().focus().setTextSelection(position).insertContent(text).run();
+    },
+    getSelection() {
+      const selection = editor?.state.selection;
+      if (!editor || !selection) return { from: 0, to: 0, text: "" };
+      return {
+        from: selection.from,
+        to: selection.to,
+        text: editor.state.doc.textBetween(selection.from, selection.to, "\n", "\n"),
+      };
+    },
+    replaceSelection(text: string) {
+      editor?.commands.insertContent(text);
+    },
+    scrollToPos(pos: number) {
+      const heading = editor?.view.dom.querySelector<HTMLElement>(`[data-heading-pos="${pos}"]`);
+      if (heading) {
+        heading.scrollIntoView({ block: "start" });
+        return;
+      }
+      if (!editor) return;
+      const position = clampPosition(editor, pos);
+      editor.commands.setTextSelection(position);
+      const coords = editor.view.coordsAtPos(position);
+      const target = document.elementFromPoint(coords.left, coords.top);
+      target?.scrollIntoView({ block: "center" });
+    },
+    focus() {
+      editor?.commands.focus();
+    },
+    getView() {
+      return editor;
+    },
+    runCommand(command, payload) {
+      if (!editor) return false;
+      return runCommand(editor, command, payload);
+    },
+  }));
+
+  useEffect(() => {
+    if (!editor) return;
+    return () => editor.destroy();
+  }, [editor]);
+
+  return (
+    <div ref={containerRef} className={styles.container}>
+      <BlockHandle editor={editor} containerRef={containerRef} />
+      <FloatingToolbar editor={editor} containerRef={containerRef} />
+      <SlashMenu editor={editor} containerRef={containerRef} />
+      <TableToolbar editor={editor} containerRef={containerRef} />
+      <EditorContent editor={editor} className={styles.wrap} />
+    </div>
+  );
+}
+
+function runCommand(editor: TiptapEditor, command: EditorCommandId, payload?: unknown): boolean {
+  return runEditorCommand(editor, command, undefined, payload);
+}
+
+export const formatCommands = Object.fromEntries(
+  [
+    "bold",
+    "italic",
+    "strikethrough",
+    "inlineCode",
+    "math",
+    "link",
+    "image",
+    "codeBlock",
+    "mermaid",
+    "blockquote",
+    "unorderedList",
+    "orderedList",
+    "taskList",
+    "horizontalRule",
+    "tableInsert",
+    "tableAddRowBefore",
+    "tableAddRowAfter",
+    "tableDeleteRow",
+    "tableAddColumnBefore",
+    "tableAddColumnAfter",
+    "tableDeleteColumn",
+    "tableDelete",
+    "tableToggleHeaderRow",
+    "tableMergeCells",
+    "tableSplitCell",
+    "heading1",
+    "heading2",
+    "heading3",
+    "heading4",
+    "headingClear",
+  ].map((id) => [id, (editor: TiptapEditor) => runCommand(editor, id as EditorCommandId)]),
+) as Record<EditorCommandId, (editor: TiptapEditor) => boolean>;
+
+function extractHeadings(editor: TiptapEditor): HeadingItem[] {
+  const headings: HeadingItem[] = [];
+  editor.state.doc.descendants((node, pos) => {
+    if (node.type.name !== "heading") return;
+    const text = node.textContent;
+    headings.push({
+      id: slugify(text),
+      level: node.attrs.level,
+      text,
+      from: pos,
+    });
+  });
+  return headings;
+}
+
+function clampPosition(editor: TiptapEditor, pos: number): number {
+  return Math.max(0, Math.min(pos, editor.state.doc.content.size));
+}
+
+async function insertSavedImages(
+  editor: TiptapEditor | null,
+  files: File[],
+  handler: ImageSaveHandler,
+) {
+  if (!editor) return;
+  for (const file of files) {
+    const image = await handler(file);
+    if (!image) continue;
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "image",
+        attrs: {
+          src: image.src,
+          previewSrc: image.previewSrc,
+          alt: file.name,
+          title: file.name,
+        },
+      })
+      .run();
+  }
+}
+
+function getImageFiles(dataTransfer: DataTransfer | null): File[] {
+  if (!dataTransfer) return [];
+  return Array.from(dataTransfer.files).filter((file) => file.type.startsWith("image/"));
+}
+
+function slugify(value: string): string {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s-]/gu, "")
+      .replace(/\s+/g, "-") || "heading"
+  );
+}

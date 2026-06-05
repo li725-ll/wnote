@@ -2,7 +2,7 @@ import { join } from "path";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import { app } from "electron";
-import { defaultSettings, type AppSettings } from "@wnote/shared";
+import { defaultSettings, type AppSettings } from "@wnote/contracts";
 import { createLog } from "@wnote/logger/main";
 
 const log = createLog("settings");

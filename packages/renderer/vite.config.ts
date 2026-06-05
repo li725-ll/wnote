@@ -11,13 +11,54 @@ export default defineConfig({
   base: "./",
   resolve: {
     alias: {
-      "@wnote/ui": resolve(__dirname, "../ui/src/index.ts"),
+      "@wnote/assets": resolve(__dirname, "../assets/src/index.ts"),
+      "@wnote/contracts": resolve(__dirname, "../contracts/src/index.ts"),
+      "@wnote/document": resolve(__dirname, "../document/src/index.ts"),
+      "@wnote/editor-react": resolve(__dirname, "../editor-react/src/index.tsx"),
+      "@wnote/markdown": resolve(__dirname, "../markdown/src/index.ts"),
+      "@wnote/renderers/katex": resolve(__dirname, "../renderers/src/katex.ts"),
+      "@wnote/renderers/mermaid": resolve(__dirname, "../renderers/src/mermaid.ts"),
+      "@wnote/renderers/shiki": resolve(__dirname, "../renderers/src/shiki.ts"),
+      "@wnote/renderers": resolve(__dirname, "../renderers/src/index.ts"),
       "@wnote/logger/renderer": resolve(__dirname, "../logger/src/renderer.ts"),
     },
   },
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) {
+            return "vendor-react";
+          }
+          if (id.includes("/@tiptap/") || id.includes("/prosemirror-")) {
+            return "vendor-tiptap";
+          }
+          if (id.includes("/mermaid/") || id.includes("/cytoscape") || id.includes("/dagre")) {
+            return "vendor-mermaid";
+          }
+          if (id.includes("/katex/")) {
+            return "vendor-katex";
+          }
+          if (
+            id.includes("/unified/") ||
+            id.includes("/remark-") ||
+            id.includes("/mdast-") ||
+            id.includes("/hast-") ||
+            id.includes("/micromark") ||
+            id.includes("/unist-") ||
+            id.includes("/property-information") ||
+            id.includes("/space-separated-tokens") ||
+            id.includes("/comma-separated-tokens")
+          ) {
+            return "vendor-markdown";
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port: devPort,

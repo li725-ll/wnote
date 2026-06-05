@@ -4,8 +4,13 @@ import { resolve } from "path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@wnote/shared": resolve(__dirname, "../shared/src/index.ts"),
+      "@wnote/assets": resolve(__dirname, "../assets/src/index.ts"),
+      "@wnote/contracts": resolve(__dirname, "../contracts/src/index.ts"),
       "@wnote/logger/main": resolve(__dirname, "../logger/src/main.ts"),
+      "@wnote/markdown": resolve(__dirname, "../markdown/src/index.ts"),
+      "@wnote/renderers/katex": resolve(__dirname, "../renderers/src/katex.ts"),
+      "@wnote/renderers/shiki": resolve(__dirname, "../renderers/src/shiki.ts"),
+      "@wnote/storage-main": resolve(__dirname, "../storage-main/src/index.ts"),
     },
   },
   build: {

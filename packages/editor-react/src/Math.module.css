@@ -1,0 +1,65 @@
+.inline {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: baseline;
+  cursor: text;
+}
+
+.block {
+  display: block;
+  margin: 0.9em 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--color-code-bg);
+  cursor: text;
+}
+
+.inline[data-selected="true"],
+.block[data-selected="true"] {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.rendered {
+  max-width: 100%;
+}
+
+.block .rendered {
+  display: block;
+}
+
+.inlineInput,
+.blockInput {
+  min-width: 8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--editor-mono-font);
+  font-size: 0.92em;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+}
+
+.inlineInput {
+  width: 14rem;
+  height: 1.8em;
+  padding: 0.15rem 0.35rem;
+}
+
+.blockInput {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+}
+
+.inlineInput:focus,
+.blockInput:focus {
+  border-color: var(--color-accent);
+}
+
+.rendered :global(.katex-error) {
+  color: var(--color-danger);
+}

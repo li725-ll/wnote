@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./global.css";
 import App from "./App";
-import { IpcChannel, type AppSettings } from "@wnote/shared";
+import { IpcChannel, type AppSettings } from "@wnote/contracts";
 import { initI18n } from "./i18n";
 
 async function bootstrap() {

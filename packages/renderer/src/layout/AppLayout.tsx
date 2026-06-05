@@ -1,6 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { IpcChannel } from "@wnote/shared";
-import type { LayoutState } from "@wnote/shared";
+import { IpcChannel, type LayoutState } from "@wnote/contracts";
 import styles from "./AppLayout.module.css";
 import { Sidebar } from "./Sidebar";
 

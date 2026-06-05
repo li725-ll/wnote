@@ -1,7 +1,27 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Editor, formatCommands } from "@wnote/ui";
-import type { EditorRef, HeadingItem } from "@wnote/ui";
-import { IpcChannel, type AppSettings } from "@wnote/shared";
+import {
+  buildAssetIndex,
+  deleteAssetReference,
+  replaceAssetReference,
+  resolveAssetPreviewSrc,
+} from "@wnote/assets";
+import { Editor, formatCommands } from "@wnote/editor-react";
+import type { EditorRef, HeadingItem } from "@wnote/editor-react";
+import {
+  IpcChannel,
+  type AppSettings,
+  type AssetRef,
+  type AssetReference,
+  type DeleteAssetResult,
+  type DeleteManyAssetsResult,
+  type ExportHtmlOptions,
+  type ExportHtmlResult,
+  type ExportPdfResult,
+  type ExportPreviewResult,
+  type OpenDocumentResult,
+  type SaveDocumentResult,
+  type ShellOpenPathResult,
+} from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -10,8 +30,23 @@ import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
 import { CommandPalette, type PaletteCommand } from "./components/CommandPalette";
+import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
+import { Toast, type ToastState } from "./components/Toast";
+import { ResourcePanel } from "./panels/ResourcePanel";
 
 const STORAGE_KEY = "wnote:welcomed";
+
+const defaultExportOptions: Required<ExportHtmlOptions> = {
+  inlineLocalImages: false,
+  renderMermaid: true,
+  theme: "light",
+  pdf: {
+    pageSize: "A4",
+    orientation: "portrait",
+    margin: "default",
+    printBackground: true,
+  },
+};
 
 export default function App() {
   const [view, setView] = useState<"welcome" | "editor" | "settings">(() => {
@@ -19,8 +54,14 @@ export default function App() {
   });
   const [headings, setHeadings] = useState<HeadingItem[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("html");
+  const [exportOptions, setExportOptions] = useState(defaultExportOptions);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const [toggleOutlineSignal, setToggleOutlineSignal] = useState(0);
   const editorRef = useRef<EditorRef>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exportingRef = useRef(false);
   const { setTheme } = useTheme();
   const [autoSave, setAutoSave] = useState(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,6 +78,7 @@ export default function App() {
     updateContent,
     openFile,
     markSaved,
+    setAssets,
     setContentSnapshot,
   } = useTabs();
 
@@ -53,9 +95,25 @@ export default function App() {
   activeTabIdRef.current = activeTabId;
   const markSavedRef = useRef(markSaved);
   markSavedRef.current = markSaved;
+  const setAssetsRef = useRef(setAssets);
+  setAssetsRef.current = setAssets;
   useEffect(() => {
     setContentSnapshot(() => editorRef.current?.getContent() ?? "");
   }, [setContentSnapshot]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  const showToast = useCallback((next: Omit<ToastState, "id">, duration = 3200) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ ...next, id: Date.now() });
+    if (duration > 0) {
+      toastTimerRef.current = setTimeout(() => setToast(null), duration);
+    }
+  }, []);
 
   useEffect(() => {
     window.electronAPI.invoke<AppSettings>(IpcChannel.SettingsGet).then((s) => {
@@ -84,8 +142,8 @@ export default function App() {
 
   useEffect(() => {
     const handler = (...args: unknown[]) => {
-      const data = args[0] as { filePath: string; name: string; content: string };
-      const tabId = openFileRef.current(data.filePath, data.content);
+      const data = args[0] as OpenDocumentResult;
+      const tabId = openFileRef.current(data.filePath, data.content, data.assets);
       if (tabId === activeTabIdRef.current) {
         editorRef.current?.setContent(data.content);
         window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
@@ -109,14 +167,10 @@ export default function App() {
 
   useEffect(() => {
     window.electronAPI
-      .invoke<{
-        filePath: string;
-        name: string;
-        content: string;
-      } | null>(IpcChannel.LastOpenedFileGet)
+      .invoke<OpenDocumentResult | null>(IpcChannel.LastOpenedFileGet)
       .then((data) => {
         if (!data) return;
-        const tabId = openFileRef.current(data.filePath, data.content);
+        const tabId = openFileRef.current(data.filePath, data.content, data.assets);
         if (tabId === activeTabIdRef.current) {
           editorRef.current?.setContent(data.content);
           window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
@@ -135,31 +189,155 @@ export default function App() {
   const handleSave = useCallback(async (saveAs = false) => {
     const tab = activeTabRef.current;
     const content = editorRef.current?.getContent() ?? tab.content;
-    const result = await window.electronAPI.invoke<{ filePath: string; name: string } | null>(
-      IpcChannel.FileSave,
-      {
-        filePath: saveAs ? undefined : tab.path,
-        content,
-        defaultName: tab.path?.split(/[/\\]/).pop() ?? "untitled.md",
-      },
-    );
+    const result = await window.electronAPI.invoke<SaveDocumentResult | null>(IpcChannel.FileSave, {
+      filePath: saveAs ? undefined : tab.path,
+      content,
+      defaultName: tab.path?.split(/[/\\]/).pop() ?? "untitled.md",
+    });
     if (result) {
-      markSavedRef.current(result.filePath);
+      markSavedRef.current(result.filePath, result.assets);
       window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
     }
   }, []);
 
+  const openExportDialog = useCallback((format: ExportFormat) => {
+    if (exportingRef.current) return;
+    setExportFormat(format);
+    setExportDialogOpen(true);
+  }, []);
+
+  const handleExport = useCallback(
+    async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
+      if (exportingRef.current) return;
+      exportingRef.current = true;
+      setExportDialogOpen(false);
+      setExportFormat(format);
+      setExportOptions(options);
+      const tab = activeTabRef.current;
+      const content = editorRef.current?.getContent() ?? tab.content;
+      const baseName =
+        tab.path
+          ?.split(/[/\\]/)
+          .pop()
+          ?.replace(/\.[^.]+$/, "") || "untitled";
+      const label = format === "pdf" ? "PDF" : "HTML";
+      const extension = format === "pdf" ? "pdf" : "html";
+      showToast({ kind: "info", title: `正在导出 ${label}` }, 0);
+      try {
+        const result = await window.electronAPI.invoke<ExportHtmlResult | ExportPdfResult | null>(
+          format === "pdf" ? IpcChannel.ExportPdf : IpcChannel.ExportHtml,
+          {
+            content,
+            documentPath: tab.path,
+            defaultName: `${baseName}.${extension}`,
+            options,
+          },
+        );
+        if (result) {
+          showToast({
+            kind: "success",
+            title: `${label} 导出完成`,
+            message: result.filePath,
+            actions: [
+              {
+                label: "在 Finder 中显示",
+                run: () => {
+                  void window.electronAPI.invoke(IpcChannel.ShellShowItemInFolder, {
+                    filePath: result.filePath,
+                  });
+                },
+              },
+              {
+                label: "打开文件",
+                run: () => {
+                  void window.electronAPI
+                    .invoke<ShellOpenPathResult>(IpcChannel.ShellOpenPath, {
+                      filePath: result.filePath,
+                    })
+                    .then((openResult) => {
+                      if (!openResult.ok) {
+                        showToast(
+                          {
+                            kind: "error",
+                            title: "打开文件失败",
+                            message: openResult.error ?? result.filePath,
+                          },
+                          6000,
+                        );
+                      }
+                    });
+                },
+              },
+            ],
+          });
+          editorRef.current?.focus();
+        } else {
+          setToast(null);
+          editorRef.current?.focus();
+        }
+      } catch (error) {
+        showToast(
+          {
+            kind: "error",
+            title: `${label} 导出失败`,
+            message: error instanceof Error ? error.message : String(error),
+          },
+          6000,
+        );
+      } finally {
+        exportingRef.current = false;
+      }
+    },
+    [showToast],
+  );
+
+  const handleExportPreview = useCallback(
+    async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
+      const tab = activeTabRef.current;
+      const content = editorRef.current?.getContent() ?? tab.content;
+      const baseName =
+        tab.path
+          ?.split(/[/\\]/)
+          .pop()
+          ?.replace(/\.[^.]+$/, "") || "untitled";
+      const extension = format === "pdf" ? "pdf" : "html";
+      setExportFormat(format);
+      setExportOptions(options);
+      try {
+        const result = await window.electronAPI.invoke<ExportPreviewResult>(
+          IpcChannel.ExportPreview,
+          {
+            content,
+            documentPath: tab.path,
+            defaultName: `${baseName}.${extension}`,
+            format,
+            options,
+          },
+        );
+        if (result.ok) {
+          showToast({ kind: "success", title: "导出预览已打开" });
+        }
+      } catch (error) {
+        showToast(
+          {
+            kind: "error",
+            title: "导出预览失败",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          6000,
+        );
+      }
+    },
+    [showToast],
+  );
+
   const handleOpenFile = useCallback(async () => {
-    const data = await window.electronAPI.invoke<{
-      filePath: string;
-      name: string;
-      content: string;
-    } | null>(IpcChannel.FileOpen);
+    const data = await window.electronAPI.invoke<OpenDocumentResult | null>(IpcChannel.FileOpen);
     if (!data) {
       editorRef.current?.focus();
       return;
     }
-    const tabId = openFileRef.current(data.filePath, data.content);
+    const tabId = openFileRef.current(data.filePath, data.content, data.assets);
     if (tabId === activeTabIdRef.current) {
       editorRef.current?.setContent(data.content);
       window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
@@ -178,6 +356,18 @@ export default function App() {
     window.electronAPI.on(IpcChannel.FileSaveAsTrigger, handler);
     return () => window.electronAPI.off(IpcChannel.FileSaveAsTrigger, handler);
   }, [handleSave]);
+
+  useEffect(() => {
+    const handler = () => openExportDialog("html");
+    window.electronAPI.on(IpcChannel.ExportHtmlTrigger, handler);
+    return () => window.electronAPI.off(IpcChannel.ExportHtmlTrigger, handler);
+  }, [openExportDialog]);
+
+  useEffect(() => {
+    const handler = () => openExportDialog("pdf");
+    window.electronAPI.on(IpcChannel.ExportPdfTrigger, handler);
+    return () => window.electronAPI.off(IpcChannel.ExportPdfTrigger, handler);
+  }, [openExportDialog]);
   // Format commands from menu
   useEffect(() => {
     const formatMap = {
@@ -229,7 +419,10 @@ export default function App() {
   // Auto-save
   const handleChange = useCallback(
     (content: string) => {
-      updateContent(content);
+      updateContent(
+        content,
+        buildAssetIndex(content, { documentPath: activeTabRef.current.path ?? undefined }),
+      );
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       if (autoSaveRef.current && activeTabRef.current.path) {
         autoSaveTimerRef.current = setTimeout(() => {
@@ -247,7 +440,90 @@ export default function App() {
   const handleImageSave = useCallback(async (file: File) => {
     const buffer = await file.arrayBuffer();
     const ext = file.name.split(".").pop() || "png";
-    return window.electronAPI.invoke<string | null>(IpcChannel.ImageSave, { buffer, ext });
+    const asset = await window.electronAPI.invoke<AssetRef | null>(IpcChannel.ImageSave, {
+      buffer,
+      ext,
+      documentPath: activeTabRef.current.path,
+      originalName: file.name,
+      mime: file.type,
+    });
+    return asset ? { src: asset.markdownPath, previewSrc: asset.url } : null;
+  }, []);
+
+  const resolveEditorAsset = useCallback((src: string) => {
+    return resolveAssetPreviewSrc(src, activeTabRef.current.path ?? undefined);
+  }, []);
+
+  const handleResourceClick = useCallback((reference: AssetReference) => {
+    editorRef.current?.scrollToPos(reference.position);
+    editorRef.current?.focus();
+  }, []);
+
+  const handleResourceDelete = useCallback(
+    (reference: AssetReference) => {
+      const current = editorRef.current?.getContent() ?? activeTabRef.current.content;
+      const next = deleteAssetReference(current, reference);
+      if (next === current) return;
+      editorRef.current?.setContent(next);
+      handleChange(next);
+      editorRef.current?.focus();
+    },
+    [handleChange],
+  );
+
+  const handleResourceRelocate = useCallback(
+    async (reference: AssetReference) => {
+      const documentPath = activeTabRef.current.path;
+      if (!documentPath) {
+        window.alert("请先保存当前文档，再重新定位图片。");
+        return;
+      }
+      const asset = await window.electronAPI.invoke<AssetRef | null>(IpcChannel.AssetImport, {
+        documentPath,
+      });
+      if (!asset) return;
+      const current = editorRef.current?.getContent() ?? activeTabRef.current.content;
+      const next = replaceAssetReference(current, reference, asset.markdownPath);
+      if (next === current) return;
+      editorRef.current?.setContent(next);
+      handleChange(next);
+      editorRef.current?.focus();
+    },
+    [handleChange],
+  );
+
+  const handleUnusedDelete = useCallback(async (asset: AssetRef) => {
+    const tab = activeTabRef.current;
+    if (!tab.path) return;
+    const ok = window.confirm(`删除未引用资源？\n${asset.markdownPath}`);
+    if (!ok) return;
+    const content = editorRef.current?.getContent() ?? tab.content;
+    const result = await window.electronAPI.invoke<DeleteAssetResult>(IpcChannel.AssetDelete, {
+      documentPath: tab.path,
+      absolutePath: asset.absolutePath,
+      content,
+    });
+    setAssetsRef.current(result.assets);
+  }, []);
+
+  const handleUnusedDeleteAll = useCallback(async (assets: AssetRef[]) => {
+    const tab = activeTabRef.current;
+    if (!tab.path || assets.length === 0) return;
+    const ok = window.confirm(`清理 ${assets.length} 个未引用资源？此操作会删除文件。`);
+    if (!ok) return;
+    const content = editorRef.current?.getContent() ?? tab.content;
+    const result = await window.electronAPI.invoke<DeleteManyAssetsResult>(
+      IpcChannel.AssetDeleteMany,
+      {
+        documentPath: tab.path,
+        absolutePaths: assets.map((asset) => asset.absolutePath),
+        content,
+      },
+    );
+    setAssetsRef.current(result.assets);
+    if (result.failed.length > 0) {
+      window.alert(`已删除 ${result.deleted.length} 个资源，${result.failed.length} 个删除失败。`);
+    }
   }, []);
 
   const handleSwitchTab = useCallback(
@@ -311,6 +587,22 @@ export default function App() {
         group: "文件",
         shortcut: "⇧⌘S",
         run: () => handleSave(true),
+      },
+      {
+        id: "export-html",
+        label: "导出为 HTML",
+        keywords: ["export", "html", "daochu"],
+        group: "文件",
+        shortcut: "⇧⌘E",
+        run: () => openExportDialog("html"),
+      },
+      {
+        id: "export-pdf",
+        label: "导出为 PDF",
+        keywords: ["export", "pdf", "daochu"],
+        group: "文件",
+        shortcut: "⇧⌘P",
+        run: () => openExportDialog("pdf"),
       },
       {
         id: "toggle-outline",
@@ -455,6 +747,83 @@ export default function App() {
         run: () => runFormat(formatCommands.horizontalRule),
       },
       {
+        id: "table-insert",
+        label: "插入表格",
+        keywords: ["table", "insert", "biaoge"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableInsert),
+      },
+      {
+        id: "table-add-row-before",
+        label: "上方插入行",
+        keywords: ["table", "row", "before", "shangfang"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableAddRowBefore),
+      },
+      {
+        id: "table-add-row-after",
+        label: "下方插入行",
+        keywords: ["table", "row", "after", "xiafang"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableAddRowAfter),
+      },
+      {
+        id: "table-delete-row",
+        label: "删除当前行",
+        keywords: ["table", "row", "delete", "shanchu"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableDeleteRow),
+      },
+      {
+        id: "table-add-column-before",
+        label: "左侧插入列",
+        keywords: ["table", "column", "before", "zuoce"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableAddColumnBefore),
+      },
+      {
+        id: "table-add-column-after",
+        label: "右侧插入列",
+        keywords: ["table", "column", "after", "youce"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableAddColumnAfter),
+      },
+      {
+        id: "table-delete-column",
+        label: "删除当前列",
+        keywords: ["table", "column", "delete", "shanchu"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableDeleteColumn),
+      },
+      {
+        id: "table-toggle-header-row",
+        label: "切换表头行",
+        keywords: ["table", "header", "biaotou"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableToggleHeaderRow),
+      },
+      {
+        id: "table-merge-cells",
+        label: "合并单元格",
+        keywords: ["table", "merge", "hebing"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableMergeCells),
+      },
+      {
+        id: "table-split-cell",
+        label: "拆分单元格",
+        keywords: ["table", "split", "chaifen"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableSplitCell),
+      },
+      {
+        id: "table-delete",
+        label: "删除表格",
+        keywords: ["table", "delete", "shanchu"],
+        group: "表格",
+        run: () => runFormat(formatCommands.tableDelete),
+      },
+      {
         id: "image",
         label: "图片",
         keywords: ["image", "img", "tupian"],
@@ -471,7 +840,7 @@ export default function App() {
         run: () => runFormat(formatCommands.math),
       },
     ],
-    [handleOpenFile, handleSave, runFormat, toggleOutline],
+    [handleOpenFile, handleSave, openExportDialog, runFormat, toggleOutline],
   );
 
   const handleWelcomeStart = () => {
@@ -491,10 +860,20 @@ export default function App() {
     <AppLayout
       toggleLeftSignal={toggleOutlineSignal}
       left={
-        <DocumentOutline
-          headings={headings}
-          onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
-        />
+        <>
+          <DocumentOutline
+            headings={headings}
+            onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
+          />
+          <ResourcePanel
+            assets={activeTab.assets}
+            onReferenceClick={handleResourceClick}
+            onReferenceDelete={handleResourceDelete}
+            onReferenceRelocate={handleResourceRelocate}
+            onUnusedDelete={handleUnusedDelete}
+            onUnusedDeleteAll={handleUnusedDeleteAll}
+          />
+        </>
       }
       center={
         <div style={{ position: "relative", height: "100%" }}>
@@ -511,6 +890,7 @@ export default function App() {
               onHeadingsChange={setHeadings}
               onChange={handleChange}
               onImageSave={handleImageSave}
+              assetResolver={resolveEditorAsset}
             />
           </div>
           <CommandPalette
@@ -521,6 +901,22 @@ export default function App() {
               editorRef.current?.focus();
             }}
           />
+          <ExportDialog
+            open={exportDialogOpen}
+            format={exportFormat}
+            initialOptions={exportOptions}
+            onCancel={() => {
+              setExportDialogOpen(false);
+              editorRef.current?.focus();
+            }}
+            onConfirm={(format, options) => {
+              void handleExport(format, options);
+            }}
+            onPreview={(format, options) => {
+              void handleExportPreview(format, options);
+            }}
+          />
+          <Toast toast={toast} onClose={() => setToast(null)} />
         </div>
       }
     />

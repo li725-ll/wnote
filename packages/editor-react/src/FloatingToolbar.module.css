@@ -1,0 +1,89 @@
+.toolbar {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
+  padding: 2px;
+  transform: translate(-50%, -100%);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  display: flex;
+  gap: 4px;
+  width: min(22rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
+  padding: 4px;
+  transform: translateX(-50%);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.55rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: 600 0.78rem/1 var(--editor-font);
+  padding: 0;
+}
+
+.button:hover,
+.button[data-active="true"] {
+  background: var(--color-hover-bg);
+  color: var(--color-accent);
+}
+
+.divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--color-border);
+  margin: 0 2px;
+}
+
+.input {
+  min-width: 0;
+  flex: 1;
+  height: 1.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 0.78rem/1 var(--editor-font);
+  outline: none;
+  padding: 0 0.45rem;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+}
+
+.apply {
+  height: 1.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: 0.74rem/1 var(--editor-font);
+  padding: 0 0.55rem;
+}
+
+.apply:hover {
+  background: var(--color-hover-bg);
+}

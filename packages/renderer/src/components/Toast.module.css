@@ -1,0 +1,56 @@
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  display: grid;
+  gap: 4px;
+  width: min(360px, calc(100vw - 40px));
+  padding: 12px 14px;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+  color: var(--color-text);
+}
+
+.toast[data-kind="success"] {
+  border-color: rgba(22, 163, 74, 0.42);
+}
+
+.toast[data-kind="error"] {
+  border-color: rgba(220, 38, 38, 0.42);
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.message {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.button {
+  border: 1px solid var(--sidebar-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.button:hover {
+  background: var(--sidebar-hover);
+}

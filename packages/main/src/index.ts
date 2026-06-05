@@ -1,16 +1,31 @@
 import { createLog } from "@wnote/logger/main";
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol } from "electron";
-import { join, basename, extname } from "path";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, shell } from "electron";
+import { basename } from "path";
 import { pathToFileURL } from "url";
-import { writeFile, mkdir, readFile } from "fs/promises";
 import { existsSync } from "fs";
-import { randomUUID } from "crypto";
+import { writeFile } from "fs/promises";
 import {
   IpcChannel,
   defaultLayoutState,
   type AppSettings,
+  type ExportHtmlRequest,
+  type ExportPdfOptions,
+  type ExportPdfRequest,
+  type ExportPreviewRequest,
   type LayoutState,
-} from "@wnote/shared";
+  type ShellPathRequest,
+} from "@wnote/contracts";
+import {
+  deleteAsset,
+  deleteAssets,
+  exportHtmlDocument,
+  extractDocumentPathFromArgs,
+  importAsset,
+  openDocument,
+  renderHtmlDocument,
+  saveAsset,
+  saveDocument,
+} from "@wnote/storage-main";
 import { createAppMenu } from "./menu";
 import { windowManager } from "./window-manager";
 import { kvGet, kvSet } from "./db";
@@ -25,17 +40,76 @@ import { loadSettings, saveSettings, getDataDirectory } from "./settings";
 
 const log = createLog("app");
 
-const SUPPORTED_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
-
 let pendingFilePath: string | null = null;
 
-function extractFilePathFromArgs(args: string[]): string | null {
-  for (const arg of args) {
-    if (arg.startsWith("-")) continue;
-    const ext = extname(arg).toLowerCase();
-    if (SUPPORTED_EXTENSIONS.has(ext) && existsSync(arg)) return arg;
+async function exportPdfDocument(payload: ExportPdfRequest & { filePath: string }) {
+  const pdfOptions = payload.options?.pdf ?? {};
+  const html = await renderHtmlDocument({ ...payload, filePath: payload.filePath });
+  const pdfWindow = new BrowserWindow({
+    show: false,
+    width: 960,
+    height: 1280,
+    webPreferences: {
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  try {
+    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    await pdfWindow.webContents.executeJavaScript(
+      `new Promise((resolve) => {
+        const done = () => setTimeout(resolve, 300);
+        if (document.readyState === "complete") done();
+        else window.addEventListener("load", done, { once: true });
+      })`,
+      true,
+    );
+    const data = await pdfWindow.webContents.printToPDF({
+      pageSize: pdfOptions.pageSize ?? "A4",
+      landscape: pdfOptions.orientation === "landscape",
+      printBackground: pdfOptions.printBackground ?? true,
+      preferCSSPageSize: true,
+      margins: pdfMargins(pdfOptions.margin),
+    });
+    await writeFile(payload.filePath, data);
+    return { filePath: payload.filePath };
+  } finally {
+    pdfWindow.destroy();
   }
-  return null;
+}
+
+async function openExportPreview(payload: ExportPreviewRequest) {
+  const previewPath =
+    payload.defaultName ?? (payload.format === "pdf" ? "untitled.pdf" : "untitled.html");
+  const html = await renderHtmlDocument({
+    ...payload,
+    filePath: previewPath,
+  });
+  const previewWindow = new BrowserWindow({
+    show: true,
+    width: payload.format === "pdf" ? 940 : 1100,
+    height: payload.format === "pdf" ? 1200 : 820,
+    title: payload.format === "pdf" ? "PDF 导出预览 — WNote" : "HTML 导出预览 — WNote",
+    webPreferences: {
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  await previewWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  return { ok: true };
+}
+
+function pdfMargins(margin: ExportPdfOptions["margin"]) {
+  switch (margin) {
+    case "compact":
+      return { marginType: "custom" as const, top: 0.47, bottom: 0.47, left: 0.47, right: 0.47 };
+    case "wide":
+      return { marginType: "custom" as const, top: 1.1, bottom: 1.1, left: 1.1, right: 1.1 };
+    default:
+      return { marginType: "default" as const };
+  }
 }
 
 async function openFileInWindow(filePath: string, win?: BrowserWindow) {
@@ -46,14 +120,10 @@ async function openFileInWindow(filePath: string, win?: BrowserWindow) {
     return;
   }
   log.info("Opening file:", filePath);
-  const content = await readFile(filePath, "utf-8");
+  const data = await openDocument(filePath);
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
-  target.webContents.send(IpcChannel.FileOpened, {
-    filePath,
-    name: basename(filePath),
-    content,
-  });
+  target.webContents.send(IpcChannel.FileOpened, data);
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -63,7 +133,7 @@ if (!gotLock) {
 } else {
   app.on("second-instance", (_event, argv) => {
     log.info("Second instance detected, argv:", argv.slice(1).join(" "));
-    const filePath = extractFilePathFromArgs(argv.slice(1));
+    const filePath = extractDocumentPathFromArgs(argv.slice(1));
     if (filePath) openFileInWindow(filePath);
     const win = windowManager.getFocused();
     if (win) {
@@ -120,8 +190,7 @@ ipcMain.handle(IpcChannel.RecentFilesClear, async () => {
 ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
   const filePath = getLastOpenedFile();
   if (!filePath || !existsSync(filePath)) return null;
-  const content = await readFile(filePath, "utf-8");
-  return { filePath, name: basename(filePath), content };
+  return openDocument(filePath);
 });
 
 ipcMain.handle(IpcChannel.FileOpen, async (event) => {
@@ -134,12 +203,12 @@ ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   if (result.canceled || result.filePaths.length === 0) return null;
   const filePath = result.filePaths[0];
   log.info("File opened via dialog:", filePath);
-  const content = await readFile(filePath, "utf-8");
+  const data = await openDocument(filePath);
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
   const settings = await loadSettings();
   for (const w of windowManager.getAll()) createAppMenu(w, settings);
-  return { filePath, name: basename(filePath), content };
+  return data;
 });
 
 ipcMain.handle(
@@ -156,26 +225,110 @@ ipcMain.handle(
       if (result.canceled || !result.filePath) return null;
       targetPath = result.filePath;
     }
-    await writeFile(targetPath, payload.content, "utf-8");
+    const saved = await saveDocument({ ...payload, filePath: targetPath });
     log.info("File saved:", targetPath);
     addRecentFile(targetPath);
     setLastOpenedFile(targetPath);
     const settings = await loadSettings();
     for (const w of windowManager.getAll()) createAppMenu(w, settings);
-    return { filePath: targetPath, name: basename(targetPath) };
+    return saved;
   },
 );
 
-ipcMain.handle(IpcChannel.ImageSave, async (_event, payload: { buffer: ArrayBuffer; ext: string }) => {
-  const dataDir = getDataDirectory();
-  const imgDir = join(dataDir, "images");
-  await mkdir(imgDir, { recursive: true });
-  const fileName = `${randomUUID()}.${payload.ext}`;
-  const filePath = join(imgDir, fileName);
-  await writeFile(filePath, Buffer.from(payload.buffer));
-  log.info("Image saved:", filePath);
-  return filePath;
+ipcMain.handle(IpcChannel.ExportHtml, async (event, payload: ExportHtmlRequest) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: payload.defaultName ?? "untitled.html",
+    filters: [{ name: "HTML", extensions: ["html"] }],
+  });
+  if (result.canceled || !result.filePath) return null;
+  const exported = await exportHtmlDocument({ ...payload, filePath: result.filePath });
+  log.info("HTML exported:", exported.filePath);
+  return exported;
 });
+
+ipcMain.handle(IpcChannel.ExportPdf, async (event, payload: ExportPdfRequest) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: payload.defaultName ?? "untitled.pdf",
+    filters: [{ name: "PDF", extensions: ["pdf"] }],
+  });
+  if (result.canceled || !result.filePath) return null;
+  const exported = await exportPdfDocument({ ...payload, filePath: result.filePath });
+  log.info("PDF exported:", exported.filePath);
+  return exported;
+});
+
+ipcMain.handle(IpcChannel.ExportPreview, async (_event, payload: ExportPreviewRequest) => {
+  const result = await openExportPreview(payload);
+  log.info("Export preview opened:", payload.format);
+  return result;
+});
+
+ipcMain.handle(IpcChannel.ShellShowItemInFolder, (_event, payload: ShellPathRequest) => {
+  if (!payload.filePath) return { ok: false, error: "Missing file path" };
+  shell.showItemInFolder(payload.filePath);
+  return { ok: true };
+});
+
+ipcMain.handle(IpcChannel.ShellOpenPath, async (_event, payload: ShellPathRequest) => {
+  if (!payload.filePath) return { ok: false, error: "Missing file path" };
+  const error = await shell.openPath(payload.filePath);
+  return error ? { ok: false, error } : { ok: true };
+});
+
+ipcMain.handle(
+  IpcChannel.ImageSave,
+  async (
+    _event,
+    payload: { buffer: ArrayBuffer; ext: string; originalName?: string; mime?: string },
+  ) => {
+    const asset = await saveAsset(payload, { dataDirectory: getDataDirectory() });
+    log.info("Image saved:", asset.absolutePath);
+    return asset;
+  },
+);
+
+ipcMain.handle(IpcChannel.AssetImport, async (event, payload: { documentPath?: string } = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || !payload.documentPath) return null;
+  const result = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    filters: [
+      {
+        name: "Images",
+        extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "apng"],
+      },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  const asset = await importAsset({
+    sourcePath: result.filePaths[0],
+    documentPath: payload.documentPath,
+  });
+  log.info("Asset imported:", asset.absolutePath);
+  return asset;
+});
+
+ipcMain.handle(
+  IpcChannel.AssetDelete,
+  async (_event, payload: { documentPath: string; absolutePath: string; content: string }) => {
+    const assets = await deleteAsset(payload);
+    log.info("Asset deleted:", payload.absolutePath);
+    return { assets };
+  },
+);
+
+ipcMain.handle(
+  IpcChannel.AssetDeleteMany,
+  async (_event, payload: { documentPath: string; absolutePaths: string[]; content: string }) => {
+    const result = await deleteAssets(payload);
+    log.info("Assets deleted:", result.deleted.length, "failed:", result.failed.length);
+    return result;
+  },
+);
 
 // 窗口控制
 ipcMain.handle(IpcChannel.WindowNew, async () => {
@@ -225,8 +378,7 @@ app.whenReady().then(async () => {
   const win = windowManager.create();
   createAppMenu(win, settings);
 
-  const startupFile =
-    pendingFilePath ?? extractFilePathFromArgs(process.argv.slice(1));
+  const startupFile = pendingFilePath ?? extractDocumentPathFromArgs(process.argv.slice(1));
   if (startupFile) {
     log.info("Startup file:", startupFile);
     pendingFilePath = null;

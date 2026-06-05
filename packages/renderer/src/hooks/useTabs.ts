@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef } from "react";
+import type { AssetIndex } from "@wnote/contracts";
 
 export interface DocumentTab {
   id: string;
   path: string | null;
   content: string;
   dirty: boolean;
+  assets?: AssetIndex;
 }
 
 let tabCounter = 0;
@@ -71,31 +73,33 @@ export function useTabs() {
   );
 
   const updateContent = useCallback(
-    (content: string) => {
+    (content: string, assets?: AssetIndex) => {
       setTabs((prev) =>
-        prev.map((t) => (t.id === activeTabId ? { ...t, content, dirty: true } : t)),
+        prev.map((t) => (t.id === activeTabId ? { ...t, content, assets, dirty: true } : t)),
       );
     },
     [activeTabId],
   );
 
   const openFile = useCallback(
-    (path: string, content: string) => {
+    (path: string, content: string, assets?: AssetIndex) => {
       snapshotCurrent();
       const existing = tabs.find((t) => t.path === path);
       if (existing) {
         setActiveTabId(existing.id);
-        setTabs((prev) => prev.map((t) => (t.id === existing.id ? { ...t, content } : t)));
+        setTabs((prev) =>
+          prev.map((t) => (t.id === existing.id ? { ...t, content, assets, dirty: false } : t)),
+        );
         return existing.id;
       }
       if (tabs.length === 1 && !activeTab.path && !activeTab.dirty && activeTab.content === "") {
         const id = activeTab.id;
         setTabs((prev) =>
-          prev.map((t) => (t.id === id ? { ...t, path, content, dirty: false } : t)),
+          prev.map((t) => (t.id === id ? { ...t, path, content, assets, dirty: false } : t)),
         );
         return id;
       }
-      const tab: DocumentTab = { id: genId(), path, content, dirty: false };
+      const tab: DocumentTab = { id: genId(), path, content, assets, dirty: false };
       setTabs((prev) => [...prev, tab]);
       setActiveTabId(tab.id);
       return tab.id;
@@ -104,8 +108,17 @@ export function useTabs() {
   );
 
   const markSaved = useCallback(
-    (path: string) => {
-      setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, path, dirty: false } : t)));
+    (path: string, assets?: AssetIndex) => {
+      setTabs((prev) =>
+        prev.map((t) => (t.id === activeTabId ? { ...t, path, assets, dirty: false } : t)),
+      );
+    },
+    [activeTabId],
+  );
+
+  const setAssets = useCallback(
+    (assets?: AssetIndex) => {
+      setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, assets } : t)));
     },
     [activeTabId],
   );
@@ -120,6 +133,7 @@ export function useTabs() {
     updateContent,
     openFile,
     markSaved,
+    setAssets,
     setContentSnapshot,
   };
 }

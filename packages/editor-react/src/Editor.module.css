@@ -1,0 +1,196 @@
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  overflow: auto;
+}
+
+.wrap {
+  min-height: 100%;
+}
+
+.editor {
+  max-width: var(--editor-max-width);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  font-family: var(--editor-font);
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
+  outline: none;
+}
+
+.editor :global(p) {
+  margin: 0.55em 0;
+}
+
+.editor :global(h1),
+.editor :global(h2),
+.editor :global(h3),
+.editor :global(h4),
+.editor :global(h5),
+.editor :global(h6) {
+  line-height: 1.35;
+  margin: 0.8em 0 0.35em;
+}
+
+.editor :global(h1) {
+  font-size: 1.9em;
+}
+
+.editor :global(h2) {
+  font-size: 1.55em;
+}
+
+.editor :global(h3) {
+  font-size: 1.25em;
+}
+
+.editor :global(pre) {
+  position: relative;
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--color-code-bg);
+  font-family: var(--editor-mono-font);
+}
+
+.editor :global(code) {
+  border-radius: 3px;
+  background: var(--color-code-bg);
+  font-family: var(--editor-mono-font);
+  padding: 0.1em 0.25em;
+}
+
+.editor :global(pre code) {
+  padding: 0;
+  background: transparent;
+}
+
+.editor :global(blockquote) {
+  margin: 0.7em 0;
+  padding-left: 1em;
+  border-left: 3px solid var(--color-blockquote-border);
+  color: var(--color-text);
+}
+
+.editor :global(a) {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.editor :global(ul),
+.editor :global(ol) {
+  padding-left: 1.45em;
+}
+
+.editor :global(li) {
+  margin: 0.25em 0;
+}
+
+.editor :global(ul[data-type="taskList"]) {
+  padding-left: 0;
+  list-style: none;
+}
+
+.editor :global(ul[data-type="taskList"] li) {
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+
+.editor :global(ul[data-type="taskList"] label) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  height: 1.55em;
+}
+
+.editor :global(ul[data-type="taskList"] input) {
+  width: 1em;
+  height: 1em;
+  margin: 0;
+}
+
+.editor :global(ul[data-type="taskList"] div) {
+  min-width: 0;
+}
+
+.editor :global(img) {
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 6px;
+}
+
+.editor :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.editor :global(.tableWrapper) {
+  margin: 0.9em 0;
+  overflow-x: auto;
+  border-radius: 6px;
+}
+
+.editor :global(th),
+.editor :global(td) {
+  position: relative;
+  min-width: 5rem;
+  border: 1px solid var(--color-table-border);
+  padding: 0.4em 0.7em;
+  vertical-align: top;
+}
+
+.editor :global(th:focus-visible),
+.editor :global(td:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.editor :global(th) {
+  background: var(--color-table-header-bg);
+  font-weight: 650;
+}
+
+.editor :global(.selectedCell::after) {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 2px solid color-mix(in srgb, var(--color-accent) 75%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.editor :global(.column-resize-handle) {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  z-index: 2;
+  width: 6px;
+  background: var(--color-accent);
+  pointer-events: none;
+}
+
+.editor :global(.resize-cursor) {
+  cursor: col-resize;
+}
+
+.editor :global(.is-empty::before) {
+  float: left;
+  height: 0;
+  color: var(--color-placeholder);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.editor :global(.ProseMirror-selectednode) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

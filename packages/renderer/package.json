@@ -8,9 +8,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@wnote/md-parser": "workspace:*",
-    "@wnote/shared": "workspace:*",
-    "@wnote/ui": "workspace:*",
+    "@wnote/assets": "workspace:*",
+    "@wnote/contracts": "workspace:*",
+    "@wnote/document": "workspace:*",
+    "@wnote/editor-react": "workspace:*",
     "i18next": "^26.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

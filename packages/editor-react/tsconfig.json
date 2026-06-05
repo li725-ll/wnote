@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "paths": {
+      "@wnote/contracts": ["../contracts/src/index.ts"],
+      "@wnote/editor-schema": ["../editor-schema/src/index.ts"],
+      "@wnote/markdown": ["../markdown/src/index.ts"],
+      "@wnote/renderers": ["../renderers/src/index.ts"],
+      "@wnote/renderers/katex": ["../renderers/src/katex.ts"],
+      "@wnote/renderers/mermaid": ["../renderers/src/mermaid.ts"],
+      "@wnote/renderers/shiki": ["../renderers/src/shiki.ts"]
+    }
+  },
+  "include": ["src"]
+}

@@ -9,8 +9,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@wnote/assets": "workspace:*",
+    "@wnote/contracts": "workspace:*",
     "@wnote/logger": "workspace:*",
-    "@wnote/md-parser": "workspace:*",
+    "@wnote/storage-main": "workspace:*",
     "better-sqlite3": "^12.10.0"
   },
   "devDependencies": {

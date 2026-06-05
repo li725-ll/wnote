@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IpcChannel, type AppSettings } from "@wnote/shared";
+import { IpcChannel, type AppSettings } from "@wnote/contracts";
 
 type Theme = "light" | "dark" | "system";
 

@@ -1,4 +1,4 @@
-import type { ElectronAPI } from "@wnote/shared";
+import type { ElectronAPI } from "@wnote/contracts";
 
 declare global {
   interface Window {

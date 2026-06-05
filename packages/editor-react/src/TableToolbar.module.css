@@ -1,0 +1,64 @@
+.toolbar {
+  position: absolute;
+  z-index: 16;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: min(100vw - 2rem, 42rem);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
+  padding: 2px;
+}
+
+.toolbar[data-placement="top"] {
+  transform: translateY(-100%);
+}
+
+.toolbar[data-placement="bottom"] {
+  transform: none;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.group + .group {
+  border-left: 1px solid var(--color-border);
+  padding-left: 2px;
+}
+
+.button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.85rem;
+  height: 1.55rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: 600 0.68rem/1 var(--editor-font);
+  padding: 0 0.4rem;
+}
+
+.button:hover {
+  background: var(--color-hover-bg);
+  color: var(--color-accent);
+}
+
+.button[data-danger="true"] {
+  color: var(--color-danger);
+}
+
+.button[data-danger="true"]:hover {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}

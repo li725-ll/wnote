@@ -1,7 +1,7 @@
 import { Menu, BrowserWindow, dialog } from "electron";
-import { readFile } from "fs/promises";
 import { basename } from "path";
-import { IpcChannel, type AppSettings } from "@wnote/shared";
+import { IpcChannel, type AppSettings } from "@wnote/contracts";
+import { openDocument } from "@wnote/storage-main";
 import { addRecentFile, setLastOpenedFile, getRecentFiles, clearRecentFiles } from "./recent-files";
 import { saveSettings, loadSettings } from "./settings";
 import { windowManager } from "./window-manager";
@@ -16,6 +16,8 @@ const labels = {
     openFile: "打开文件",
     save: "保存",
     saveAs: "另存为",
+    exportHtml: "导出为 HTML",
+    exportPdf: "导出为 PDF",
     autoSave: "自动保存",
     recentFiles: "最近打开",
     clearRecent: "清除记录",
@@ -68,6 +70,8 @@ const labels = {
     openFile: "Open File",
     save: "Save",
     saveAs: "Save As",
+    exportHtml: "Export as HTML",
+    exportPdf: "Export as PDF",
     autoSave: "Auto Save",
     recentFiles: "Recent Files",
     clearRecent: "Clear Recent",
@@ -119,11 +123,10 @@ async function openFileInWindow(win: BrowserWindow) {
   });
   if (result.canceled || result.filePaths.length === 0) return;
   const filePath = result.filePaths[0];
-  const content = await readFile(filePath, "utf-8");
-  const name = basename(filePath);
+  const data = await openDocument(filePath);
   addRecentFile(filePath);
   setLastOpenedFile(filePath);
-  win.webContents.send(IpcChannel.FileOpened, { filePath, name, content });
+  win.webContents.send(IpcChannel.FileOpened, data);
   const settings = await loadSettings();
   createAppMenu(win, settings);
 }
@@ -138,11 +141,10 @@ export function createAppMenu(win: BrowserWindow, settings: AppSettings) {
           ...recentFiles.map((f) => ({
             label: basename(f.path),
             click: async () => {
-              const content = await readFile(f.path, "utf-8");
-              const name = basename(f.path);
+              const data = await openDocument(f.path);
               addRecentFile(f.path);
               setLastOpenedFile(f.path);
-              win.webContents.send(IpcChannel.FileOpened, { filePath: f.path, name, content });
+              win.webContents.send(IpcChannel.FileOpened, data);
               const s = await loadSettings();
               createAppMenu(win, s);
             },
@@ -214,6 +216,16 @@ export function createAppMenu(win: BrowserWindow, settings: AppSettings) {
           label: l.saveAs,
           accelerator: "CmdOrCtrl+Shift+S",
           click: () => win.webContents.send(IpcChannel.FileSaveAsTrigger),
+        },
+        {
+          label: l.exportHtml,
+          accelerator: "CmdOrCtrl+Shift+E",
+          click: () => win.webContents.send(IpcChannel.ExportHtmlTrigger),
+        },
+        {
+          label: l.exportPdf,
+          accelerator: "CmdOrCtrl+Shift+P",
+          click: () => win.webContents.send(IpcChannel.ExportPdfTrigger),
         },
         { type: "separator" as const },
         {

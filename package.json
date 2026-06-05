@@ -8,11 +8,12 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "build": "pnpm --filter @wnote/preload build && pnpm --filter @wnote/ui build && pnpm --filter @wnote/renderer build && pnpm --filter @wnote/main build",
+    "build": "pnpm --filter @wnote/preload build && pnpm --filter @wnote/renderer build && pnpm --filter @wnote/main build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
     "prepare": "husky",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
@@ -44,7 +45,8 @@
     "node-gyp": "^12.3.0",
     "prettier": "^3.8.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.8"
   },
   "lint-staged": {
     "*.{ts,tsx,mts,cts,mjs,cjs,js}": [
