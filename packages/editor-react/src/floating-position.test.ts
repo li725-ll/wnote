@@ -4,6 +4,7 @@ import {
   centeredFloatingPoint,
   clamp,
   clampFloatingPoint,
+  finitePoint,
   sideHandlePoint,
   viewportPoint,
   type RectLike,
@@ -38,6 +39,16 @@ describe("floating-position", () => {
       left: 18,
       top: 272,
     });
+  });
+
+  it("guards non-finite floating points", () => {
+    expect(finitePoint({ left: Number.NaN, top: 10 })).toBeNull();
+    expect(
+      clampFloatingPoint({ left: Number.NaN, top: Number.POSITIVE_INFINITY }, container, {
+        width: 120,
+        height: 40,
+      }),
+    ).toEqual({ left: 18, top: 28 });
   });
 
   it("places centered float above when there is room", () => {

@@ -28,6 +28,16 @@ export interface FloatingPlacement extends FloatingPoint {
 
 const defaultPadding = 8;
 
+export function finiteNumber(value: number): number | null {
+  return Number.isFinite(value) ? value : null;
+}
+
+export function finitePoint(point: FloatingPoint): FloatingPoint | null {
+  const left = finiteNumber(point.left);
+  const top = finiteNumber(point.top);
+  return left === null || top === null ? null : { left, top };
+}
+
 export function clamp(value: number, min: number, max: number): number {
   if (max < min) return min;
   return Math.max(min, Math.min(value, max));
@@ -49,14 +59,16 @@ export function clampFloatingPoint(
   box: FloatingBox,
   padding = defaultPadding,
 ): FloatingPoint {
+  const finite = finitePoint(point);
+  if (!finite) return { left: container.scrollLeft + padding, top: container.scrollTop + padding };
   return {
     left: clamp(
-      point.left,
+      finite.left,
       container.scrollLeft + padding,
       container.scrollLeft + container.width - box.width - padding,
     ),
     top: clamp(
-      point.top,
+      finite.top,
       container.scrollTop + padding,
       container.scrollTop + container.height - box.height - padding,
     ),

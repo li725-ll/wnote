@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import type { AssetResolver } from "./index";
 import {
   clampImageWidth,
+  imageAssetResolverFromExtension,
   imageDisplaySource,
   imageFigureAttrs,
   imageStyle,
@@ -135,7 +136,7 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
   const width = normalizeImageWidth(node.attrs.width);
   const align = normalizeImageAlign(node.attrs.align);
   const caption = String(node.attrs.caption ?? "");
-  const assetResolver = extension.options.assetResolver as AssetResolver | undefined;
+  const assetResolver = imageAssetResolverFromExtension(extension);
   const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
 
   return (

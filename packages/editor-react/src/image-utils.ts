@@ -55,3 +55,10 @@ export function imageDisplaySource(
   if (resolveAsset) return resolveAsset(src);
   return src;
 }
+
+export function imageAssetResolverFromExtension(
+  extension: { options?: { assetResolver?: unknown } } | null | undefined,
+): ((src: string) => string | null) | undefined {
+  const resolver = extension?.options?.assetResolver;
+  return typeof resolver === "function" ? (resolver as (src: string) => string | null) : undefined;
+}

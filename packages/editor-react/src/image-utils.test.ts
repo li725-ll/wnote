@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clampImageWidth,
+  imageAssetResolverFromExtension,
   imageDisplaySource,
   imageFigureAttrs,
   imageStyle,
@@ -59,5 +60,15 @@ describe("image utils", () => {
     expect(imageDisplaySource("a.png", "", () => "resolved.png")).toBe("resolved.png");
     expect(imageDisplaySource("a.png", "", () => null)).toBeNull();
     expect(imageDisplaySource("a.png", null)).toBe("a.png");
+  });
+
+  it("safely reads asset resolvers from optional extensions", () => {
+    const resolver = (src: string) => `resolved:${src}`;
+    expect(imageAssetResolverFromExtension(undefined)).toBeUndefined();
+    expect(imageAssetResolverFromExtension({})).toBeUndefined();
+    expect(imageAssetResolverFromExtension({ options: { assetResolver: "bad" } })).toBeUndefined();
+    expect(
+      imageAssetResolverFromExtension({ options: { assetResolver: resolver } })?.("a.png"),
+    ).toBe("resolved:a.png");
   });
 });
