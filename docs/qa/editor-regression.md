@@ -1,0 +1,85 @@
+# Editor Regression Checklist
+
+Run this checklist after editor, markdown, asset, export, or Electron startup changes.
+
+## Startup
+
+- Start the app with `pnpm dev`.
+- Confirm the main window opens without renderer or main-process crashes.
+- Confirm DevTools-only browser noise does not hide app-level errors in the terminal.
+- Close the window and confirm the dev process exits cleanly.
+
+## File Flow
+
+- Create a new document.
+- Type a title, paragraph, list, quote, code block, and table.
+- Save as a Markdown file.
+- Close and reopen the saved file.
+- Confirm content, headings, and dirty/saved state are preserved.
+- Switch between two open tabs and confirm content does not bleed between tabs.
+
+## Markdown Editing
+
+- Headings: create H1-H4 from toolbar, slash menu, and Markdown shortcuts.
+- Lists: unordered, ordered, task list checked and unchecked.
+- Inline marks: bold, italic, strikethrough, inline code, link.
+- Blocks: blockquote, horizontal rule, fenced code, Mermaid, block math.
+- Tables: insert table, add/delete rows and columns, toggle header row, merge and split cells.
+
+## Rich Nodes
+
+- Code block:
+  - Set language to `ts` and confirm highlight renders.
+  - Set an unsupported language and confirm plain-code fallback remains editable.
+- Math:
+  - Insert inline and block math.
+  - Enter an invalid formula and confirm the raw formula remains visible.
+- Mermaid:
+  - Insert a valid diagram and confirm preview renders.
+  - Enter invalid Mermaid source and confirm source fallback remains visible.
+- Image:
+  - Insert an image.
+  - Resize it.
+  - Change alignment.
+  - Add and edit caption, alt, and title.
+
+## Assets
+
+- Confirm local Markdown images appear in the resource panel.
+- Confirm figure images with caption/width/alignment appear in the resource panel.
+- Delete an image reference from the resource panel.
+- Relocate an image reference from the resource panel.
+- Clean unused assets and confirm referenced local files are not removed.
+- Confirm remote and data images are never treated as local missing files.
+
+## Export
+
+- Export HTML with Mermaid enabled.
+- Export HTML with Mermaid disabled.
+- Export HTML with local image inlining enabled.
+- Export PDF with:
+  - A4 portrait default margin.
+  - Letter landscape wide margin.
+  - Compact margin with print background disabled.
+- Open HTML export preview.
+- Open PDF export preview.
+- Confirm export failures in KaTeX, Shiki, or Mermaid fall back without aborting the export.
+
+## Focus And Menus
+
+- Confirm slash menu opens, filters, inserts the selected block, and closes on escape.
+- Confirm floating toolbar does not cover selected text.
+- Confirm block handle tracks the active block and does not cover editable text.
+- Confirm table toolbar appears only inside tables and does not block cell editing.
+- Confirm resource panel actions return focus to the editor.
+
+## Required Commands
+
+Run these before committing:
+
+```sh
+pnpm test
+pnpm -r run typecheck
+pnpm build
+git diff --check
+```
