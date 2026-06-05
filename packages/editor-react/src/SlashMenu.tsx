@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import { slashCommands, type EditorCommandDefinition } from "./editor-commands";
 import { belowFloatingPoint } from "./floating-position";
+import {
+  nextSlashMenuSelected,
+  reconcileSlashMenuSelected,
+  type SlashMenuNavigationKey,
+} from "./slash-menu-state";
 import styles from "./SlashMenu.module.css";
 
 interface SlashMenuProps {
@@ -32,10 +37,13 @@ const hiddenState: SlashState = {
 };
 
 const slashMenuBox = { width: 288, height: 416 };
+const navigationKeys = new Set<string>(["ArrowDown", "ArrowUp", "Home", "End"]);
 
 export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
   const [state, setState] = useState<SlashState>(hiddenState);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = "wnote-slash-menu";
+  const activeOptionId = state.visible ? `${menuId}-option-${state.selected}` : undefined;
 
   const update = useCallback(() => {
     if (!editor || editor.isDestroyed) {
@@ -68,19 +76,24 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
       },
       slashMenuBox,
     );
-    setState((current) => ({
-      visible: true,
-      left: position.left,
-      top: position.top,
-      from: trigger.from,
-      to: trigger.to,
-      query: trigger.query,
-      placement: position.placement,
-      selected: boundedSelected(
-        current.visible ? current.selected : 0,
-        slashCommands(trigger.query),
-      ),
-    }));
+    const commands = slashCommands(trigger.query);
+    setState((current) => {
+      const selected = current.visible ? current.selected : 0;
+      return {
+        visible: true,
+        left: position.left,
+        top: position.top,
+        from: trigger.from,
+        to: trigger.to,
+        query: trigger.query,
+        placement: position.placement,
+        selected: reconcileSlashMenuSelected({
+          selected,
+          itemCount: commands.length,
+          queryChanged: current.query !== trigger.query,
+        }),
+      };
+    });
   }, [containerRef, editor]);
 
   useEffect(() => {
@@ -114,24 +127,23 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
         if (event.key === "Escape") {
           event.preventDefault();
           setState(hiddenState);
+          editor.commands.focus();
+          return;
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
         }
         return;
       }
-      if (event.key === "ArrowDown") {
+      if (navigationKeys.has(event.key)) {
         event.preventDefault();
         setState((current) => ({
           ...current,
-          selected: (current.selected + 1) % slashCommands(current.query).length,
-        }));
-        return;
-      }
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setState((current) => ({
-          ...current,
-          selected:
-            (current.selected + slashCommands(current.query).length - 1) %
+          selected: nextSlashMenuSelected(
+            current.selected,
             slashCommands(current.query).length,
+            event.key as SlashMenuNavigationKey,
+          ),
         }));
         return;
       }
@@ -147,6 +159,7 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
       if (event.key === "Escape") {
         event.preventDefault();
         setState(hiddenState);
+        editor.commands.focus();
       }
     };
 
@@ -165,6 +178,13 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
     return () => window.removeEventListener("mousedown", close);
   }, [state.visible]);
 
+  useEffect(() => {
+    if (!state.visible) return;
+    menuRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [state.query, state.selected, state.visible]);
+
   if (!editor || !state.visible) return null;
   const commands = slashCommands(state.query);
 
@@ -174,6 +194,10 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
       className={styles.menu}
       contentEditable={false}
       data-placement={state.placement}
+      id={menuId}
+      role="listbox"
+      aria-label="插入块"
+      aria-activedescendant={commands.length ? activeOptionId : undefined}
       style={{ left: state.left, top: state.top }}
       onMouseDown={(event) => event.preventDefault()}
     >
@@ -183,6 +207,9 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
             key={item.id}
             className={styles.item}
             data-active={index === state.selected ? "true" : "false"}
+            id={`${menuId}-option-${index}`}
+            role="option"
+            aria-selected={index === state.selected}
             type="button"
             onMouseEnter={() => setState((current) => ({ ...current, selected: index }))}
             onClick={() => {
@@ -223,9 +250,4 @@ function execute(
   if (!item) return;
   editor.chain().focus().deleteRange({ from: state.from, to: state.to }).run();
   item.run(editor);
-}
-
-function boundedSelected(selected: number, commands: EditorCommandDefinition[]) {
-  if (!commands.length) return 0;
-  return Math.min(selected, commands.length - 1);
 }
