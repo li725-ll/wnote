@@ -60,6 +60,7 @@ export const wnoteTheme = EditorView.theme({
     maxWidth: "var(--editor-max-width)",
     margin: "0 auto",
     padding: "2.5rem 2rem",
+    fontFamily: "var(--editor-font)",
     lineHeight: "var(--editor-line-height)",
     caretColor: "var(--color-text)",
   },
@@ -78,9 +79,11 @@ export const wnoteTheme = EditorView.theme({
   },
   ".cm-scroller": {
     overflow: "auto",
+    fontFamily: "var(--editor-font)",
   },
   ".cm-placeholder": {
     color: "var(--color-placeholder)",
+    fontFamily: "var(--editor-font)",
   },
 
   // Headings
@@ -139,6 +142,7 @@ export const wnoteTheme = EditorView.theme({
 
   // Smooth padding transition for list indentation
   ".cm-line": {
+    fontFamily: "var(--editor-font)",
     transition: "padding-left 0.15s ease",
   },
 
