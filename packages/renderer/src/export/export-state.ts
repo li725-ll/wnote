@@ -1,4 +1,5 @@
 import { IpcChannel, type ExportHtmlOptions } from "@wnote/contracts";
+import type { ToastAction } from "../components/Toast";
 import type { ExportFormat } from "../components/ExportDialog";
 
 export const defaultExportOptions: Required<ExportHtmlOptions> = {
@@ -39,4 +40,25 @@ export function describeExport(
     defaultName: `${getExportBaseName(documentPath)}.${extension}`,
     channel: format === "pdf" ? IpcChannel.ExportPdf : IpcChannel.ExportHtml,
   };
+}
+
+export interface ExportSuccessActionHandlers {
+  showInFolder(filePath: string): void;
+  openFile(filePath: string): void;
+}
+
+export function createExportSuccessActions(
+  filePath: string,
+  handlers: ExportSuccessActionHandlers,
+): ToastAction[] {
+  return [
+    {
+      label: "在 Finder 中显示",
+      run: () => handlers.showInFolder(filePath),
+    },
+    {
+      label: "打开文件",
+      run: () => handlers.openFile(filePath),
+    },
+  ];
 }

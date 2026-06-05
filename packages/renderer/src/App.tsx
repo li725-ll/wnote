@@ -28,7 +28,11 @@ import { isCommandPaletteToggleKey } from "./components/command-palette-state";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
-import { defaultExportOptions, describeExport } from "./export/export-state";
+import {
+  createExportSuccessActions,
+  defaultExportOptions,
+  describeExport,
+} from "./export/export-state";
 import {
   buildDocumentAssetIndex,
   relocateDocumentAssetReference,
@@ -225,37 +229,27 @@ export default function App() {
             kind: "success",
             title: `${label} 导出完成`,
             message: result.filePath,
-            actions: [
-              {
-                label: "在 Finder 中显示",
-                run: () => {
-                  void window.electronAPI.invoke(IpcChannel.ShellShowItemInFolder, {
-                    filePath: result.filePath,
+            actions: createExportSuccessActions(result.filePath, {
+              showInFolder: (filePath) => {
+                void window.electronAPI.invoke(IpcChannel.ShellShowItemInFolder, { filePath });
+              },
+              openFile: (filePath) => {
+                void window.electronAPI
+                  .invoke<ShellOpenPathResult>(IpcChannel.ShellOpenPath, { filePath })
+                  .then((openResult) => {
+                    if (!openResult.ok) {
+                      showToast(
+                        {
+                          kind: "error",
+                          title: "打开文件失败",
+                          message: openResult.error ?? filePath,
+                        },
+                        6000,
+                      );
+                    }
                   });
-                },
               },
-              {
-                label: "打开文件",
-                run: () => {
-                  void window.electronAPI
-                    .invoke<ShellOpenPathResult>(IpcChannel.ShellOpenPath, {
-                      filePath: result.filePath,
-                    })
-                    .then((openResult) => {
-                      if (!openResult.ok) {
-                        showToast(
-                          {
-                            kind: "error",
-                            title: "打开文件失败",
-                            message: openResult.error ?? result.filePath,
-                          },
-                          6000,
-                        );
-                      }
-                    });
-                },
-              },
-            ],
+            }),
           });
           editorRef.current?.focus();
         } else {

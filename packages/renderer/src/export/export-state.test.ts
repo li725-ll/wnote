@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { IpcChannel } from "@wnote/contracts";
-import { defaultExportOptions, describeExport, getExportBaseName } from "./export-state";
+import {
+  createExportSuccessActions,
+  defaultExportOptions,
+  describeExport,
+  getExportBaseName,
+} from "./export-state";
 
 describe("export state", () => {
   it("defines stable default export options", () => {
@@ -43,5 +48,18 @@ describe("export state", () => {
       defaultName: "untitled.pdf",
       channel: IpcChannel.ExportPdf,
     });
+  });
+
+  it("creates export success actions", () => {
+    const calls: string[] = [];
+    const actions = createExportSuccessActions("/tmp/report.pdf", {
+      showInFolder: (filePath) => calls.push(`show:${filePath}`),
+      openFile: (filePath) => calls.push(`open:${filePath}`),
+    });
+
+    expect(actions.map((action) => action.label)).toEqual(["在 Finder 中显示", "打开文件"]);
+    actions[0]?.run();
+    actions[1]?.run();
+    expect(calls).toEqual(["show:/tmp/report.pdf", "open:/tmp/report.pdf"]);
   });
 });
