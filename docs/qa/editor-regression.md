@@ -2,9 +2,22 @@
 
 Run this checklist after editor, markdown, asset, export, or Electron startup changes.
 
+## Fixture
+
+Use the regression sample for manual passes:
+
+```sh
+pnpm dev -- docs/qa/fixtures/editor-regression-sample.md
+```
+
+If the dev helper does not forward the file argument in your shell, start with `pnpm dev`, then open `docs/qa/fixtures/editor-regression-sample.md` from the app menu.
+
+The sample covers headings, inline marks, links, lists, task lists, blockquote, horizontal rule, tables, code highlighting, unknown code fallback, math, invalid math fallback, Mermaid, invalid Mermaid fallback, remote images, missing local image fallback, and block operations.
+
 ## Startup
 
 - Start the app with `pnpm dev`.
+- Start the app with the regression sample path when doing a manual editor pass.
 - Confirm the main window opens without renderer or main-process crashes.
 - Confirm DevTools-only browser noise does not hide app-level errors in the terminal.
 - Close the window and confirm the dev process exits cleanly.
@@ -70,6 +83,7 @@ Run this checklist after editor, markdown, asset, export, or Electron startup ch
 - Confirm slash menu opens, filters, inserts the selected block, and closes on escape.
 - Confirm floating toolbar does not cover selected text.
 - Confirm block handle tracks the active block and does not cover editable text.
+- Confirm block handle can move, duplicate, insert around, and delete blocks in the fixture.
 - Confirm table toolbar appears only inside tables and does not block cell editing.
 - Confirm resource panel actions return focus to the editor.
 
