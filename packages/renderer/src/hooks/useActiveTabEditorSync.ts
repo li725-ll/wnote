@@ -1,5 +1,4 @@
 import { useEffect, useRef, type RefObject } from "react";
-import { IpcChannel } from "@wnote/contracts";
 import type { EditorRef } from "@wnote/editor-react";
 import { getDocumentTitle } from "../files/file-state";
 import type { DocumentTab } from "./useTabs";
@@ -8,10 +7,12 @@ export function useActiveTabEditorSync({
   activeTab,
   activeTabId,
   editorRef,
+  setWindowTitle,
 }: {
   activeTab: DocumentTab | undefined;
   activeTabId: string;
   editorRef: RefObject<EditorRef | null>;
+  setWindowTitle(title: string): void;
 }) {
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
@@ -21,6 +22,6 @@ export function useActiveTabEditorSync({
     if (!tab) return;
 
     editorRef.current?.setContent(tab.content);
-    window.electronAPI.send(IpcChannel.WindowTitleSet, getDocumentTitle(tab.path));
-  }, [activeTabId, activeTab?.path, editorRef]);
+    setWindowTitle(getDocumentTitle(tab.path));
+  }, [activeTabId, activeTab?.path, editorRef, setWindowTitle]);
 }

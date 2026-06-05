@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
-import { IpcChannel, type OpenDocumentResult, type SaveDocumentResult } from "@wnote/contracts";
+import type { SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -16,7 +16,6 @@ import { ResourcePanel } from "./panels/ResourcePanel";
 import { defaultExportOptions } from "./export/export-state";
 import { buildDocumentAssetIndex } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
-import { shouldApplyOpenedDocument } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
@@ -29,6 +28,8 @@ import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
 import { useDocumentSave } from "./hooks/useDocumentSave";
 import { useEditorAssetActions } from "./hooks/useEditorAssetActions";
 import { useExportActions } from "./hooks/useExportActions";
+import { useWindowTitle } from "./hooks/useWindowTitle";
+import { useDocumentOpen } from "./hooks/useDocumentOpen";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -65,8 +66,6 @@ export default function App() {
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
-  const openFileRef = useRef(openFile);
-  openFileRef.current = openFile;
   const newTabRef = useRef(newTab);
   newTabRef.current = newTab;
   const closeTabRef = useRef(closeTab);
@@ -86,14 +85,14 @@ export default function App() {
     return editorRef.current?.getContentAsync() ?? tab.content;
   }, []);
   const getCurrentTab = useCallback(() => activeTabRef.current, []);
-
-  const applyOpenedDocument = useCallback((data: OpenDocumentResult) => {
-    const tabId = openFileRef.current(data.filePath, data.content, data.assets);
-    if (shouldApplyOpenedDocument(tabId, activeTabIdRef.current)) {
-      editorRef.current?.setContent(data.content);
-      window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
-    }
-  }, []);
+  const getActiveTabId = useCallback(() => activeTabIdRef.current, []);
+  const setWindowTitle = useWindowTitle();
+  const { applyOpenedDocument, openDocumentDialog } = useDocumentOpen({
+    editorRef,
+    getActiveTabId,
+    openFile,
+    setWindowTitle,
+  });
 
   useAppSettingsSync({
     onAutoSaveChange: setAutoSave,
@@ -113,12 +112,15 @@ export default function App() {
     onClose: handleIpcCloseFile,
   });
 
-  useActiveTabEditorSync({ activeTab, activeTabId, editorRef });
+  useActiveTabEditorSync({ activeTab, activeTabId, editorRef, setWindowTitle });
 
-  const handleSaved = useCallback((result: SaveDocumentResult) => {
-    markSavedRef.current(result.filePath, result.assets);
-    window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
-  }, []);
+  const handleSaved = useCallback(
+    (result: SaveDocumentResult) => {
+      markSavedRef.current(result.filePath, result.assets);
+      setWindowTitle(result.name);
+    },
+    [setWindowTitle],
+  );
   const handleSave = useDocumentSave({
     getCurrentTab,
     getEditorContent,
@@ -137,16 +139,6 @@ export default function App() {
     onFormatChange: setExportFormat,
     onOptionsChange: setExportOptions,
   });
-
-  const handleOpenFile = useCallback(async () => {
-    const data = await window.electronAPI.invoke<OpenDocumentResult | null>(IpcChannel.FileOpen);
-    if (!data) {
-      editorRef.current?.focus();
-      return;
-    }
-    applyOpenedDocument(data);
-    editorRef.current?.focus();
-  }, [applyOpenedDocument]);
 
   const handleIpcSave = useCallback(() => {
     void handleSave(false);
@@ -234,13 +226,13 @@ export default function App() {
           newTabRef.current();
           editorRef.current?.focus();
         },
-        openFile: handleOpenFile,
+        openFile: openDocumentDialog,
         save: handleSave,
         openExportDialog,
         toggleOutline,
         runFormat,
       }),
-    [handleOpenFile, handleSave, openExportDialog, runFormat, toggleOutline],
+    [handleSave, openDocumentDialog, openExportDialog, runFormat, toggleOutline],
   );
 
   const handleWelcomeStart = () => {
