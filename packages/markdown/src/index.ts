@@ -177,6 +177,7 @@ function hastToMdast(node: HastNode): Content[] {
     case "br":
       return [{ type: "break" } satisfies Break];
     case "input":
+    case "label":
       return [];
     case "table":
       return [tableNode(node)];
@@ -203,7 +204,10 @@ function listNode(ordered: boolean, children: HastNode[]): List {
 }
 
 function listItemNode(node: HastElement): ListItem {
-  const children = node.children.flatMap((child) => hastToMdast(child));
+  const contentChildren = isTaskListItem(node)
+    ? node.children.filter((child) => !isTaskControlNode(child))
+    : node.children;
+  const children = contentChildren.flatMap((child) => hastToMdast(child));
   return {
     type: "listItem",
     spread: false,
@@ -231,10 +235,25 @@ function tableNode(node: HastElement): Table {
         )
         .map((cell) => ({
           type: "tableCell",
-          children: cell.children.flatMap((child) => hastToMdast(child)).filter(isPhrasingContent),
+          children: tableCellPhrasing(cell),
         })) satisfies TableCell[],
     })) satisfies TableRow[];
   return { type: "table", align: tableAlignments(rows, node), children: rows };
+}
+
+function tableCellPhrasing(cell: HastElement): PhrasingContent[] {
+  const content = cell.children.flatMap((child) => hastToMdast(child));
+  const phrasing: PhrasingContent[] = [];
+  for (const node of content) {
+    if (isPhrasingContent(node)) {
+      phrasing.push(node);
+      continue;
+    }
+    if (node.type === "paragraph") {
+      phrasing.push(...node.children.filter(isPhrasingContent));
+    }
+  }
+  return phrasing;
 }
 
 function tableAlignments(rows: TableRow[], node: HastElement): Table["align"] {
@@ -260,6 +279,10 @@ function tableRows(node: HastNode): HastElement[] {
 }
 
 function taskChecked(node: HastElement): boolean | null {
+  const dataChecked = stringProperty(node.properties.dataChecked).toLowerCase();
+  if (dataChecked === "true") return true;
+  if (dataChecked === "false") return false;
+
   const first = node.children.find(
     (child): child is HastElement =>
       child.type === "element" &&
@@ -268,6 +291,17 @@ function taskChecked(node: HastElement): boolean | null {
   );
   if (!first) return null;
   return Boolean(first.properties.checked);
+}
+
+function isTaskListItem(node: HastElement): boolean {
+  return taskChecked(node) !== null;
+}
+
+function isTaskControlNode(node: HastNode): boolean {
+  if (node.type !== "element") return false;
+  if (node.tagName === "input") return true;
+  if (node.tagName !== "label") return false;
+  return node.children.some(isTaskControlNode);
 }
 
 function codeLanguage(node: HastElement): string | null {
