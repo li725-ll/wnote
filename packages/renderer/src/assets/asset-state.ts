@@ -39,3 +39,23 @@ export function relocateDocumentAssetReference(
   const next = replaceAssetReference(content, reference, nextSrc);
   return next === content ? null : next;
 }
+
+export function canRelocateDocumentAsset(documentPath: string | null): boolean {
+  return Boolean(documentPath);
+}
+
+export function getAssetRelocateBlockedMessage(): string {
+  return "请先保存当前文档，再重新定位图片。";
+}
+
+export function getUnusedAssetDeleteConfirmMessage(markdownPath: string): string {
+  return `删除未引用资源？\n${markdownPath}`;
+}
+
+export function getUnusedAssetDeleteAllConfirmMessage(count: number): string {
+  return `清理 ${count} 个未引用资源？此操作会删除文件。`;
+}
+
+export function getUnusedAssetDeleteFailureMessage(deleted: number, failed: number): string {
+  return `已删除 ${deleted} 个资源，${failed} 个删除失败。`;
+}

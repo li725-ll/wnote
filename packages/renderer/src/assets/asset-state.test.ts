@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { AssetIndex, AssetReference } from "@wnote/contracts";
 import {
   buildDocumentAssetIndex,
+  canRelocateDocumentAsset,
+  getAssetRelocateBlockedMessage,
+  getUnusedAssetDeleteAllConfirmMessage,
+  getUnusedAssetDeleteConfirmMessage,
+  getUnusedAssetDeleteFailureMessage,
   relocateDocumentAssetReference,
   removeDocumentAssetReference,
   resolveDocumentAssetPreview,
@@ -51,6 +56,19 @@ describe("asset state", () => {
 
     expect(relocateDocumentAssetReference(content, target, "new.png")).toBe("![A](new.png)");
     expect(relocateDocumentAssetReference(content, stale, "new.png")).toBeNull();
+  });
+
+  it("describes resource action guards and confirmation messages", () => {
+    expect(canRelocateDocumentAsset("/docs/note.md")).toBe(true);
+    expect(canRelocateDocumentAsset(null)).toBe(false);
+    expect(getAssetRelocateBlockedMessage()).toBe("请先保存当前文档，再重新定位图片。");
+    expect(getUnusedAssetDeleteConfirmMessage("note.assets/a.png")).toBe(
+      "删除未引用资源？\nnote.assets/a.png",
+    );
+    expect(getUnusedAssetDeleteAllConfirmMessage(3)).toBe(
+      "清理 3 个未引用资源？此操作会删除文件。",
+    );
+    expect(getUnusedAssetDeleteFailureMessage(2, 1)).toBe("已删除 2 个资源，1 个删除失败。");
   });
 });
 
