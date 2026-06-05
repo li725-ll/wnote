@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampCommandPaletteSelected,
   filterCommandPaletteCommands,
+  isCommandPaletteToggleKey,
   nextCommandPaletteSelected,
   normalizeCommandPaletteQuery,
   reconcileCommandPaletteSelected,
@@ -78,4 +79,24 @@ describe("command palette state", () => {
     expect(nextCommandPaletteSelected(0, 3, "End")).toBe(2);
     expect(nextCommandPaletteSelected(0, 0, "End")).toBe(0);
   });
+
+  it("detects the global command palette toggle shortcut", () => {
+    expect(isCommandPaletteToggleKey(key("k", { metaKey: true }))).toBe(true);
+    expect(isCommandPaletteToggleKey(key("K", { ctrlKey: true }))).toBe(true);
+    expect(isCommandPaletteToggleKey(key("k", { metaKey: true, shiftKey: true }))).toBe(false);
+    expect(isCommandPaletteToggleKey(key("p", { metaKey: true }))).toBe(false);
+    expect(isCommandPaletteToggleKey(key("k"))).toBe(false);
+  });
 });
+
+function key(
+  value: string,
+  modifiers: Partial<Pick<KeyboardEvent, "metaKey" | "ctrlKey" | "shiftKey">> = {},
+) {
+  return {
+    key: value,
+    metaKey: modifiers.metaKey ?? false,
+    ctrlKey: modifiers.ctrlKey ?? false,
+    shiftKey: modifiers.shiftKey ?? false,
+  };
+}

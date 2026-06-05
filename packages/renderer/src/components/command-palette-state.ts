@@ -74,3 +74,12 @@ export function nextCommandPaletteSelected(
       return itemCount - 1;
   }
 }
+
+export function isCommandPaletteToggleKey(event: {
+  key: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+}): boolean {
+  return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "k";
+}

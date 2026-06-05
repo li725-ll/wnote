@@ -24,6 +24,7 @@ import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
 import { CommandPalette } from "./components/CommandPalette";
+import { isCommandPaletteToggleKey } from "./components/command-palette-state";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
@@ -364,7 +365,7 @@ export default function App() {
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "k") {
+      if (isCommandPaletteToggleKey(event)) {
         event.preventDefault();
         setPaletteOpen((open) => !open);
       }
