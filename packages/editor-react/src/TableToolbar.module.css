@@ -54,11 +54,26 @@
   color: var(--color-accent);
 }
 
+.button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.button:disabled:hover {
+  background: transparent;
+  color: var(--color-text);
+}
+
 .button[data-danger="true"] {
   color: var(--color-danger);
 }
 
 .button[data-danger="true"]:hover {
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.button[data-danger="true"]:disabled:hover {
+  background: transparent;
   color: var(--color-danger);
 }

@@ -160,6 +160,12 @@ describe("@wnote/markdown", () => {
     ).toBe("| A | B |\n| - | - |\n| 1 | 2 |");
   });
 
+  it("round-trips tables with inline formatting", () => {
+    expect(roundTrip("| A | B |\n| - | - |\n| **Bold** | `code` [link](https://e.test) |")).toBe(
+      "| A        | B                             |\n| -------- | ----------------------------- |\n| **Bold** | `code` [link](https://e.test) |",
+    );
+  });
+
   it("keeps unknown html fallback blocks", () => {
     expect(roundTrip('<aside data-kind="note"><p>Keep me</p></aside>')).toBe(
       '<aside data-kind="note"><p>Keep me</p></aside>',

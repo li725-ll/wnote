@@ -35,7 +35,7 @@ const hiddenState: TableState = {
 
 const tableToolbarBox = { width: 672, height: 32 };
 
-const commandGroups = [
+export const tableToolbarCommandGroups = [
   ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
   ["tableAddColumnBefore", "tableAddColumnAfter", "tableDeleteColumn"],
   ["tableToggleHeaderRow", "tableMergeCells", "tableSplitCell"],
@@ -122,7 +122,7 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
       style={{ left: state.left, top: state.top }}
       onMouseDown={(event) => event.preventDefault()}
     >
-      {commandGroups.map((group, index) => (
+      {tableToolbarCommandGroups.map((group, index) => (
         <div
           key={group.join(":")}
           className={styles.group}
@@ -135,7 +135,11 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
               <ToolbarButton
                 key={command.id}
                 command={command}
-                onClick={() => command.run(editor, { block: { pos: state.pos, size: state.size } })}
+                disabled={command.canRun ? !command.canRun(editor) : false}
+                onClick={() => {
+                  command.run(editor, { block: { pos: state.pos, size: state.size } });
+                  editor.commands.focus();
+                }}
               />
             );
           })}
@@ -147,20 +151,23 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
 
 function ToolbarButton({
   command,
+  disabled,
   onClick,
 }: {
   command: EditorCommandDefinition;
+  disabled: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       className={styles.button}
       data-danger={command.danger ? "true" : "false"}
+      disabled={disabled}
       title={command.hint ? `${command.label} - ${command.hint}` : command.label}
       type="button"
       onClick={onClick}
     >
-      {shortLabel(command.id)}
+      {tableToolbarShortLabel(command.id)}
     </button>
   );
 }
@@ -183,14 +190,14 @@ function tableElement(editor: TiptapEditor, pos: number): HTMLElement | null {
   return null;
 }
 
-function shortLabel(id: string): string {
+export function tableToolbarShortLabel(id: string): string {
   const labels: Record<string, string> = {
-    tableAddRowBefore: "+R↑",
-    tableAddRowAfter: "+R↓",
-    tableDeleteRow: "-R",
-    tableAddColumnBefore: "+C←",
-    tableAddColumnAfter: "+C→",
-    tableDeleteColumn: "-C",
+    tableAddRowBefore: "+Row↑",
+    tableAddRowAfter: "+Row↓",
+    tableDeleteRow: "-Row",
+    tableAddColumnBefore: "+Col←",
+    tableAddColumnAfter: "+Col→",
+    tableDeleteColumn: "-Col",
     tableDelete: "Del",
     tableToggleHeaderRow: "TH",
     tableMergeCells: "Merge",

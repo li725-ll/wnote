@@ -18,6 +18,7 @@ export interface EditorCommandDefinition {
   slash?: boolean;
   blockMenu?: boolean;
   danger?: boolean;
+  canRun?(editor: TiptapEditor): boolean;
   run(editor: TiptapEditor, context?: EditorCommandContext, payload?: unknown): boolean;
 }
 
@@ -239,6 +240,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "上方插入行",
     hint: "在当前行上方插入一行",
     group: "table",
+    canRun: (editor) => editor.can().addRowBefore(),
     run: (editor) => editor.chain().focus().addRowBefore().run(),
   },
   {
@@ -246,6 +248,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "下方插入行",
     hint: "在当前行下方插入一行",
     group: "table",
+    canRun: (editor) => editor.can().addRowAfter(),
     run: (editor) => editor.chain().focus().addRowAfter().run(),
   },
   {
@@ -253,6 +256,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "删除行",
     hint: "删除当前行",
     group: "table",
+    canRun: (editor) => editor.can().deleteRow(),
     run: (editor) => editor.chain().focus().deleteRow().run(),
   },
   {
@@ -260,6 +264,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "左侧插入列",
     hint: "在当前列左侧插入一列",
     group: "table",
+    canRun: (editor) => editor.can().addColumnBefore(),
     run: (editor) => editor.chain().focus().addColumnBefore().run(),
   },
   {
@@ -267,6 +272,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "右侧插入列",
     hint: "在当前列右侧插入一列",
     group: "table",
+    canRun: (editor) => editor.can().addColumnAfter(),
     run: (editor) => editor.chain().focus().addColumnAfter().run(),
   },
   {
@@ -274,6 +280,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "删除列",
     hint: "删除当前列",
     group: "table",
+    canRun: (editor) => editor.can().deleteColumn(),
     run: (editor) => editor.chain().focus().deleteColumn().run(),
   },
   {
@@ -282,6 +289,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     hint: "删除整张表格",
     group: "table",
     danger: true,
+    canRun: (editor) => editor.can().deleteTable(),
     run: (editor) => editor.chain().focus().deleteTable().run(),
   },
   {
@@ -289,6 +297,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "切换表头",
     hint: "切换首行为表头",
     group: "table",
+    canRun: (editor) => editor.can().toggleHeaderRow(),
     run: (editor) => editor.chain().focus().toggleHeaderRow().run(),
   },
   {
@@ -296,6 +305,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "合并单元格",
     hint: "合并选中的单元格",
     group: "table",
+    canRun: (editor) => editor.can().mergeCells(),
     run: (editor) => editor.chain().focus().mergeCells().run(),
   },
   {
@@ -303,6 +313,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "拆分单元格",
     hint: "拆分当前单元格",
     group: "table",
+    canRun: (editor) => editor.can().splitCell(),
     run: (editor) => editor.chain().focus().splitCell().run(),
   },
 ];

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blockMenuCommands, slashCommands, editorCommands, tableCommands } from "./editor-commands";
+import { tableToolbarCommandGroups, tableToolbarShortLabel } from "./TableToolbar";
 
 describe("editor commands", () => {
   it("filters slash commands by id and labels", () => {
@@ -46,6 +47,34 @@ describe("editor commands", () => {
       "tableMergeCells",
       "tableSplitCell",
     ]);
+  });
+
+  it("keeps table toolbar groups in a stable layout", () => {
+    expect(tableToolbarCommandGroups).toEqual([
+      ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
+      ["tableAddColumnBefore", "tableAddColumnAfter", "tableDeleteColumn"],
+      ["tableToggleHeaderRow", "tableMergeCells", "tableSplitCell"],
+      ["tableDelete"],
+    ]);
+  });
+
+  it("keeps table toolbar labels compact", () => {
+    expect(tableCommands.map((command) => tableToolbarShortLabel(command.id))).toEqual([
+      "+Row↑",
+      "+Row↓",
+      "-Row",
+      "+Col←",
+      "+Col→",
+      "-Col",
+      "Del",
+      "TH",
+      "Merge",
+      "Split",
+    ]);
+  });
+
+  it("guards every table command with canRun", () => {
+    expect(tableCommands.every((command) => typeof command.canRun === "function")).toBe(true);
   });
 
   it("marks delete table as the only dangerous table command", () => {
