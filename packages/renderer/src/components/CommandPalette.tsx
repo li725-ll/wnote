@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  clampCommandPaletteSelected,
+  filterCommandPaletteCommands,
+  nextCommandPaletteSelected,
+  reconcileCommandPaletteSelected,
+  type CommandPaletteNavigationKey,
+} from "./command-palette-state";
 import styles from "./CommandPalette.module.css";
 
 export interface PaletteCommand {
@@ -16,41 +23,47 @@ interface CommandPaletteProps {
   onClose: () => void;
 }
 
-function normalize(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-function commandMatches(command: PaletteCommand, query: string): boolean {
-  if (!query) return true;
-  const haystack = [command.label, command.group, command.shortcut ?? "", ...command.keywords]
-    .join(" ")
-    .toLowerCase();
-  return query
-    .split(/\s+/)
-    .filter(Boolean)
-    .every((part) => haystack.includes(part));
-}
+const navigationKeys = new Set<string>(["ArrowDown", "ArrowUp", "Home", "End"]);
+const paletteId = "wnote-command-palette";
+const listId = `${paletteId}-list`;
 
 export function CommandPalette({ open, commands, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
+  const previousQueryRef = useRef(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const filtered = useMemo(() => {
-    const q = normalize(query);
-    return commands.filter((command) => commandMatches(command, q)).slice(0, 12);
-  }, [commands, query]);
+  const filtered = useMemo(() => filterCommandPaletteCommands(commands, query), [commands, query]);
+  const clampedSelected = clampCommandPaletteSelected(selected, filtered.length);
+  const activeOptionId = filtered.length ? `${listId}-option-${clampedSelected}` : undefined;
 
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setSelected(0);
+    previousQueryRef.current = "";
     requestAnimationFrame(() => inputRef.current?.focus());
   }, [open]);
 
   useEffect(() => {
-    setSelected((value) => Math.min(value, Math.max(filtered.length - 1, 0)));
-  }, [filtered.length]);
+    const previousQuery = previousQueryRef.current;
+    setSelected((value) =>
+      reconcileCommandPaletteSelected({
+        selected: value,
+        itemCount: filtered.length,
+        queryChanged: previousQuery !== query,
+      }),
+    );
+    previousQueryRef.current = query;
+  }, [filtered.length, query]);
+
+  useEffect(() => {
+    if (!open) return;
+    listRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [open, query, selected]);
 
   if (!open) return null;
 
@@ -62,12 +75,23 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
 
   return (
     <div className={styles.overlay} onMouseDown={onClose}>
-      <div className={styles.palette} onMouseDown={(event) => event.stopPropagation()}>
+      <div
+        className={styles.palette}
+        role="dialog"
+        aria-modal="true"
+        aria-label="命令面板"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <input
           ref={inputRef}
           className={styles.input}
           value={query}
           placeholder="输入命令..."
+          role="combobox"
+          aria-expanded="true"
+          aria-controls={listId}
+          aria-activedescendant={activeOptionId}
+          aria-autocomplete="list"
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -75,30 +99,35 @@ export function CommandPalette({ open, commands, onClose }: CommandPaletteProps)
               onClose();
               return;
             }
-            if (event.key === "ArrowDown") {
+            if (navigationKeys.has(event.key)) {
               event.preventDefault();
-              setSelected((value) => Math.min(value + 1, filtered.length - 1));
-              return;
-            }
-            if (event.key === "ArrowUp") {
-              event.preventDefault();
-              setSelected((value) => Math.max(value - 1, 0));
+              setSelected((value) =>
+                nextCommandPaletteSelected(
+                  value,
+                  filtered.length,
+                  event.key as CommandPaletteNavigationKey,
+                ),
+              );
               return;
             }
             if (event.key === "Enter") {
               event.preventDefault();
-              runCommand(filtered[selected]);
+              runCommand(filtered[clampedSelected]);
             }
           }}
         />
-        <div className={styles.list}>
+        <div ref={listRef} className={styles.list} id={listId} role="listbox" aria-label="命令">
           {filtered.length === 0 ? (
             <div className={styles.empty}>无匹配命令</div>
           ) : (
             filtered.map((command, index) => (
               <button
                 key={command.id}
-                className={`${styles.item} ${index === selected ? styles.selected : ""}`}
+                className={`${styles.item} ${index === clampedSelected ? styles.selected : ""}`}
+                data-active={index === clampedSelected ? "true" : "false"}
+                id={`${listId}-option-${index}`}
+                role="option"
+                aria-selected={index === clampedSelected}
                 onMouseEnter={() => setSelected(index)}
                 onClick={() => runCommand(command)}
               >
