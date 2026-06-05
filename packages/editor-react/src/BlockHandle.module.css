@@ -61,8 +61,23 @@
   color: var(--color-accent);
 }
 
+.menuButton:disabled {
+  color: var(--color-muted);
+  cursor: default;
+  opacity: 0.45;
+}
+
+.menuButton:disabled:hover {
+  background: transparent;
+  color: var(--color-muted);
+}
+
 .menuButton[data-danger="true"] {
   color: var(--color-danger);
+}
+
+.menuButton[data-danger="true"]:disabled {
+  color: var(--color-muted);
 }
 
 .divider {

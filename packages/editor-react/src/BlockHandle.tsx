@@ -127,9 +127,11 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
   }, [menuOpen]);
 
   if (!editor || !block.visible) return null;
+  const commandContext = { block: { pos: block.pos, size: block.size } };
 
   const execute = (command: EditorCommandDefinition) => {
-    command.run(editor, { block: { pos: block.pos, size: block.size } });
+    if (command.canRun && !command.canRun(editor, commandContext)) return;
+    command.run(editor, commandContext);
     setMenuOpen(false);
   };
 
@@ -143,6 +145,8 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
     >
       <button
         className={styles.handle}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
         title={blockLabel(block.type)}
         type="button"
         onClick={() => setMenuOpen((open) => !open)}
@@ -150,12 +154,13 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
         +
       </button>
       {menuOpen ? (
-        <div className={styles.menu}>
+        <div className={styles.menu} role="menu" aria-label="块操作">
           {blockMenuCommands.map((command, index) => (
             <FragmentMenuItem
               key={command.id}
               command={command}
               divider={index > 0 && command.group !== blockMenuCommands[index - 1]?.group}
+              disabled={command.canRun ? !command.canRun(editor, commandContext) : false}
               onClick={() => execute(command)}
             />
           ))}
@@ -168,10 +173,12 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
 function FragmentMenuItem({
   command,
   divider,
+  disabled,
   onClick,
 }: {
   command: EditorCommandDefinition;
   divider: boolean;
+  disabled: boolean;
   onClick: () => void;
 }) {
   return (
@@ -180,6 +187,8 @@ function FragmentMenuItem({
       <button
         className={styles.menuButton}
         data-danger={command.danger ? "true" : "false"}
+        disabled={disabled}
+        role="menuitem"
         type="button"
         onClick={(event) => {
           event.preventDefault();

@@ -1,5 +1,6 @@
 import type { EditorCommandId } from "@wnote/contracts";
 import type { Editor as TiptapEditor } from "@tiptap/react";
+import { canMoveBlock, duplicateBlock, insertEmptyBlock, moveBlock } from "./block-operations";
 
 export type EditorCommandGroup = "format" | "block" | "insert" | "table" | "danger";
 
@@ -18,7 +19,7 @@ export interface EditorCommandDefinition {
   slash?: boolean;
   blockMenu?: boolean;
   danger?: boolean;
-  canRun?(editor: TiptapEditor): boolean;
+  canRun?(editor: TiptapEditor, context?: EditorCommandContext): boolean;
   run(editor: TiptapEditor, context?: EditorCommandContext, payload?: unknown): boolean;
 }
 
@@ -117,6 +118,46 @@ export const editorCommands: EditorCommandDefinition[] = [
     run: (editor, context) => blockChain(editor, context).toggleCodeBlock().run(),
   },
   {
+    id: "blockMoveUp",
+    label: "上移当前块",
+    group: "block",
+    blockMenu: true,
+    canRun: (editor, context) => canMoveBlock(editor.state.doc, context, "up"),
+    run: (editor, context) => moveBlock(editor, context, "up"),
+  },
+  {
+    id: "blockMoveDown",
+    label: "下移当前块",
+    group: "block",
+    blockMenu: true,
+    canRun: (editor, context) => canMoveBlock(editor.state.doc, context, "down"),
+    run: (editor, context) => moveBlock(editor, context, "down"),
+  },
+  {
+    id: "blockInsertBefore",
+    label: "上方插入块",
+    group: "insert",
+    blockMenu: true,
+    canRun: (_editor, context) => Boolean(context?.block),
+    run: (editor, context) => insertEmptyBlock(editor, context, "before"),
+  },
+  {
+    id: "blockInsertAfter",
+    label: "下方插入块",
+    group: "insert",
+    blockMenu: true,
+    canRun: (_editor, context) => Boolean(context?.block),
+    run: (editor, context) => insertEmptyBlock(editor, context, "after"),
+  },
+  {
+    id: "blockDuplicate",
+    label: "复制当前块",
+    group: "insert",
+    blockMenu: true,
+    canRun: (_editor, context) => Boolean(context?.block),
+    run: (editor, context) => duplicateBlock(editor, context),
+  },
+  {
     id: "tableInsert",
     label: "表格",
     hint: "3 x 3",
@@ -193,6 +234,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     group: "danger",
     blockMenu: true,
     danger: true,
+    canRun: (_editor, context) => Boolean(context?.block),
     run: (editor, context) => {
       if (!context?.block) return false;
       return editor

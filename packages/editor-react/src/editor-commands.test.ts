@@ -24,9 +24,51 @@ describe("editor commands", () => {
       "block",
       "block",
       "block",
+      "block",
+      "block",
+      "insert",
+      "insert",
+      "insert",
       "insert",
       "danger",
     ]);
+  });
+
+  it("exposes block menu commands in a stable order", () => {
+    expect(blockMenuCommands.map((command) => command.id)).toEqual([
+      "paragraph",
+      "heading1",
+      "heading2",
+      "heading3",
+      "blockquote",
+      "unorderedList",
+      "orderedList",
+      "taskList",
+      "codeBlock",
+      "blockMoveUp",
+      "blockMoveDown",
+      "blockInsertBefore",
+      "blockInsertAfter",
+      "blockDuplicate",
+      "tableInsert",
+      "deleteBlock",
+    ]);
+  });
+
+  it("guards block management commands with canRun", () => {
+    const guardedIds = [
+      "blockMoveUp",
+      "blockMoveDown",
+      "blockInsertBefore",
+      "blockInsertAfter",
+      "blockDuplicate",
+      "deleteBlock",
+    ];
+    expect(
+      blockMenuCommands
+        .filter((command) => guardedIds.includes(command.id))
+        .every((command) => typeof command.canRun === "function"),
+    ).toBe(true);
   });
 
   it("keeps the public math command mapped to inline math", () => {
