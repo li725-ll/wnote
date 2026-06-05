@@ -14,6 +14,7 @@ import Underline from "@tiptap/extension-underline";
 import type { EditorCommandId, HeadingItem } from "@wnote/contracts";
 import { BlockHandle } from "./BlockHandle";
 import { CodeBlock } from "./code-block";
+import { EditorContentSync, type EditorContentTarget } from "./content-sync";
 import { runEditorCommand } from "./editor-commands";
 import styles from "./Editor.module.css";
 import { FloatingToolbar } from "./FloatingToolbar";
@@ -67,10 +68,13 @@ export function Editor({
   placeholder = "开始写作...",
   ref,
 }: EditorProps) {
-  const markdownRef = useRef(initialContent);
-  const latestHtmlRef = useRef("");
-  const contentVersionRef = useRef(0);
-  const conversionPromiseRef = useRef<Promise<string> | null>(null);
+  const contentSyncRef = useRef<EditorContentSync | null>(null);
+  contentSyncRef.current ??= new EditorContentSync({
+    initialContent,
+    loadMarkdown: loadMarkdownModule,
+    onChange,
+  });
+  contentSyncRef.current.setOnChange(onChange);
   const containerRef = useRef<HTMLDivElement>(null);
   const suppressUpdateRef = useRef(false);
   const onChangeRef = useRef(onChange);
@@ -137,7 +141,7 @@ export function Editor({
     },
     onUpdate({ editor }) {
       if (suppressUpdateRef.current) return;
-      void convertEditorHtml(editor.getHTML());
+      void contentSyncRef.current?.convertEditorHtml(editor.getHTML());
       onHeadingsChangeRef.current?.(extractHeadings(editor));
     },
     onCreate({ editor }) {
@@ -145,60 +149,36 @@ export function Editor({
     },
   });
 
-  const convertEditorHtml = useCallback((html: string) => {
-    latestHtmlRef.current = html;
-    const version = ++contentVersionRef.current;
-    const promise = loadMarkdownModule()
-      .then(({ htmlToMarkdown }) => htmlToMarkdown(html))
-      .then((markdown) => {
-        if (version === contentVersionRef.current) {
-          markdownRef.current = markdown;
-          onChangeRef.current?.(markdown);
-        }
-        return markdown;
-      });
-    conversionPromiseRef.current = promise;
-    return promise;
-  }, []);
-
   const applyMarkdownContent = useCallback(async (md: string, target: TiptapEditor) => {
-    const version = ++contentVersionRef.current;
-    const { markdownToHtml } = await loadMarkdownModule();
-    if (version !== contentVersionRef.current) return md;
-
-    try {
-      suppressUpdateRef.current = true;
-      target.commands.setContent(markdownToHtml(md), { emitUpdate: false });
-    } finally {
-      suppressUpdateRef.current = false;
-    }
-    latestHtmlRef.current = target.getHTML();
-    markdownRef.current = md;
-    onHeadingsChangeRef.current?.(extractHeadings(target));
-    return md;
+    return (
+      contentSyncRef.current?.applyMarkdownContent(
+        md,
+        tiptapContentTarget(target, suppressUpdateRef),
+      ) ?? md
+    );
   }, []);
 
   useEffect(() => {
     if (!editor) return;
-    conversionPromiseRef.current = applyMarkdownContent(markdownRef.current, editor);
+    void applyMarkdownContent(contentSyncRef.current?.getContent() ?? initialContent, editor);
   }, [applyMarkdownContent, editor]);
 
   useImperativeHandle(
     ref,
     () => ({
       getContent() {
-        return markdownRef.current;
+        return contentSyncRef.current?.getContent() ?? initialContent;
       },
       async getContentAsync() {
-        const pending = conversionPromiseRef.current;
-        if (pending) return pending;
-        if (!editor) return markdownRef.current;
-        return convertEditorHtml(latestHtmlRef.current || editor.getHTML());
+        if (!editor) return contentSyncRef.current?.getContentAsync() ?? initialContent;
+        return contentSyncRef.current?.getContentAsync(editor.getHTML()) ?? initialContent;
       },
       setContent(md: string) {
-        markdownRef.current = md;
-        if (!editor) return;
-        conversionPromiseRef.current = applyMarkdownContent(md, editor);
+        if (!editor) {
+          void contentSyncRef.current?.applyMarkdownContent(md);
+          return;
+        }
+        void applyMarkdownContent(md, editor);
       },
       replaceRange(from: number, to: number, text: string) {
         if (!editor) return;
@@ -250,7 +230,7 @@ export function Editor({
         return runCommand(editor, command, payload);
       },
     }),
-    [applyMarkdownContent, convertEditorHtml, editor],
+    [applyMarkdownContent, editor, initialContent],
   );
 
   useEffect(() => {
@@ -365,6 +345,25 @@ function slugify(value: string): string {
       .replace(/[^\p{L}\p{N}\s-]/gu, "")
       .replace(/\s+/g, "-") || "heading"
   );
+}
+
+function tiptapContentTarget(
+  editor: TiptapEditor,
+  suppressUpdateRef: React.RefObject<boolean>,
+): EditorContentTarget {
+  return {
+    getHTML() {
+      return editor.getHTML();
+    },
+    setHTML(html: string) {
+      try {
+        suppressUpdateRef.current = true;
+        editor.commands.setContent(html, { emitUpdate: false });
+      } finally {
+        suppressUpdateRef.current = false;
+      }
+    },
+  };
 }
 
 type MarkdownModule = typeof import("@wnote/markdown");
