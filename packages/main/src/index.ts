@@ -313,8 +313,7 @@ app.whenReady().then(async () => {
   if (startupFile) {
     log.info("Startup file:", startupFile);
     pendingFilePath = null;
-    addRecentFile(startupFile);
-    setLastOpenedFile(startupFile);
+    await openFileInWindow(startupFile, win);
   }
 
   app.on("activate", async () => {

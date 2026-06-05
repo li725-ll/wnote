@@ -7,6 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const children = [];
 const rendererPort = process.env.WNOTE_RENDERER_PORT ?? "5190";
+const forwardedArgs = process.argv.slice(2).filter((arg) => arg !== "--");
 
 function run(cmd, opts = {}) {
   console.log(`> ${cmd}`);
@@ -56,7 +57,7 @@ console.log("\n--- Waiting for renderer dev server... ---\n");
 await new Promise((resolve) => setTimeout(resolve, 2000));
 
 console.log("\n--- Starting Electron ---\n");
-const electron = spawn("npx", ["electron", "packages/main/dist/index.js"], {
+const electron = spawn("npx", ["electron", "packages/main/dist/index.js", ...forwardedArgs], {
   cwd: root,
   stdio: "inherit",
   shell: true,

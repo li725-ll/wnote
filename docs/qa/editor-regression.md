@@ -10,7 +10,7 @@ Use the regression sample for manual passes:
 pnpm dev -- docs/qa/fixtures/editor-regression-sample.md
 ```
 
-If the dev helper does not forward the file argument in your shell, start with `pnpm dev`, then open `docs/qa/fixtures/editor-regression-sample.md` from the app menu.
+This command is verified to forward the fixture path to Electron and open the document on startup. If it fails in a shell-specific setup, start with `pnpm dev`, then open `docs/qa/fixtures/editor-regression-sample.md` from the app menu.
 
 The sample covers headings, inline marks, links, lists, task lists, blockquote, horizontal rule, tables, code highlighting, unknown code fallback, math, invalid math fallback, Mermaid, invalid Mermaid fallback, remote images, missing local image fallback, and block operations.
 
