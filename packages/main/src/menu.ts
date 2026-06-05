@@ -283,7 +283,6 @@ export function createAppMenu(win: BrowserWindow, settings: AppSettings) {
         { type: "separator" as const },
         {
           label: l.link,
-          accelerator: "CmdOrCtrl+K",
           click: () => win.webContents.send(IpcChannel.FormatLink),
         },
         {
@@ -355,6 +354,7 @@ export function createAppMenu(win: BrowserWindow, settings: AppSettings) {
       submenu: [
         {
           label: l.toggleLeftSidebar,
+          accelerator: "CmdOrCtrl+\\",
           click: () => win.webContents.send(IpcChannel.ToggleSidebar, "left"),
         },
         { type: "separator" as const },

@@ -7,6 +7,7 @@ import { Sidebar } from "./Sidebar";
 interface AppLayoutProps {
   left: ReactNode;
   center: ReactNode;
+  toggleLeftSignal?: number;
 }
 
 const MIN_WIDTH = 160;
@@ -16,7 +17,7 @@ function saveLayout(partial: Partial<LayoutState>) {
   window.electronAPI.invoke(IpcChannel.LayoutSet, partial);
 }
 
-export function AppLayout({ left, center }: AppLayoutProps) {
+export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps) {
   const [leftWidth, setLeftWidth] = useState(320);
   const [leftOpen, setLeftOpen] = useState(true);
   const [loaded, setLoaded] = useState(false);
@@ -31,6 +32,14 @@ export function AppLayout({ left, center }: AppLayoutProps) {
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (toggleLeftSignal === 0) return;
+    setLeftOpen((prev) => {
+      saveLayout({ leftOpen: !prev });
+      return !prev;
+    });
+  }, [toggleLeftSignal]);
 
   useEffect(() => {
     const handler = (...args: unknown[]) => {

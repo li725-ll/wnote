@@ -1,4 +1,9 @@
 .tabBar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   height: 36px;
@@ -6,9 +11,19 @@
   border-bottom: 1px solid var(--sidebar-border, #e5e5e5);
   padding: 0 4px;
   gap: 2px;
-  flex-shrink: 0;
   -webkit-app-region: drag;
+  transform: translateY(calc(-100% + 4px));
   user-select: none;
+  opacity: 0;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.tabBar:hover,
+.tabBar:focus-within {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .tabs {
@@ -48,9 +63,9 @@
 }
 
 .active {
-  background: var(--color-bg, #fff);
+  background: color-mix(in srgb, var(--color-bg, #fff) 92%, transparent);
   color: var(--color-text, #1a1a1a);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .title {
