@@ -3,10 +3,6 @@ import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import {
   IpcChannel,
-  type AssetRef,
-  type AssetReference,
-  type DeleteAssetResult,
-  type DeleteManyAssetsResult,
   type ExportHtmlOptions,
   type ExportHtmlResult,
   type ExportPdfResult,
@@ -31,17 +27,7 @@ import {
   defaultExportOptions,
   describeExport,
 } from "./export/export-state";
-import {
-  buildDocumentAssetIndex,
-  canRelocateDocumentAsset,
-  getAssetRelocateBlockedMessage,
-  getUnusedAssetDeleteAllConfirmMessage,
-  getUnusedAssetDeleteConfirmMessage,
-  getUnusedAssetDeleteFailureMessage,
-  relocateDocumentAssetReference,
-  removeDocumentAssetReference,
-  resolveDocumentAssetPreview,
-} from "./assets/asset-state";
+import { buildDocumentAssetIndex } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
 import { shouldApplyOpenedDocument } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
@@ -54,6 +40,7 @@ import { useFormatIpc } from "./hooks/useFormatIpc";
 import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
 import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
 import { useDocumentSave } from "./hooks/useDocumentSave";
+import { useEditorAssetActions } from "./hooks/useEditorAssetActions";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -302,107 +289,29 @@ export default function App() {
     },
     [updateContent, scheduleAutoSave],
   );
+  const handleAssetsChange = useCallback((assets: Parameters<typeof setAssets>[0]) => {
+    setAssetsRef.current(assets);
+  }, []);
 
   const handleNewTab = useCallback(() => {
     newTab();
   }, [newTab]);
 
-  const handleImageSave = useCallback(async (file: File) => {
-    const buffer = await file.arrayBuffer();
-    const ext = file.name.split(".").pop() || "png";
-    const asset = await window.electronAPI.invoke<AssetRef | null>(IpcChannel.ImageSave, {
-      buffer,
-      ext,
-      documentPath: activeTabRef.current.path,
-      originalName: file.name,
-      mime: file.type,
-    });
-    return asset ? { src: asset.markdownPath, previewSrc: asset.url } : null;
-  }, []);
-
-  const resolveEditorAsset = useCallback((src: string) => {
-    return resolveDocumentAssetPreview(src, activeTabRef.current.assets, activeTabRef.current.path);
-  }, []);
-
-  const handleResourceClick = useCallback((reference: AssetReference) => {
-    editorRef.current?.scrollToPos(reference.position);
-    editorRef.current?.focus();
-  }, []);
-
-  const handleResourceDelete = useCallback(
-    async (reference: AssetReference) => {
-      const current = await getEditorContent();
-      const next = removeDocumentAssetReference(current, reference);
-      if (!next) return;
-      editorRef.current?.setContent(next);
-      handleChange(next);
-      editorRef.current?.focus();
-    },
-    [getEditorContent, handleChange],
-  );
-
-  const handleResourceRelocate = useCallback(
-    async (reference: AssetReference) => {
-      const documentPath = activeTabRef.current.path;
-      if (!canRelocateDocumentAsset(documentPath)) {
-        window.alert(getAssetRelocateBlockedMessage());
-        return;
-      }
-      const asset = await window.electronAPI.invoke<AssetRef | null>(IpcChannel.AssetImport, {
-        documentPath,
-      });
-      if (!asset) return;
-      const current = await getEditorContent();
-      const next = relocateDocumentAssetReference(current, reference, asset.markdownPath);
-      if (!next) return;
-      editorRef.current?.setContent(next);
-      handleChange(next);
-      editorRef.current?.focus();
-    },
-    [getEditorContent, handleChange],
-  );
-
-  const handleUnusedDelete = useCallback(
-    async (asset: AssetRef) => {
-      const tab = activeTabRef.current;
-      if (!tab.path) return;
-      const ok = window.confirm(getUnusedAssetDeleteConfirmMessage(asset.markdownPath));
-      if (!ok) return;
-      const content = await getEditorContent();
-      const result = await window.electronAPI.invoke<DeleteAssetResult>(IpcChannel.AssetDelete, {
-        documentPath: tab.path,
-        absolutePath: asset.absolutePath,
-        content,
-      });
-      setAssetsRef.current(result.assets);
-    },
-    [getEditorContent],
-  );
-
-  const handleUnusedDeleteAll = useCallback(
-    async (assets: AssetRef[]) => {
-      const tab = activeTabRef.current;
-      if (!tab.path || assets.length === 0) return;
-      const ok = window.confirm(getUnusedAssetDeleteAllConfirmMessage(assets.length));
-      if (!ok) return;
-      const content = await getEditorContent();
-      const result = await window.electronAPI.invoke<DeleteManyAssetsResult>(
-        IpcChannel.AssetDeleteMany,
-        {
-          documentPath: tab.path,
-          absolutePaths: assets.map((asset) => asset.absolutePath),
-          content,
-        },
-      );
-      setAssetsRef.current(result.assets);
-      if (result.failed.length > 0) {
-        window.alert(
-          getUnusedAssetDeleteFailureMessage(result.deleted.length, result.failed.length),
-        );
-      }
-    },
-    [getEditorContent],
-  );
+  const {
+    handleImageSave,
+    resolveEditorAsset,
+    handleResourceClick,
+    handleResourceDelete,
+    handleResourceRelocate,
+    handleUnusedDelete,
+    handleUnusedDeleteAll,
+  } = useEditorAssetActions({
+    editorRef,
+    getCurrentTab,
+    getEditorContent,
+    onContentChange: handleChange,
+    onAssetsChange: handleAssetsChange,
+  });
 
   const handleSwitchTab = useCallback(
     (id: string) => {
