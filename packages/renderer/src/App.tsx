@@ -55,6 +55,7 @@ import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
 import { useNavigationIpc } from "./hooks/useNavigationIpc";
 import { useFileIpc } from "./hooks/useFileIpc";
+import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -287,29 +288,20 @@ export default function App() {
     editorRef.current?.focus();
   }, [applyOpenedDocument]);
 
-  useEffect(() => {
-    const handler = () => handleSave(false);
-    window.electronAPI.on(IpcChannel.FileSaveTrigger, handler);
-    return () => window.electronAPI.off(IpcChannel.FileSaveTrigger, handler);
+  const handleIpcSave = useCallback(() => {
+    void handleSave(false);
   }, [handleSave]);
-
-  useEffect(() => {
-    const handler = () => handleSave(true);
-    window.electronAPI.on(IpcChannel.FileSaveAsTrigger, handler);
-    return () => window.electronAPI.off(IpcChannel.FileSaveAsTrigger, handler);
+  const handleIpcSaveAs = useCallback(() => {
+    void handleSave(true);
   }, [handleSave]);
-
-  useEffect(() => {
-    const handler = () => openExportDialog("html");
-    window.electronAPI.on(IpcChannel.ExportHtmlTrigger, handler);
-    return () => window.electronAPI.off(IpcChannel.ExportHtmlTrigger, handler);
-  }, [openExportDialog]);
-
-  useEffect(() => {
-    const handler = () => openExportDialog("pdf");
-    window.electronAPI.on(IpcChannel.ExportPdfTrigger, handler);
-    return () => window.electronAPI.off(IpcChannel.ExportPdfTrigger, handler);
-  }, [openExportDialog]);
+  const handleIpcExportHtml = useCallback(() => openExportDialog("html"), [openExportDialog]);
+  const handleIpcExportPdf = useCallback(() => openExportDialog("pdf"), [openExportDialog]);
+  useMenuActionIpc({
+    onSave: handleIpcSave,
+    onSaveAs: handleIpcSaveAs,
+    onExportHtml: handleIpcExportHtml,
+    onExportPdf: handleIpcExportPdf,
+  });
   // Format commands from menu
   useEffect(() => {
     const handlers = formatIpcCommandEntries.map(([channel, fn]) => {
