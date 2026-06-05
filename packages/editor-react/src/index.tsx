@@ -32,7 +32,7 @@ export interface SavedImageRef {
 }
 
 export type ImageSaveHandler = (file: File) => Promise<SavedImageRef | null>;
-export type AssetResolver = (src: string) => string;
+export type AssetResolver = (src: string) => string | null;
 
 export interface EditorProps {
   initialContent?: string;

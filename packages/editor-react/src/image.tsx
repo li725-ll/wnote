@@ -221,7 +221,7 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               </button>
             </div>
           ) : null}
-          {loaded ? (
+          {loaded && displaySrc ? (
             <img
               ref={imageRef}
               className={styles.image}
@@ -237,7 +237,7 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               <code>{src}</code>
             </div>
           )}
-          {selected && loaded ? (
+          {selected && loaded && displaySrc ? (
             <button
               className={styles.resizeHandle}
               type="button"

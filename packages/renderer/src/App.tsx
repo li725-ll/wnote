@@ -462,6 +462,8 @@ export default function App() {
   }, []);
 
   const resolveEditorAsset = useCallback((src: string) => {
+    const reference = activeTabRef.current.assets?.references.find((item) => item.src === src);
+    if (reference?.status === "missing") return null;
     return resolveAssetPreviewSrc(src, activeTabRef.current.path ?? undefined);
   }, []);
 

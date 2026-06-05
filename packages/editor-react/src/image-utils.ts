@@ -49,7 +49,9 @@ export function clampImageWidth(value: number, maxWidth: number): number {
 export function imageDisplaySource(
   src: string,
   previewSrc: string | null | undefined,
-  resolveAsset?: (src: string) => string,
-): string {
-  return previewSrc || resolveAsset?.(src) || src;
+  resolveAsset?: (src: string) => string | null,
+): string | null {
+  if (previewSrc) return previewSrc;
+  if (resolveAsset) return resolveAsset(src);
+  return src;
 }

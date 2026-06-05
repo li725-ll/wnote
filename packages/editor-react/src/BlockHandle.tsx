@@ -3,7 +3,7 @@ import type { Editor as TiptapEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { blockMenuCommands, type EditorCommandDefinition } from "./editor-commands";
-import { sideHandlePoint } from "./floating-position";
+import { sideHandlePoint, type RectLike } from "./floating-position";
 import styles from "./BlockHandle.module.css";
 
 interface BlockHandleProps {
@@ -60,19 +60,18 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
     }
 
     const element = blockElement(editor, info.pos);
-    const editorRect = editor.view.dom.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const blockRect = element?.getBoundingClientRect() ?? editor.view.coordsAtPos(info.pos);
+    const editorRect = rectLike(editor.view.dom.getBoundingClientRect());
+    const containerRect = rectLike(container.getBoundingClientRect());
+    const blockRect = rectLike(
+      element?.getBoundingClientRect() ?? editor.view.coordsAtPos(info.pos),
+    );
+    if (!finiteRect(editorRect) || !finiteRect(containerRect) || !finiteRect(blockRect)) {
+      setBlock(hiddenBlock);
+      return;
+    }
     const position = sideHandlePoint(
       editorRect,
-      {
-        left: blockRect.left,
-        right: blockRect.right,
-        top: blockRect.top,
-        bottom: blockRect.bottom,
-        width: blockRect.right - blockRect.left,
-        height: blockRect.bottom - blockRect.top,
-      },
+      blockRect,
       {
         ...containerRect,
         scrollLeft: container.scrollLeft,
@@ -80,6 +79,10 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
       },
       blockHandleBox,
     );
+    if (!Number.isFinite(position.left) || !Number.isFinite(position.top)) {
+      setBlock(hiddenBlock);
+      return;
+    }
     setBlock({
       visible: true,
       left: position.left,
@@ -220,6 +223,28 @@ function currentBlock(editor: TiptapEditor): BlockInfo | null {
 function blockElement(editor: TiptapEditor, pos: number): HTMLElement | null {
   const dom = editor.view.nodeDOM(pos);
   return dom instanceof HTMLElement ? dom : null;
+}
+
+function rectLike(rect: Pick<RectLike, "left" | "right" | "top" | "bottom">): RectLike {
+  return {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    bottom: rect.bottom,
+    width: rect.right - rect.left,
+    height: rect.bottom - rect.top,
+  };
+}
+
+function finiteRect(rect: RectLike): boolean {
+  return (
+    Number.isFinite(rect.left) &&
+    Number.isFinite(rect.right) &&
+    Number.isFinite(rect.top) &&
+    Number.isFinite(rect.bottom) &&
+    Number.isFinite(rect.width) &&
+    Number.isFinite(rect.height)
+  );
 }
 
 function blockLabel(type: string): string {

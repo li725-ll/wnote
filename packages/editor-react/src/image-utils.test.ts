@@ -57,6 +57,7 @@ describe("image utils", () => {
   it("prefers preview source before resolving assets", () => {
     expect(imageDisplaySource("a.png", "preview.png", () => "resolved.png")).toBe("preview.png");
     expect(imageDisplaySource("a.png", "", () => "resolved.png")).toBe("resolved.png");
+    expect(imageDisplaySource("a.png", "", () => null)).toBeNull();
     expect(imageDisplaySource("a.png", null)).toBe("a.png");
   });
 });
