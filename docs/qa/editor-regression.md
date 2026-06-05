@@ -120,5 +120,32 @@ Manual window interaction still needs a human pass for file save/reopen, rich no
 - Cleared Image node crash when resolving asset preview options.
 - Cleared missing local image fallback `net::ERR_FILE_NOT_FOUND` noise.
 - Cleared Block Handle `NaN` positioning warning.
-- Added renderer CSP metadata; the Electron insecure CSP warning no longer appears during fixture startup.
+- Added renderer CSP metadata. Production CSP is covered by tests and does not include
+  `unsafe-eval`; development CSP still allows Vite's eval path and may show Electron's dev-only
+  warning.
 - Remaining DevTools Autofill protocol errors are Chromium DevTools noise, not app-level failures.
+
+## 2026-06-06 Automated Completion Pass
+
+- Hardened editor runtime guards for optional image extension options and non-finite floating
+  positions.
+- Removed the unused direct underline dependency; underline remains available through StarterKit.
+- Added tested renderer CSP generation and main-window security option checks.
+- Extracted document open and window title synchronization out of the renderer shell.
+- Improved Markdown shortcuts for task-list and horizontal-rule variants.
+- Added code-block copy controls and clipboard helper tests.
+- Expanded block command discoverability for heading 4 and horizontal rule.
+- Added storage-main tests for saving, importing, and guarded deletion of asset files.
+
+Validated with:
+
+```sh
+pnpm lint
+pnpm test
+pnpm -r run typecheck
+pnpm build
+git diff --check
+```
+
+`pnpm build` still reports the known large chunk warnings for Tiptap, Mermaid, Cytoscape/Wardley,
+and markdown vendor chunks. Those remain tracked in `docs/qa/build-budget.md`.
