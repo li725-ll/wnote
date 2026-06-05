@@ -3,30 +3,13 @@ import react from "@vitejs/plugin-react";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from "path";
+import { rendererContentSecurityPolicy } from "./src/security/csp";
 
 const devPort = Number(process.env.WNOTE_RENDERER_PORT ?? 5190);
-const productionCsp = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https: wnote-asset:",
-  "font-src 'self' data:",
-  "connect-src 'self' wnote-asset:",
-  "worker-src 'self' blob:",
-].join("; ");
-const developmentCsp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: http: https: wnote-asset:",
-  "font-src 'self' data:",
-  `connect-src 'self' http://localhost:${devPort} ws://localhost:${devPort} wnote-asset:`,
-  "worker-src 'self' blob:",
-].join("; ");
 
 export default defineConfig(({ mode }) => ({
   plugins: [
-    htmlCsp(mode === "development" ? developmentCsp : productionCsp),
+    htmlCsp(rendererContentSecurityPolicy({ dev: mode === "development", devPort })),
     react(),
     wasm(),
     topLevelAwait(),

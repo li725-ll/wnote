@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, type BrowserWindowConstructorOptions } from "electron";
 import { join } from "path";
 import { createLog } from "@wnote/logger/main";
 
@@ -12,19 +12,24 @@ export interface WindowOptions {
   isNew?: boolean;
 }
 
+export function mainWindowOptions(opts: WindowOptions = {}): BrowserWindowConstructorOptions {
+  return {
+    width: opts.width ?? 1200,
+    height: opts.height ?? 800,
+    webPreferences: {
+      preload: join(__dirname, "../../preload/dist/index.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  };
+}
+
 class WindowManager {
   private windows = new Map<number, BrowserWindow>();
 
   create(opts: WindowOptions = {}): BrowserWindow {
-    const win = new BrowserWindow({
-      width: opts.width ?? 1200,
-      height: opts.height ?? 800,
-      webPreferences: {
-        preload: join(__dirname, "../../preload/dist/index.js"),
-        contextIsolation: true,
-        nodeIntegration: false,
-      },
-    });
+    const win = new BrowserWindow(mainWindowOptions(opts));
 
     this.windows.set(win.id, win);
     log.info(`Window created id=${win.id} (total: ${this.windows.size})`);
