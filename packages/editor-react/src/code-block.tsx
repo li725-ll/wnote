@@ -9,6 +9,7 @@ import {
   readyRenderState,
   type AsyncRenderState,
 } from "./async-render-state";
+import { copyCodeBlockText } from "./code-block-utils";
 import styles from "./CodeBlock.module.css";
 
 export const CodeBlock = CodeBlockLowlight.extend({
@@ -45,6 +46,7 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
   const language = normalizeLanguage(node.attrs.language);
   const code = node.textContent;
   const [renderState, setRenderState] = useState<AsyncRenderState>(loadingRenderState);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   useEffect(() => {
     let disposed = false;
@@ -70,6 +72,18 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
   return (
     <NodeViewWrapper className={styles.wrapper} data-selected={selected ? "true" : "false"}>
       <div className={styles.header} contentEditable={false}>
+        <button
+          className={styles.copyButton}
+          type="button"
+          title="复制代码"
+          onClick={() => {
+            void copyCodeBlockText(code)
+              .then((copied) => setCopyState(copied ? "copied" : "failed"))
+              .catch(() => setCopyState("failed"));
+          }}
+        >
+          {copyState === "copied" ? "Copied" : copyState === "failed" ? "Failed" : "Copy"}
+        </button>
         <input
           className={styles.language}
           value={label}

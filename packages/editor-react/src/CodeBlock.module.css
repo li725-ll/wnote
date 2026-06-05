@@ -13,9 +13,27 @@
 
 .header {
   display: flex;
+  gap: 0.4rem;
   justify-content: flex-end;
+  align-items: center;
   min-height: 2rem;
   padding: 0.35rem 0.5rem 0;
+}
+
+.copyButton {
+  height: 1.6rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font: 12px/1 var(--editor-ui-font);
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .language {

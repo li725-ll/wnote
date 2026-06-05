@@ -49,7 +49,7 @@ export const MarkdownShortcuts = Extension.create({
             if (event.key !== "Enter") return false;
 
             const line = lineBefore(view.state.doc, view.state.selection.from);
-            if (!/^\s*---\s*$/.test(line.text)) return false;
+            if (!isHorizontalRuleShortcut(line.text)) return false;
 
             event.preventDefault();
             view.dispatch(view.state.tr.delete(line.from, view.state.selection.from));
@@ -77,7 +77,7 @@ export function blockCommand(value: string): BlockCommand | null {
   if (value === ">") return { type: "blockquote" };
   if (/^[-*+]$/.test(value)) return { type: "bulletList" };
   if (/^\d+[.)]$/.test(value)) return { type: "orderedList" };
-  if (/^[-*+]\s+\[[ xX]\]$/.test(value)) return { type: "taskList" };
+  if (/^(?:[-*+]\s+)?\[[ xX]\]$/.test(value)) return { type: "taskList" };
 
   const fence = /^```([A-Za-z0-9_-]+)?$/.exec(value);
   if (fence?.[1]?.toLowerCase() === "mermaid") return { type: "mermaidBlock" };
@@ -85,6 +85,10 @@ export function blockCommand(value: string): BlockCommand | null {
   if (value === "$$") return { type: "blockMath" };
 
   return null;
+}
+
+export function isHorizontalRuleShortcut(value: string): boolean {
+  return /^\s*(?:---|\*\*\*|___)\s*$/.test(value);
 }
 
 function lineBefore(doc: ProseMirrorNode, pos: number) {

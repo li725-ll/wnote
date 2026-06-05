@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockCommand } from "./markdown-shortcuts";
+import { blockCommand, isHorizontalRuleShortcut } from "./markdown-shortcuts";
 
 describe("markdown shortcuts", () => {
   it("detects headings", () => {
@@ -14,6 +14,8 @@ describe("markdown shortcuts", () => {
     expect(blockCommand("1)")).toEqual({ type: "orderedList" });
     expect(blockCommand("- [ ]")).toEqual({ type: "taskList" });
     expect(blockCommand("- [x]")).toEqual({ type: "taskList" });
+    expect(blockCommand("[ ]")).toEqual({ type: "taskList" });
+    expect(blockCommand("[X]")).toEqual({ type: "taskList" });
   });
 
   it("detects code, mermaid, and math blocks", () => {
@@ -26,5 +28,13 @@ describe("markdown shortcuts", () => {
     expect(blockCommand("hello")).toBeNull();
     expect(blockCommand("## title")).toBeNull();
     expect(blockCommand("```")).toEqual({ type: "codeBlock", language: undefined });
+  });
+
+  it("detects horizontal rule shortcuts", () => {
+    expect(isHorizontalRuleShortcut("---")).toBe(true);
+    expect(isHorizontalRuleShortcut("***")).toBe(true);
+    expect(isHorizontalRuleShortcut("___")).toBe(true);
+    expect(isHorizontalRuleShortcut("--")).toBe(false);
+    expect(isHorizontalRuleShortcut("*** title")).toBe(false);
   });
 });
