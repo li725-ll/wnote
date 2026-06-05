@@ -111,3 +111,14 @@ git diff --check
 - `git diff --check` passed.
 
 Manual window interaction still needs a human pass for file save/reopen, rich node editing, asset panel actions, and PDF/HTML preview inspection.
+
+## 2026-06-06 Fixture Startup Pass
+
+- `pnpm dev -- docs/qa/fixtures/editor-regression-sample.md` opened the fixture on startup.
+- Confirmed file-open delivery waits for renderer window content before sending `FileOpened`.
+- Cleared Tiptap duplicate extension warning for `underline`.
+- Cleared Image node crash when resolving asset preview options.
+- Cleared missing local image fallback `net::ERR_FILE_NOT_FOUND` noise.
+- Cleared Block Handle `NaN` positioning warning.
+- Added renderer CSP metadata; the Electron insecure CSP warning no longer appears during fixture startup.
+- Remaining DevTools Autofill protocol errors are Chromium DevTools noise, not app-level failures.
