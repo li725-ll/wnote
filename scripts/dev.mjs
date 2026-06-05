@@ -41,9 +41,8 @@ function cleanup() {
 process.on("SIGINT", cleanup);
 process.on("SIGTERM", cleanup);
 
-console.log("\n--- Building preload & ui ---\n");
+console.log("\n--- Building preload ---\n");
 run("pnpm --filter @wnote/preload build");
-run("pnpm --filter @wnote/ui build");
 
 console.log("\n--- Building main ---\n");
 run("pnpm --filter @wnote/main build");
@@ -52,8 +51,6 @@ console.log("\n--- Starting renderer dev server ---\n");
 spawnProcess("pnpm", ["--filter", "@wnote/renderer", "dev"], "renderer");
 
 spawnProcess("pnpm", ["--filter", "@wnote/main", "dev"], "main");
-
-spawnProcess("pnpm", ["--filter", "@wnote/ui", "dev"], "ui");
 
 console.log("\n--- Waiting for renderer dev server... ---\n");
 await new Promise((resolve) => setTimeout(resolve, 2000));

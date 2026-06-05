@@ -3,6 +3,7 @@ import { resolve } from "path";
 
 export default defineConfig({
   resolve: {
+    conditions: ["node", "import", "module", "default"],
     alias: {
       "@wnote/assets": resolve(__dirname, "../assets/src/index.ts"),
       "@wnote/contracts": resolve(__dirname, "../contracts/src/index.ts"),
