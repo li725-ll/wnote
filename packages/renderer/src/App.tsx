@@ -25,7 +25,7 @@ import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
 import { CommandPalette } from "./components/CommandPalette";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
-import { Toast, type ToastState } from "./components/Toast";
+import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
 import { defaultExportOptions, describeExport } from "./export/export-state";
 import {
@@ -41,6 +41,7 @@ import {
   getSaveDefaultName,
   shouldApplyOpenedDocument,
 } from "./files/file-state";
+import { useToastController } from "./hooks/useToastController";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -53,12 +54,11 @@ export default function App() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("html");
   const [exportOptions, setExportOptions] = useState(defaultExportOptions);
-  const [toast, setToast] = useState<ToastState | null>(null);
   const [toggleOutlineSignal, setToggleOutlineSignal] = useState(0);
   const editorRef = useRef<EditorRef>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exportingRef = useRef(false);
   const { setTheme } = useTheme();
+  const { toast, showToast, closeToast } = useToastController();
   const [autoSave, setAutoSave] = useState(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveRef = useRef(autoSave);
@@ -100,20 +100,6 @@ export default function App() {
   const getEditorContent = useCallback(async () => {
     const tab = activeTabRef.current;
     return editorRef.current?.getContentAsync() ?? tab.content;
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
-  const showToast = useCallback((next: Omit<ToastState, "id">, duration = 3200) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast({ ...next, id: Date.now() });
-    if (duration > 0) {
-      toastTimerRef.current = setTimeout(() => setToast(null), duration);
-    }
   }, []);
 
   const applyOpenedDocument = useCallback((data: OpenDocumentResult) => {
@@ -273,7 +259,7 @@ export default function App() {
           });
           editorRef.current?.focus();
         } else {
-          setToast(null);
+          closeToast();
           editorRef.current?.focus();
         }
       } catch (error) {
@@ -289,7 +275,7 @@ export default function App() {
         exportingRef.current = false;
       }
     },
-    [getEditorContent, showToast],
+    [closeToast, getEditorContent, showToast],
   );
 
   const handleExportPreview = useCallback(
@@ -617,7 +603,7 @@ export default function App() {
               void handleExportPreview(format, options);
             }}
           />
-          <Toast toast={toast} onClose={() => setToast(null)} />
+          <Toast toast={toast} onClose={closeToast} />
         </div>
       }
     />
