@@ -1,126 +1,97 @@
 import { useState, useCallback, useRef } from "react";
 import type { AssetIndex } from "@wnote/contracts";
+import {
+  activeTab as getActiveTab,
+  closeTab as closeTabState,
+  createInitialTabsState,
+  createNewTab,
+  markActiveTabSaved,
+  openFileTab,
+  setActiveTabAssets,
+  switchTab as switchTabState,
+  updateActiveTabContent,
+  type TabsState,
+} from "./tabs-state";
 
-export interface DocumentTab {
-  id: string;
-  path: string | null;
-  content: string;
-  dirty: boolean;
-  assets?: AssetIndex;
-}
+export type { DocumentTab } from "./tabs-state";
 
 let tabCounter = 0;
 function genId(): string {
   return `tab-${Date.now()}-${++tabCounter}`;
 }
 
-function createEmptyTab(): DocumentTab {
-  return { id: genId(), path: null, content: "", dirty: false };
-}
-
 export function useTabs() {
-  const [tabs, setTabs] = useState<DocumentTab[]>(() => [createEmptyTab()]);
-  const [activeTabId, setActiveTabId] = useState<string>(() => tabs[0]?.id ?? "");
+  const [state, setState] = useState<TabsState>(() => createInitialTabsState(genId));
+  const stateRef = useRef(state);
   const contentSnapshotRef = useRef<(() => string) | null>(null);
+  stateRef.current = state;
 
-  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+  const { tabs, activeTabId } = state;
+  const activeTab = getActiveTab(state);
+
+  const applyState = useCallback((next: TabsState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   const setContentSnapshot = useCallback((fn: () => string) => {
     contentSnapshotRef.current = fn;
   }, []);
 
-  const snapshotCurrent = useCallback(() => {
-    const content = contentSnapshotRef.current?.();
-    if (content === undefined) return;
-    setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, content: content! } : t)));
-  }, [activeTabId]);
-
   const newTab = useCallback(() => {
-    snapshotCurrent();
-    const tab = createEmptyTab();
-    setTabs((prev) => [...prev, tab]);
-    setActiveTabId(tab.id);
-    return tab.id;
-  }, [snapshotCurrent]);
+    const id = genId();
+    applyState(createNewTab(stateRef.current, () => id, contentSnapshotRef.current?.()));
+    return id;
+  }, [applyState]);
 
   const closeTab = useCallback(
     (id: string) => {
-      setTabs((prev) => {
-        const remaining = prev.filter((t) => t.id !== id);
-        if (remaining.length === 0) {
-          const fresh = createEmptyTab();
-          setActiveTabId(fresh.id);
-          return [fresh];
-        }
-        if (id === activeTabId) {
-          const idx = prev.findIndex((t) => t.id === id);
-          const next = remaining[Math.min(idx, remaining.length - 1)];
-          setActiveTabId(next.id);
-        }
-        return remaining;
-      });
+      applyState(closeTabState(stateRef.current, id, genId));
     },
-    [activeTabId],
+    [applyState],
   );
 
   const switchTab = useCallback(
     (id: string) => {
-      if (id === activeTabId) return;
-      snapshotCurrent();
-      setActiveTabId(id);
+      applyState(switchTabState(stateRef.current, id, contentSnapshotRef.current?.()));
     },
-    [activeTabId, snapshotCurrent],
+    [applyState],
   );
 
   const updateContent = useCallback(
     (content: string, assets?: AssetIndex) => {
-      setTabs((prev) =>
-        prev.map((t) => (t.id === activeTabId ? { ...t, content, assets, dirty: true } : t)),
-      );
+      applyState(updateActiveTabContent(stateRef.current, content, assets));
     },
-    [activeTabId],
+    [applyState],
   );
 
   const openFile = useCallback(
     (path: string, content: string, assets?: AssetIndex) => {
-      snapshotCurrent();
-      const existing = tabs.find((t) => t.path === path);
-      if (existing) {
-        setActiveTabId(existing.id);
-        setTabs((prev) =>
-          prev.map((t) => (t.id === existing.id ? { ...t, content, assets, dirty: false } : t)),
-        );
-        return existing.id;
-      }
-      if (tabs.length === 1 && !activeTab.path && !activeTab.dirty && activeTab.content === "") {
-        const id = activeTab.id;
-        setTabs((prev) =>
-          prev.map((t) => (t.id === id ? { ...t, path, content, assets, dirty: false } : t)),
-        );
-        return id;
-      }
-      const tab: DocumentTab = { id: genId(), path, content, assets, dirty: false };
-      setTabs((prev) => [...prev, tab]);
-      setActiveTabId(tab.id);
-      return tab.id;
+      const next = openFileTab(stateRef.current, {
+        path,
+        content,
+        assets,
+        createId: genId,
+        snapshot: contentSnapshotRef.current?.(),
+      });
+      applyState(next);
+      return next.activeTabId;
     },
-    [tabs, activeTab, snapshotCurrent],
+    [applyState],
   );
 
   const markSaved = useCallback(
     (path: string, assets?: AssetIndex) => {
-      setTabs((prev) =>
-        prev.map((t) => (t.id === activeTabId ? { ...t, path, assets, dirty: false } : t)),
-      );
+      applyState(markActiveTabSaved(stateRef.current, path, assets));
     },
-    [activeTabId],
+    [applyState],
   );
 
   const setAssets = useCallback(
     (assets?: AssetIndex) => {
-      setTabs((prev) => prev.map((t) => (t.id === activeTabId ? { ...t, assets } : t)));
+      applyState(setActiveTabAssets(stateRef.current, assets));
     },
-    [activeTabId],
+    [applyState],
   );
 
   return {
