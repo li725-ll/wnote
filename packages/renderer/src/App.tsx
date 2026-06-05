@@ -43,7 +43,7 @@ import {
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
-import { getSaveDefaultName, shouldApplyOpenedDocument } from "./files/file-state";
+import { shouldApplyOpenedDocument } from "./files/file-state";
 import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
@@ -53,6 +53,7 @@ import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
 import { useFormatIpc } from "./hooks/useFormatIpc";
 import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
 import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
+import { useDocumentSave } from "./hooks/useDocumentSave";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -109,6 +110,7 @@ export default function App() {
     const tab = activeTabRef.current;
     return editorRef.current?.getContentAsync() ?? tab.content;
   }, []);
+  const getCurrentTab = useCallback(() => activeTabRef.current, []);
 
   const applyOpenedDocument = useCallback((data: OpenDocumentResult) => {
     const tabId = openFileRef.current(data.filePath, data.content, data.assets);
@@ -138,25 +140,15 @@ export default function App() {
 
   useActiveTabEditorSync({ activeTab, activeTabId, editorRef });
 
-  const handleSave = useCallback(
-    async (saveAs = false) => {
-      const tab = activeTabRef.current;
-      const content = await getEditorContent();
-      const result = await window.electronAPI.invoke<SaveDocumentResult | null>(
-        IpcChannel.FileSave,
-        {
-          filePath: saveAs ? undefined : tab.path,
-          content,
-          defaultName: getSaveDefaultName(tab.path),
-        },
-      );
-      if (result) {
-        markSavedRef.current(result.filePath, result.assets);
-        window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
-      }
-    },
-    [getEditorContent],
-  );
+  const handleSaved = useCallback((result: SaveDocumentResult) => {
+    markSavedRef.current(result.filePath, result.assets);
+    window.electronAPI.send(IpcChannel.WindowTitleSet, result.name);
+  }, []);
+  const handleSave = useDocumentSave({
+    getCurrentTab,
+    getEditorContent,
+    onSaved: handleSaved,
+  });
   const { scheduleAutoSave } = useAutoSave(autoSave, () => handleSave(false));
 
   const openExportDialog = useCallback((format: ExportFormat) => {
