@@ -35,6 +35,11 @@ import {
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
+import {
+  getDocumentTitle,
+  getSaveDefaultName,
+  shouldApplyOpenedDocument,
+} from "./files/file-state";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -110,6 +115,14 @@ export default function App() {
     }
   }, []);
 
+  const applyOpenedDocument = useCallback((data: OpenDocumentResult) => {
+    const tabId = openFileRef.current(data.filePath, data.content, data.assets);
+    if (shouldApplyOpenedDocument(tabId, activeTabIdRef.current)) {
+      editorRef.current?.setContent(data.content);
+      window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
+    }
+  }, []);
+
   useEffect(() => {
     window.electronAPI.invoke<AppSettings>(IpcChannel.SettingsGet).then((s) => {
       setAutoSave(s.autoSave);
@@ -138,15 +151,11 @@ export default function App() {
   useEffect(() => {
     const handler = (...args: unknown[]) => {
       const data = args[0] as OpenDocumentResult;
-      const tabId = openFileRef.current(data.filePath, data.content, data.assets);
-      if (tabId === activeTabIdRef.current) {
-        editorRef.current?.setContent(data.content);
-        window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
-      }
+      applyOpenedDocument(data);
     };
     window.electronAPI.on(IpcChannel.FileOpened, handler);
     return () => window.electronAPI.off(IpcChannel.FileOpened, handler);
-  }, []);
+  }, [applyOpenedDocument]);
 
   useEffect(() => {
     const handler = () => newTabRef.current();
@@ -165,19 +174,14 @@ export default function App() {
       .invoke<OpenDocumentResult | null>(IpcChannel.LastOpenedFileGet)
       .then((data) => {
         if (!data) return;
-        const tabId = openFileRef.current(data.filePath, data.content, data.assets);
-        if (tabId === activeTabIdRef.current) {
-          editorRef.current?.setContent(data.content);
-          window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
-        }
+        applyOpenedDocument(data);
       });
-  }, []);
+  }, [applyOpenedDocument]);
 
   useEffect(() => {
     if (activeTab) {
       editorRef.current?.setContent(activeTab.content);
-      const title = activeTab.path ? (activeTab.path.split(/[/\\]/).pop() ?? "WNote") : "未命名";
-      window.electronAPI.send(IpcChannel.WindowTitleSet, title);
+      window.electronAPI.send(IpcChannel.WindowTitleSet, getDocumentTitle(activeTab.path));
     }
   }, [activeTabId, activeTab?.path]); // eslint-disable-line
 
@@ -190,7 +194,7 @@ export default function App() {
         {
           filePath: saveAs ? undefined : tab.path,
           content,
-          defaultName: tab.path?.split(/[/\\]/).pop() ?? "untitled.md",
+          defaultName: getSaveDefaultName(tab.path),
         },
       );
       if (result) {
@@ -328,13 +332,9 @@ export default function App() {
       editorRef.current?.focus();
       return;
     }
-    const tabId = openFileRef.current(data.filePath, data.content, data.assets);
-    if (tabId === activeTabIdRef.current) {
-      editorRef.current?.setContent(data.content);
-      window.electronAPI.send(IpcChannel.WindowTitleSet, data.name);
-    }
+    applyOpenedDocument(data);
     editorRef.current?.focus();
-  }, []);
+  }, [applyOpenedDocument]);
 
   useEffect(() => {
     const handler = () => handleSave(false);
