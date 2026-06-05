@@ -287,7 +287,6 @@ function buildDecorations(view: EditorView): DecorationSet {
             decos.push(Decoration.replace({}).range(textTo, node.to));
           }
         }
-        return false;
       }
 
       // --- Image (per-node) ---
