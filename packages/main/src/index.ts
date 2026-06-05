@@ -3,13 +3,11 @@ import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, shell 
 import { basename } from "path";
 import { pathToFileURL } from "url";
 import { existsSync } from "fs";
-import { writeFile } from "fs/promises";
 import {
   IpcChannel,
   defaultLayoutState,
   type AppSettings,
   type ExportHtmlRequest,
-  type ExportPdfOptions,
   type ExportPdfRequest,
   type ExportPreviewRequest,
   type LayoutState,
@@ -22,10 +20,10 @@ import {
   extractDocumentPathFromArgs,
   importAsset,
   openDocument,
-  renderHtmlDocument,
   saveAsset,
   saveDocument,
 } from "@wnote/storage-main";
+import { asPdfWindow, asPreviewWindow, exportPdfDocument, openExportPreview } from "./export-pdf";
 import { createAppMenu } from "./menu";
 import { windowManager } from "./window-manager";
 import { kvGet, kvSet } from "./db";
@@ -41,76 +39,6 @@ import { loadSettings, saveSettings, getDataDirectory } from "./settings";
 const log = createLog("app");
 
 let pendingFilePath: string | null = null;
-
-async function exportPdfDocument(payload: ExportPdfRequest & { filePath: string }) {
-  const pdfOptions = payload.options?.pdf ?? {};
-  const html = await renderHtmlDocument({ ...payload, filePath: payload.filePath });
-  const pdfWindow = new BrowserWindow({
-    show: false,
-    width: 960,
-    height: 1280,
-    webPreferences: {
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  try {
-    await pdfWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
-    await pdfWindow.webContents.executeJavaScript(
-      `new Promise((resolve) => {
-        const done = () => setTimeout(resolve, 300);
-        if (document.readyState === "complete") done();
-        else window.addEventListener("load", done, { once: true });
-      })`,
-      true,
-    );
-    const data = await pdfWindow.webContents.printToPDF({
-      pageSize: pdfOptions.pageSize ?? "A4",
-      landscape: pdfOptions.orientation === "landscape",
-      printBackground: pdfOptions.printBackground ?? true,
-      preferCSSPageSize: true,
-      margins: pdfMargins(pdfOptions.margin),
-    });
-    await writeFile(payload.filePath, data);
-    return { filePath: payload.filePath };
-  } finally {
-    pdfWindow.destroy();
-  }
-}
-
-async function openExportPreview(payload: ExportPreviewRequest) {
-  const previewPath =
-    payload.defaultName ?? (payload.format === "pdf" ? "untitled.pdf" : "untitled.html");
-  const html = await renderHtmlDocument({
-    ...payload,
-    filePath: previewPath,
-  });
-  const previewWindow = new BrowserWindow({
-    show: true,
-    width: payload.format === "pdf" ? 940 : 1100,
-    height: payload.format === "pdf" ? 1200 : 820,
-    title: payload.format === "pdf" ? "PDF 导出预览 — WNote" : "HTML 导出预览 — WNote",
-    webPreferences: {
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-  await previewWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
-  return { ok: true };
-}
-
-function pdfMargins(margin: ExportPdfOptions["margin"]) {
-  switch (margin) {
-    case "compact":
-      return { marginType: "custom" as const, top: 0.47, bottom: 0.47, left: 0.47, right: 0.47 };
-    case "wide":
-      return { marginType: "custom" as const, top: 1.1, bottom: 1.1, left: 1.1, right: 1.1 };
-    default:
-      return { marginType: "default" as const };
-  }
-}
 
 async function openFileInWindow(filePath: string, win?: BrowserWindow) {
   const target = win ?? windowManager.getFocused();
@@ -256,13 +184,17 @@ ipcMain.handle(IpcChannel.ExportPdf, async (event, payload: ExportPdfRequest) =>
     filters: [{ name: "PDF", extensions: ["pdf"] }],
   });
   if (result.canceled || !result.filePath) return null;
-  const exported = await exportPdfDocument({ ...payload, filePath: result.filePath });
+  const exported = await exportPdfDocument({ ...payload, filePath: result.filePath }, (options) =>
+    asPdfWindow(new BrowserWindow(options)),
+  );
   log.info("PDF exported:", exported.filePath);
   return exported;
 });
 
 ipcMain.handle(IpcChannel.ExportPreview, async (_event, payload: ExportPreviewRequest) => {
-  const result = await openExportPreview(payload);
+  const result = await openExportPreview(payload, (options) =>
+    asPreviewWindow(new BrowserWindow(options)),
+  );
   log.info("Export preview opened:", payload.format);
   return result;
 });
