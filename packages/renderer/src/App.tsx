@@ -43,7 +43,6 @@ import {
   removeDocumentAssetReference,
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
-import { formatIpcCommandEntries } from "./commands/format-ipc";
 import { buildPaletteCommands } from "./commands/palette-commands";
 import {
   getDocumentTitle,
@@ -56,6 +55,7 @@ import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
 import { useNavigationIpc } from "./hooks/useNavigationIpc";
 import { useFileIpc } from "./hooks/useFileIpc";
 import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
+import { useFormatIpc } from "./hooks/useFormatIpc";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -302,22 +302,8 @@ export default function App() {
     onExportHtml: handleIpcExportHtml,
     onExportPdf: handleIpcExportPdf,
   });
-  // Format commands from menu
-  useEffect(() => {
-    const handlers = formatIpcCommandEntries.map(([channel, fn]) => {
-      const handler = () => {
-        const view = editorRef.current?.getView();
-        if (view) fn(view);
-      };
-      window.electronAPI.on(channel, handler);
-      return [channel, handler] as const;
-    });
-    return () => {
-      for (const [channel, handler] of handlers) {
-        window.electronAPI.off(channel, handler);
-      }
-    };
-  }, []);
+  const getFormatEditorView = useCallback(() => editorRef.current?.getView() ?? null, []);
+  useFormatIpc(getFormatEditorView);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
