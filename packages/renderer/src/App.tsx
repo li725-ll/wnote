@@ -1,16 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
-import {
-  IpcChannel,
-  type ExportHtmlOptions,
-  type ExportHtmlResult,
-  type ExportPdfResult,
-  type ExportPreviewResult,
-  type OpenDocumentResult,
-  type SaveDocumentResult,
-  type ShellOpenPathResult,
-} from "@wnote/contracts";
+import { IpcChannel, type OpenDocumentResult, type SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -22,11 +13,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
-import {
-  createExportSuccessActions,
-  defaultExportOptions,
-  describeExport,
-} from "./export/export-state";
+import { defaultExportOptions } from "./export/export-state";
 import { buildDocumentAssetIndex } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
 import { shouldApplyOpenedDocument } from "./files/file-state";
@@ -41,6 +28,7 @@ import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
 import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
 import { useDocumentSave } from "./hooks/useDocumentSave";
 import { useEditorAssetActions } from "./hooks/useEditorAssetActions";
+import { useExportActions } from "./hooks/useExportActions";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -138,116 +126,17 @@ export default function App() {
   });
   const { scheduleAutoSave } = useAutoSave(autoSave, () => handleSave(false));
 
-  const openExportDialog = useCallback((format: ExportFormat) => {
-    if (exportingRef.current) return;
-    setExportFormat(format);
-    setExportDialogOpen(true);
-  }, []);
-
-  const handleExport = useCallback(
-    async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
-      if (exportingRef.current) return;
-      exportingRef.current = true;
-      setExportDialogOpen(false);
-      setExportFormat(format);
-      setExportOptions(options);
-      const tab = activeTabRef.current;
-      const content = await getEditorContent();
-      const descriptor = describeExport(format, tab.path);
-      const { label } = descriptor;
-      showToast({ kind: "info", title: `正在导出 ${label}` }, 0);
-      try {
-        const result = await window.electronAPI.invoke<ExportHtmlResult | ExportPdfResult | null>(
-          descriptor.channel,
-          {
-            content,
-            documentPath: tab.path,
-            defaultName: descriptor.defaultName,
-            options,
-          },
-        );
-        if (result) {
-          showToast({
-            kind: "success",
-            title: `${label} 导出完成`,
-            message: result.filePath,
-            actions: createExportSuccessActions(result.filePath, {
-              showInFolder: (filePath) => {
-                void window.electronAPI.invoke(IpcChannel.ShellShowItemInFolder, { filePath });
-              },
-              openFile: (filePath) => {
-                void window.electronAPI
-                  .invoke<ShellOpenPathResult>(IpcChannel.ShellOpenPath, { filePath })
-                  .then((openResult) => {
-                    if (!openResult.ok) {
-                      showToast(
-                        {
-                          kind: "error",
-                          title: "打开文件失败",
-                          message: openResult.error ?? filePath,
-                        },
-                        6000,
-                      );
-                    }
-                  });
-              },
-            }),
-          });
-          editorRef.current?.focus();
-        } else {
-          closeToast();
-          editorRef.current?.focus();
-        }
-      } catch (error) {
-        showToast(
-          {
-            kind: "error",
-            title: `${label} 导出失败`,
-            message: error instanceof Error ? error.message : String(error),
-          },
-          6000,
-        );
-      } finally {
-        exportingRef.current = false;
-      }
-    },
-    [closeToast, getEditorContent, showToast],
-  );
-
-  const handleExportPreview = useCallback(
-    async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
-      const tab = activeTabRef.current;
-      const content = await getEditorContent();
-      const descriptor = describeExport(format, tab.path);
-      setExportFormat(format);
-      setExportOptions(options);
-      try {
-        const result = await window.electronAPI.invoke<ExportPreviewResult>(
-          IpcChannel.ExportPreview,
-          {
-            content,
-            documentPath: tab.path,
-            defaultName: descriptor.defaultName,
-            format,
-            options,
-          },
-        );
-        if (result.ok) {
-          showToast({ kind: "success", title: "导出预览已打开" });
-        }
-      } catch (error) {
-        showToast(
-          {
-            kind: "error",
-            title: "导出预览失败",
-            message: error instanceof Error ? error.message : String(error),
-          },
-          6000,
-        );
-      }
-    },
-    [getEditorContent, showToast],
-  );
+  const { openExportDialog, handleExport, handleExportPreview } = useExportActions({
+    editorRef,
+    exportingRef,
+    getCurrentTab,
+    getEditorContent,
+    closeToast,
+    showToast,
+    onDialogOpenChange: setExportDialogOpen,
+    onFormatChange: setExportFormat,
+    onOptionsChange: setExportOptions,
+  });
 
   const handleOpenFile = useCallback(async () => {
     const data = await window.electronAPI.invoke<OpenDocumentResult | null>(IpcChannel.FileOpen);
