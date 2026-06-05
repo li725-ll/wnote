@@ -8,7 +8,7 @@ import {
 } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
 import { type Range, StateField } from "@codemirror/state";
-import { slugify } from "./headings";
+import { parseAtxHeadingLine, slugify } from "./headings";
 
 class TableWidget extends WidgetType {
   constructor(private content: string) {
@@ -176,7 +176,8 @@ function buildDecorations(view: EditorView): DecorationSet {
   const decos: Range<Decoration>[] = [];
   const activeLines = getActiveLines(view);
   const doc = view.state.doc;
-  const slugCount = new Map<string, number>();
+  const decoratedHeadingLines = new Set<number>();
+  const codeLines = new Set<number>();
 
   syntaxTree(view.state).iterate({
     enter(node) {
@@ -184,18 +185,10 @@ function buildDecorations(view: EditorView): DecorationSet {
       if (/^ATXHeading(\d)$/.test(node.name)) {
         const level = Number(node.name.slice(-1));
         const lineNum = doc.lineAt(node.from).number;
+        decoratedHeadingLines.add(lineNum);
         const isActive = activeLines.has(lineNum);
         const text = doc.sliceString(node.from, node.to);
         const hashEnd = text.indexOf(" ") + 1;
-        const headingText = text.replace(/^#{1,6}\s+/, "").trim();
-
-        if (headingText) {
-          const base = slugify(headingText);
-          const count = slugCount.get(base) || 0;
-          slugCount.set(base, count + 1);
-          const id = count === 0 ? base : `${base}-${count}`;
-          decos.push(Decoration.line({ attributes: { id } }).range(node.from));
-        }
 
         const cls = `cm-md-heading${level}`;
         decos.push(Decoration.mark({ class: cls }).range(node.from, node.to));
@@ -329,6 +322,9 @@ function buildDecorations(view: EditorView): DecorationSet {
       if (node.name === "FencedCode") {
         const startLine = doc.lineAt(node.from);
         const endLine = doc.lineAt(node.to);
+        for (let i = startLine.number; i <= endLine.number; i++) {
+          codeLines.add(i);
+        }
         const startActive = activeLines.has(startLine.number);
         const endActive = activeLines.has(endLine.number);
         const isSingleLine = startLine.number === endLine.number;
@@ -485,6 +481,33 @@ function buildDecorations(view: EditorView): DecorationSet {
       }
     },
   });
+
+  const slugCount = new Map<string, number>();
+  for (let i = 1; i <= doc.lines; i++) {
+    if (codeLines.has(i)) continue;
+
+    const line = doc.line(i);
+    const heading = parseAtxHeadingLine(line.text);
+    if (!heading) continue;
+
+    const base = slugify(heading.text);
+    const count = slugCount.get(base) || 0;
+    slugCount.set(base, count + 1);
+    const id = count === 0 ? base : `${base}-${count}`;
+    decos.push(Decoration.line({ attributes: { id } }).range(line.from));
+
+    if (decoratedHeadingLines.has(i)) continue;
+
+    const isActive = activeLines.has(i);
+    decos.push(
+      Decoration.mark({ class: `cm-md-heading${heading.level}` }).range(line.from, line.to),
+    );
+    if (isActive) {
+      decos.push(syntaxMark.range(line.from, line.from + heading.markerEnd));
+    } else {
+      decos.push(Decoration.replace({}).range(line.from, line.from + heading.markerEnd));
+    }
+  }
 
   return Decoration.set(decos, true);
 }
