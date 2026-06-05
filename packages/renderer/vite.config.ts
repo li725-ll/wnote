@@ -5,9 +5,32 @@ import topLevelAwait from "vite-plugin-top-level-await";
 import { resolve } from "path";
 
 const devPort = Number(process.env.WNOTE_RENDERER_PORT ?? 5190);
+const productionCsp = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https: wnote-asset:",
+  "font-src 'self' data:",
+  "connect-src 'self' wnote-asset:",
+  "worker-src 'self' blob:",
+].join("; ");
+const developmentCsp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: http: https: wnote-asset:",
+  "font-src 'self' data:",
+  `connect-src 'self' http://localhost:${devPort} ws://localhost:${devPort} wnote-asset:`,
+  "worker-src 'self' blob:",
+].join("; ");
 
-export default defineConfig({
-  plugins: [react(), wasm(), topLevelAwait()],
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    htmlCsp(mode === "development" ? developmentCsp : productionCsp),
+    react(),
+    wasm(),
+    topLevelAwait(),
+  ],
   base: "./",
   resolve: {
     alias: {
@@ -61,4 +84,16 @@ export default defineConfig({
     port: devPort,
     strictPort: true,
   },
-});
+}));
+
+function htmlCsp(content: string) {
+  return {
+    name: "wnote-html-csp",
+    transformIndexHtml(html: string) {
+      return html.replace(
+        "<head>",
+        `<head>\n    <meta http-equiv="Content-Security-Policy" content="${content}" />`,
+      );
+    },
+  };
+}
