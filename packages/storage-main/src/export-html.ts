@@ -21,6 +21,20 @@ const HIGHLIGHT_LANGUAGE_ALIASES = new Map<string, string>([
   ["xml", "xml"],
 ]);
 
+interface ExportRenderers {
+  katex?: {
+    renderBlockMath(source: string): string;
+    renderInlineMath(source: string): string;
+  };
+  highlight?: (code: string, language: string, theme: "light" | "dark") => Promise<string>;
+}
+
+type RenderExportHtmlOptions = ExportHtmlOptions & {
+  documentPath?: string;
+  exportPath: string;
+  renderers?: ExportRenderers;
+};
+
 export async function exportHtmlDocument(
   payload: ExportHtmlRequest & { filePath: string },
   options: ExportHtmlOptions = {},
@@ -48,10 +62,10 @@ export async function renderHtmlDocument(
 
 export async function renderExportHtml(
   html: string,
-  options: ExportHtmlOptions & { documentPath?: string; exportPath: string },
+  options: RenderExportHtmlOptions,
 ): Promise<string> {
-  let next = await renderMathPlaceholders(html);
-  next = await renderCodeBlocks(next, options.theme ?? "light");
+  let next = await renderMathPlaceholders(html, options.renderers?.katex);
+  next = await renderCodeBlocks(next, options.theme ?? "light", options.renderers);
   next = renderMermaidBlocks(next, options.renderMermaid ?? true);
   next = await rewriteLocalImageSources(next, options);
   return next;
@@ -171,31 +185,46 @@ export async function rewriteLocalImageSources(
   }, html);
 }
 
-async function renderMathPlaceholders(html: string): Promise<string> {
-  const katex = await import("@wnote/renderers/katex");
+async function renderMathPlaceholders(
+  html: string,
+  injectedKatex?: NonNullable<ExportRenderers["katex"]>,
+): Promise<string> {
+  const katex = injectedKatex ?? (await import("@wnote/renderers/katex"));
   const blockMatches = [
     ...html.matchAll(/<div\b([^>]*?)\bdata-math-block=(["'])(.*?)\2([^>]*)>[\s\S]*?<\/div>/gi),
   ];
-  let next = blockMatches.reduce(
-    (current, match) =>
-      current.replace(match[0], katex.renderBlockMath(decodeEntities(match[3]).trim())),
-    html,
-  );
+  let next = blockMatches.reduce((current, match) => {
+    const source = decodeEntities(match[3]).trim();
+    return current.replace(
+      match[0],
+      renderMathFallback(source, "block", () => katex.renderBlockMath(source)),
+    );
+  }, html);
   const inlineMatches = [
     ...next.matchAll(/<span\b([^>]*?)\bdata-math-inline=(["'])(.*?)\2([^>]*)>[\s\S]*?<\/span>/gi),
   ];
-  next = inlineMatches.reduce(
-    (current, match) =>
-      current.replace(match[0], katex.renderInlineMath(decodeEntities(match[3]).trim())),
-    next,
-  );
+  next = inlineMatches.reduce((current, match) => {
+    const source = decodeEntities(match[3]).trim();
+    return current.replace(
+      match[0],
+      renderMathFallback(source, "inline", () => katex.renderInlineMath(source)),
+    );
+  }, next);
   return next;
 }
 
-async function renderCodeBlocks(html: string, theme: "light" | "dark"): Promise<string> {
+async function renderCodeBlocks(
+  html: string,
+  theme: "light" | "dark",
+  renderers?: ExportRenderers,
+): Promise<string> {
   const matches = [
     ...html.matchAll(/<pre><code(?: class=(["'])language-([^"']+)\1)?>([\s\S]*?)<\/code><\/pre>/gi),
   ];
+  const highlight =
+    renderers && "highlight" in renderers
+      ? renderers.highlight
+      : await loadHighlightIfNeeded(matches);
   const replacements = await Promise.all(
     matches.map(async (match) => {
       const lang = normalizedHighlightLanguage(match[2]);
@@ -206,10 +235,9 @@ async function renderCodeBlocks(html: string, theme: "light" | "dark"): Promise<
           to: `<pre><code>${escapeHtml(code.replace(/\n$/g, ""))}</code></pre>`,
         };
       }
-      const { highlight } = await import("@wnote/renderers/shiki");
       return {
         from: match[0],
-        to: await highlight(code.replace(/\n$/g, ""), lang, theme),
+        to: await renderCodeFallback(code.replace(/\n$/g, ""), lang, theme, highlight),
       };
     }),
   );
@@ -217,6 +245,51 @@ async function renderCodeBlocks(html: string, theme: "light" | "dark"): Promise<
     (current, replacement) => current.replace(replacement.from, replacement.to),
     html,
   );
+}
+
+async function loadHighlightIfNeeded(
+  matches: RegExpMatchArray[],
+): Promise<ExportRenderers["highlight"]> {
+  if (!matches.some((match) => normalizedHighlightLanguage(match[2]))) return undefined;
+  try {
+    const { highlight } = await import("@wnote/renderers/shiki");
+    return highlight;
+  } catch {
+    return undefined;
+  }
+}
+
+function renderMathFallback(
+  source: string,
+  mode: "block" | "inline",
+  render: () => string,
+): string {
+  try {
+    return render();
+  } catch {
+    const escaped = escapeHtml(source);
+    if (mode === "inline") return `<code class="katex-error">${escaped}</code>`;
+    return `<pre class="katex-error"><code>${escaped}</code></pre>`;
+  }
+}
+
+async function renderCodeFallback(
+  code: string,
+  language: string,
+  theme: "light" | "dark",
+  highlight?: NonNullable<ExportRenderers["highlight"]>,
+): Promise<string> {
+  if (!highlight) return plainCodeBlock(code, language);
+  try {
+    return await highlight(code, language, theme);
+  } catch {
+    return plainCodeBlock(code, language);
+  }
+}
+
+function plainCodeBlock(code: string, language?: string): string {
+  const className = language ? ` class="language-${escapeAttribute(language)}"` : "";
+  return `<pre><code${className}>${escapeHtml(code)}</code></pre>`;
 }
 
 function normalizedHighlightLanguage(language: string | undefined): string | null {
