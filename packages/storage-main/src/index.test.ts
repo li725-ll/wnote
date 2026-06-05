@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mkdir, mkdtemp, readFile, writeFile } from "fs/promises";
+import { mkdir, mkdtemp, readFile, stat, writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
+import { deleteAsset, importAsset, saveAsset } from ".";
 import {
   exportHtmlDocument,
   renderExportHtml,
@@ -241,5 +242,57 @@ describe("@wnote/storage-main export", () => {
     expect(html).toContain('src="data:image/png;base64,iVBORw=="');
     expect(html).not.toContain("mermaid.esm.min.mjs");
     expect(html).toContain(":root { color-scheme: dark; }");
+  });
+});
+
+describe("@wnote/storage-main assets", () => {
+  it("saves pasted images beside saved documents", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-asset-save-"));
+    const documentPath = join(dir, "note.md");
+
+    const asset = await saveAsset(
+      {
+        buffer: new Uint8Array([1, 2, 3]).buffer,
+        ext: "png",
+        documentPath,
+        originalName: "pasted.png",
+        mime: "image/png",
+      },
+      { dataDirectory: join(dir, "data") },
+    );
+
+    expect(asset.markdownPath).toMatch(/^note\.assets[/\\].+\.png$/);
+    expect(asset.url).toContain("wnote-asset://");
+    expect(asset.size).toBe(3);
+    await expect(stat(asset.absolutePath)).resolves.toMatchObject({ size: 3 });
+  });
+
+  it("imports external images into the document asset directory", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-asset-import-"));
+    const sourcePath = join(dir, "source.jpg");
+    const documentPath = join(dir, "note.md");
+    await writeFile(sourcePath, Buffer.from([4, 5, 6, 7]));
+
+    const asset = await importAsset({ sourcePath, documentPath });
+
+    expect(asset.originalName).toBe("source.jpg");
+    expect(asset.markdownPath).toMatch(/^note\.assets[/\\].+\.jpg$/);
+    expect(asset.mime).toBe("image/jpeg");
+    await expect(readFile(asset.absolutePath)).resolves.toEqual(Buffer.from([4, 5, 6, 7]));
+  });
+
+  it("rejects deleting files outside the document asset directory", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-asset-delete-"));
+    const documentPath = join(dir, "note.md");
+    const outsidePath = join(dir, "outside.png");
+    await writeFile(outsidePath, Buffer.from([1]));
+
+    await expect(
+      deleteAsset({
+        documentPath,
+        absolutePath: outsidePath,
+        content: "",
+      }),
+    ).rejects.toThrow("outside the document assets directory");
   });
 });
