@@ -33,20 +33,9 @@ import { CommandPalette, type PaletteCommand } from "./components/CommandPalette
 import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
 import { Toast, type ToastState } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
+import { defaultExportOptions, describeExport } from "./export/export-state";
 
 const STORAGE_KEY = "wnote:welcomed";
-
-const defaultExportOptions: Required<ExportHtmlOptions> = {
-  inlineLocalImages: false,
-  renderMermaid: true,
-  theme: "light",
-  pdf: {
-    pageSize: "A4",
-    orientation: "portrait",
-    margin: "default",
-    printBackground: true,
-  },
-};
 
 export default function App() {
   const [view, setView] = useState<"welcome" | "editor" | "settings">(() => {
@@ -226,21 +215,16 @@ export default function App() {
       setExportOptions(options);
       const tab = activeTabRef.current;
       const content = await getEditorContent();
-      const baseName =
-        tab.path
-          ?.split(/[/\\]/)
-          .pop()
-          ?.replace(/\.[^.]+$/, "") || "untitled";
-      const label = format === "pdf" ? "PDF" : "HTML";
-      const extension = format === "pdf" ? "pdf" : "html";
+      const descriptor = describeExport(format, tab.path);
+      const { label } = descriptor;
       showToast({ kind: "info", title: `正在导出 ${label}` }, 0);
       try {
         const result = await window.electronAPI.invoke<ExportHtmlResult | ExportPdfResult | null>(
-          format === "pdf" ? IpcChannel.ExportPdf : IpcChannel.ExportHtml,
+          descriptor.channel,
           {
             content,
             documentPath: tab.path,
-            defaultName: `${baseName}.${extension}`,
+            defaultName: descriptor.defaultName,
             options,
           },
         );
@@ -306,12 +290,7 @@ export default function App() {
     async (format: ExportFormat, options: Required<ExportHtmlOptions>) => {
       const tab = activeTabRef.current;
       const content = await getEditorContent();
-      const baseName =
-        tab.path
-          ?.split(/[/\\]/)
-          .pop()
-          ?.replace(/\.[^.]+$/, "") || "untitled";
-      const extension = format === "pdf" ? "pdf" : "html";
+      const descriptor = describeExport(format, tab.path);
       setExportFormat(format);
       setExportOptions(options);
       try {
@@ -320,7 +299,7 @@ export default function App() {
           {
             content,
             documentPath: tab.path,
-            defaultName: `${baseName}.${extension}`,
+            defaultName: descriptor.defaultName,
             format,
             options,
           },
