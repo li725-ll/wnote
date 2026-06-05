@@ -63,7 +63,10 @@ export const editorCommands: EditorCommandDefinition[] = [
   {
     id: "heading4",
     label: "标题 4",
+    hint: "四级标题",
     group: "block",
+    slash: true,
+    blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 4 }).run(),
   },
   {
@@ -226,6 +229,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     hint: "水平线",
     group: "insert",
     slash: true,
+    blockMenu: true,
     run: (editor) => editor.chain().focus().setHorizontalRule().run(),
   },
   {
