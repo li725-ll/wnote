@@ -10,6 +10,38 @@ import { syntaxTree } from "@codemirror/language";
 import { type Range, StateField } from "@codemirror/state";
 import { parseAtxHeadingLine, slugify } from "./headings";
 
+function appendInlineMarkdown(parent: HTMLElement, text: string) {
+  const pattern = /(\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text))) {
+    if (match.index > lastIndex) {
+      parent.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+    }
+
+    if (match[2]) {
+      const strong = document.createElement("strong");
+      strong.textContent = match[2];
+      parent.appendChild(strong);
+    } else if (match[3]) {
+      const code = document.createElement("code");
+      code.textContent = match[3];
+      parent.appendChild(code);
+    } else if (match[4]) {
+      const em = document.createElement("em");
+      em.textContent = match[4];
+      parent.appendChild(em);
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+}
+
 class TableWidget extends WidgetType {
   constructor(private content: string) {
     super();
@@ -41,7 +73,7 @@ class TableWidget extends WidgetType {
     const hr = thead.insertRow();
     for (let i = 0; i < headers.length; i++) {
       const th = document.createElement("th");
-      th.textContent = headers[i];
+      appendInlineMarkdown(th, headers[i]);
       th.style.textAlign = aligns[i] ?? "left";
       hr.appendChild(th);
     }
@@ -52,7 +84,7 @@ class TableWidget extends WidgetType {
       const tr = tbody.insertRow();
       for (let i = 0; i < headers.length; i++) {
         const td = tr.insertCell();
-        td.textContent = cells[i] ?? "";
+        appendInlineMarkdown(td, cells[i] ?? "");
         td.style.textAlign = aligns[i] ?? "left";
       }
     }
@@ -170,6 +202,10 @@ function getActiveLines(view: EditorView): Set<number> {
   return lines;
 }
 
+function isBlockquoteLine(view: EditorView, pos: number): boolean {
+  return /^\s*>\s?/.test(view.state.doc.lineAt(pos).text);
+}
+
 const syntaxMark = Decoration.mark({ class: "cm-md-syntax" });
 
 function buildDecorations(view: EditorView): DecorationSet {
@@ -205,7 +241,8 @@ function buildDecorations(view: EditorView): DecorationSet {
 
       // --- Bold (per-node) ---
       if (node.name === "StrongEmphasis") {
-        const active = isCursorInRange(view, node.from, node.to);
+        const active =
+          isCursorInRange(view, node.from, node.to) && !isBlockquoteLine(view, node.from);
         decos.push(Decoration.mark({ class: "cm-md-bold" }).range(node.from, node.to));
         if (active) {
           decos.push(syntaxMark.range(node.from, node.from + 2));
@@ -219,7 +256,8 @@ function buildDecorations(view: EditorView): DecorationSet {
 
       // --- Italic (per-node) ---
       if (node.name === "Emphasis") {
-        const active = isCursorInRange(view, node.from, node.to);
+        const active =
+          isCursorInRange(view, node.from, node.to) && !isBlockquoteLine(view, node.from);
         decos.push(Decoration.mark({ class: "cm-md-italic" }).range(node.from, node.to));
         if (active) {
           decos.push(syntaxMark.range(node.from, node.from + 1));
@@ -401,7 +439,6 @@ function buildDecorations(view: EditorView): DecorationSet {
             }
           }
         }
-        return false;
       }
 
       // --- Table (line styling when editing) ---

@@ -179,6 +179,13 @@ export const wnoteTheme = EditorView.theme({
       backgroundColor: "var(--color-table-header-bg)",
       fontWeight: "600",
     },
+    "& code": {
+      fontFamily: "var(--editor-mono-font)",
+      fontSize: "0.9em",
+      backgroundColor: "var(--color-code-bg)",
+      borderRadius: "3px",
+      padding: "0.1em 0.25em",
+    },
   },
   ".cm-md-table-line": {
     backgroundColor: "var(--color-code-bg)",
