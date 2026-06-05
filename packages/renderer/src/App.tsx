@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Editor, formatCommands } from "@wnote/editor-react";
+import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import {
   IpcChannel,
@@ -34,6 +34,7 @@ import {
   removeDocumentAssetReference,
   resolveDocumentAssetPreview,
 } from "./assets/asset-state";
+import { formatIpcCommandEntries } from "./commands/format-ipc";
 import { buildPaletteCommands } from "./commands/palette-commands";
 import {
   getDocumentTitle,
@@ -361,37 +362,17 @@ export default function App() {
   }, [openExportDialog]);
   // Format commands from menu
   useEffect(() => {
-    const formatMap = {
-      [IpcChannel.FormatBold]: formatCommands.bold,
-      [IpcChannel.FormatItalic]: formatCommands.italic,
-      [IpcChannel.FormatStrikethrough]: formatCommands.strikethrough,
-      [IpcChannel.FormatInlineCode]: formatCommands.inlineCode,
-      [IpcChannel.FormatMath]: formatCommands.math,
-      [IpcChannel.FormatLink]: formatCommands.link,
-      [IpcChannel.FormatImage]: formatCommands.image,
-      [IpcChannel.FormatCodeBlock]: formatCommands.codeBlock,
-      [IpcChannel.FormatBlockquote]: formatCommands.blockquote,
-      [IpcChannel.FormatUnorderedList]: formatCommands.unorderedList,
-      [IpcChannel.FormatOrderedList]: formatCommands.orderedList,
-      [IpcChannel.FormatTaskList]: formatCommands.taskList,
-      [IpcChannel.FormatHorizontalRule]: formatCommands.horizontalRule,
-      [IpcChannel.FormatHeading1]: formatCommands.heading1,
-      [IpcChannel.FormatHeading2]: formatCommands.heading2,
-      [IpcChannel.FormatHeading3]: formatCommands.heading3,
-      [IpcChannel.FormatHeading4]: formatCommands.heading4,
-      [IpcChannel.FormatHeadingClear]: formatCommands.headingClear,
-    };
-    const handlers: [string, () => void][] = Object.entries(formatMap).map(([ch, fn]) => {
+    const handlers = formatIpcCommandEntries.map(([channel, fn]) => {
       const handler = () => {
         const view = editorRef.current?.getView();
         if (view) fn(view);
       };
-      window.electronAPI.on(ch as IpcChannel, handler);
-      return [ch, handler];
+      window.electronAPI.on(channel, handler);
+      return [channel, handler] as const;
     });
     return () => {
-      for (const [ch, handler] of handlers) {
-        window.electronAPI.off(ch as IpcChannel, handler);
+      for (const [channel, handler] of handlers) {
+        window.electronAPI.off(channel, handler);
       }
     };
   }, []);
