@@ -152,7 +152,6 @@ const bindings: KeyBinding[] = [
   { key: "Mod-Shift-x", run: formatCommands.strikethrough },
   { key: "Mod-`", run: formatCommands.inlineCode },
   { key: "Mod-Shift-m", run: formatCommands.math },
-  { key: "Mod-k", run: formatCommands.link },
   { key: "Mod-Shift-i", run: formatCommands.image },
   { key: "Mod-Shift-`", run: formatCommands.codeBlock },
   { key: "Mod-Shift-q", run: formatCommands.blockquote },
