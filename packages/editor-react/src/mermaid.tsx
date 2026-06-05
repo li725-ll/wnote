@@ -2,6 +2,13 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useEffect, useId, useState } from "react";
+import {
+  errorRenderState,
+  idleRenderState,
+  loadingRenderState,
+  readyRenderState,
+  type AsyncRenderState,
+} from "./async-render-state";
 import styles from "./Mermaid.module.css";
 
 const defaultDiagram = "graph TD\n  A --> B";
@@ -41,23 +48,24 @@ function MermaidView({ node, selected, updateAttributes }: NodeViewProps) {
   const source = String(node.attrs.source ?? "");
   const id = useStableMermaidId();
   const [editing, setEditing] = useState(!source.trim());
-  const [svg, setSvg] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [renderState, setRenderState] = useState<AsyncRenderState>(idleRenderState);
 
   useEffect(() => {
     let disposed = false;
-    setError(null);
-    setSvg("");
+    setRenderState(loadingRenderState);
 
-    if (!source.trim()) return;
+    if (!source.trim()) {
+      setRenderState(idleRenderState);
+      return;
+    }
 
     void import("@wnote/renderers/mermaid")
       .then(({ renderDiagram }) => renderDiagram(source, id, "default"))
       .then((result) => {
-        if (!disposed) setSvg(result);
+        if (!disposed) setRenderState(readyRenderState(result));
       })
       .catch((reason: unknown) => {
-        if (!disposed) setError(reason instanceof Error ? reason.message : "Mermaid render failed");
+        if (!disposed) setRenderState(errorRenderState(reason, "Mermaid render failed"));
       });
 
     return () => {
@@ -92,12 +100,16 @@ function MermaidView({ node, selected, updateAttributes }: NodeViewProps) {
         />
       ) : (
         <div className={styles.preview} contentEditable={false}>
-          {svg ? <div dangerouslySetInnerHTML={{ __html: svg }} /> : <pre>{source}</pre>}
+          {renderState.status === "ready" ? (
+            <div dangerouslySetInnerHTML={{ __html: renderState.html }} />
+          ) : (
+            <pre>{source}</pre>
+          )}
         </div>
       )}
-      {error ? (
+      {renderState.error ? (
         <div className={styles.error} contentEditable={false}>
-          {error}
+          {renderState.error}
         </div>
       ) : null}
     </NodeViewWrapper>

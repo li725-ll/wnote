@@ -3,6 +3,12 @@ import { mergeAttributes } from "@tiptap/core";
 import { NodeViewContent, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useEffect, useMemo, useState } from "react";
+import {
+  errorRenderState,
+  loadingRenderState,
+  readyRenderState,
+  type AsyncRenderState,
+} from "./async-render-state";
 import styles from "./CodeBlock.module.css";
 
 export const CodeBlock = CodeBlockLowlight.extend({
@@ -38,22 +44,20 @@ export const CodeBlock = CodeBlockLowlight.extend({
 function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
   const language = normalizeLanguage(node.attrs.language);
   const code = node.textContent;
-  const [html, setHtml] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [renderState, setRenderState] = useState<AsyncRenderState>(loadingRenderState);
 
   useEffect(() => {
     let disposed = false;
-    setError(null);
-    setHtml("");
+    setRenderState(loadingRenderState);
 
     void import("@wnote/renderers/shiki")
       .then(({ highlight }) => highlight(code, language || "text", "light"))
       .then((result) => {
-        if (!disposed) setHtml(result);
+        if (!disposed) setRenderState(readyRenderState(result));
       })
       .catch((reason: unknown) => {
         if (disposed) return;
-        setError(reason instanceof Error ? reason.message : "Highlight failed");
+        setRenderState(errorRenderState(reason, "Highlight failed"));
       });
 
     return () => {
@@ -78,11 +82,11 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
         />
       </div>
       <div className={styles.body}>
-        {html ? (
+        {renderState.status === "ready" ? (
           <div
             className={styles.highlight}
             contentEditable={false}
-            dangerouslySetInnerHTML={{ __html: html }}
+            dangerouslySetInnerHTML={{ __html: renderState.html }}
           />
         ) : (
           <pre className={styles.highlightFallback} aria-hidden="true">
@@ -91,9 +95,9 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
         )}
         <NodeViewContent className={styles.content} />
       </div>
-      {error ? (
+      {renderState.error ? (
         <div className={styles.error} contentEditable={false}>
-          {error}
+          {renderState.error}
         </div>
       ) : null}
     </NodeViewWrapper>

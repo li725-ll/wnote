@@ -2,6 +2,13 @@ import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useEffect, useState } from "react";
+import {
+  errorRenderState,
+  escapedTextHtml,
+  loadingRenderState,
+  readyRenderState,
+  type AsyncRenderState,
+} from "./async-render-state";
 import styles from "./Math.module.css";
 
 export const InlineMath = Node.create({
@@ -70,15 +77,23 @@ function MathView({ node, selected, updateAttributes }: NodeViewProps) {
   const isBlock = node.type.name === "blockMath";
   const formula = String(node.attrs.formula ?? "");
   const [editing, setEditing] = useState(!formula);
-  const [html, setHtml] = useState("");
+  const [renderState, setRenderState] = useState<AsyncRenderState>(loadingRenderState);
 
   useEffect(() => {
     let disposed = false;
+    setRenderState(loadingRenderState);
 
-    void import("@wnote/renderers/katex").then(({ renderBlockMath, renderInlineMath }) => {
-      if (disposed) return;
-      setHtml(isBlock ? renderBlockMath(formula) : renderInlineMath(formula));
-    });
+    void import("@wnote/renderers/katex")
+      .then(({ renderBlockMath, renderInlineMath }) => {
+        if (disposed) return;
+        setRenderState(
+          readyRenderState(isBlock ? renderBlockMath(formula) : renderInlineMath(formula)),
+        );
+      })
+      .catch((reason: unknown) => {
+        if (disposed) return;
+        setRenderState(errorRenderState(reason, "Math render failed"));
+      });
 
     return () => {
       disposed = true;
@@ -112,13 +127,12 @@ function MathView({ node, selected, updateAttributes }: NodeViewProps) {
         <span
           className={styles.rendered}
           contentEditable={false}
-          dangerouslySetInnerHTML={{ __html: html || escapeHtml(formula) }}
+          title={renderState.error ?? undefined}
+          dangerouslySetInnerHTML={{
+            __html: renderState.status === "ready" ? renderState.html : escapedTextHtml(formula),
+          }}
         />
       )}
     </NodeViewWrapper>
   );
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
