@@ -19,8 +19,8 @@ export function DocumentOutline({ headings, onHeadingClick }: DocumentOutlinePro
         <p className={styles.empty}>{t("outline.empty")}</p>
       ) : (
         <ul className={styles.list}>
-          {headings.map((h, i) => (
-            <li key={`${h.id}-${i}`}>
+          {headings.map((h) => (
+            <li key={`${h.id}-${h.from}`}>
               <button
                 className={styles.item}
                 style={{ paddingLeft: `${(h.level - 1) * 12 + 8}px` }}

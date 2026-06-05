@@ -17,26 +17,33 @@ function saveLayout(partial: Partial<LayoutState>) {
 }
 
 export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps) {
-  const [leftWidth, setLeftWidth] = useState(320);
-  const [leftOpen, setLeftOpen] = useState(true);
-  const [loaded, setLoaded] = useState(false);
+  const [layout, setLayout] = useState<
+    Pick<LayoutState, "leftOpen" | "leftWidth"> & {
+      loaded: boolean;
+    }
+  >({
+    leftOpen: true,
+    leftWidth: 320,
+    loaded: false,
+  });
   const [dragging, setDragging] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
+  const { leftOpen, leftWidth } = layout;
 
   useEffect(() => {
     window.electronAPI.invoke<LayoutState>(IpcChannel.LayoutGet).then((state) => {
-      setLeftOpen(state.leftOpen);
-      setLeftWidth(state.leftWidth);
-      setLoaded(true);
+      setLayout({ leftOpen: state.leftOpen, leftWidth: state.leftWidth, loaded: true });
     });
   }, []);
 
   useEffect(() => {
     if (toggleLeftSignal === 0) return;
-    setLeftOpen((prev) => {
-      saveLayout({ leftOpen: !prev });
-      return !prev;
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- external menu signal intentionally updates layout state.
+    setLayout((prev) => {
+      const next = { ...prev, leftOpen: !prev.leftOpen };
+      saveLayout({ leftOpen: next.leftOpen });
+      return next;
     });
   }, [toggleLeftSignal]);
 
@@ -44,9 +51,10 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
     const handler = (...args: unknown[]) => {
       const side = args[0] as string;
       if (side === "left") {
-        setLeftOpen((prev) => {
-          saveLayout({ leftOpen: !prev });
-          return !prev;
+        setLayout((prev) => {
+          const next = { ...prev, leftOpen: !prev.leftOpen };
+          saveLayout({ leftOpen: next.leftOpen });
+          return next;
         });
       }
     };
@@ -69,7 +77,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
       if (!dragging) return;
       const delta = e.clientX - startXRef.current;
       const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidthRef.current + delta));
-      setLeftWidth(newWidth);
+      setLayout((prev) => ({ ...prev, leftWidth: newWidth }));
     },
     [dragging],
   );
@@ -83,7 +91,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
     "--left-width": leftOpen ? `${leftWidth}px` : "0px",
   } as React.CSSProperties;
 
-  if (!loaded) return null;
+  if (!layout.loaded) return null;
 
   return (
     <div className={`${styles.layout} ${dragging ? styles.dragging : ""}`} style={style}>

@@ -21,17 +21,30 @@ export function ExportDialog({
   onConfirm,
   onPreview,
 }: ExportDialogProps) {
+  if (!open) return null;
+  return (
+    <ExportDialogContent
+      key={`${format}-${JSON.stringify(initialOptions)}`}
+      format={format}
+      initialOptions={initialOptions}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+      onPreview={onPreview}
+    />
+  );
+}
+
+function ExportDialogContent({
+  format,
+  initialOptions,
+  onCancel,
+  onConfirm,
+  onPreview,
+}: Omit<ExportDialogProps, "open">) {
   const [options, setOptions] = useState(initialOptions);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>(format);
 
   useEffect(() => {
-    if (!open) return;
-    setOptions(initialOptions);
-    setSelectedFormat(format);
-  }, [format, initialOptions, open]);
-
-  useEffect(() => {
-    if (!open) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCancel();
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter")
@@ -39,9 +52,7 @@ export function ExportDialog({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onCancel, onConfirm, open, options, selectedFormat]);
-
-  if (!open) return null;
+  }, [onCancel, onConfirm, options, selectedFormat]);
 
   return (
     <div className={styles.overlay} role="presentation" onMouseDown={onCancel}>

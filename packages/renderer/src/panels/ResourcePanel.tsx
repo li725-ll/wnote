@@ -172,8 +172,8 @@ function ResourceGroup({
         <p className={styles.groupEmpty}>{empty}</p>
       ) : (
         <ul className={styles.list}>
-          {references.map((reference, index) => (
-            <li key={`${reference.src}-${reference.position}-${index}`}>
+          {references.map((reference) => (
+            <li key={`${reference.src}-${reference.position}`}>
               <div className={styles.row}>
                 <button className={styles.item} onClick={() => onReferenceClick?.(reference)}>
                   <span className={styles.status} data-status={reference.status}>
