@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import { slashCommands, type EditorCommandDefinition } from "./editor-commands";
+import { belowFloatingPoint } from "./floating-position";
 import styles from "./SlashMenu.module.css";
 
 interface SlashMenuProps {
@@ -16,6 +17,7 @@ interface SlashState {
   to: number;
   query: string;
   selected: number;
+  placement: "top" | "bottom";
 }
 
 const hiddenState: SlashState = {
@@ -26,7 +28,10 @@ const hiddenState: SlashState = {
   to: 0,
   query: "",
   selected: 0,
+  placement: "bottom",
 };
+
+const slashMenuBox = { width: 288, height: 416 };
 
 export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
   const [state, setState] = useState<SlashState>(hiddenState);
@@ -46,14 +51,31 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
     }
 
     const coords = editor.view.coordsAtPos(trigger.to);
-    const rect = container.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const position = belowFloatingPoint(
+      {
+        left: coords.left,
+        right: coords.right,
+        top: coords.top,
+        bottom: coords.bottom,
+        width: coords.right - coords.left,
+        height: coords.bottom - coords.top,
+      },
+      {
+        ...containerRect,
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+      },
+      slashMenuBox,
+    );
     setState((current) => ({
       visible: true,
-      left: coords.left - rect.left + container.scrollLeft,
-      top: coords.bottom - rect.top + container.scrollTop + 6,
+      left: position.left,
+      top: position.top,
       from: trigger.from,
       to: trigger.to,
       query: trigger.query,
+      placement: position.placement,
       selected: boundedSelected(
         current.visible ? current.selected : 0,
         slashCommands(trigger.query),
@@ -132,6 +154,17 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
     return () => editor.view.dom.removeEventListener("keydown", handler);
   }, [editor, state.visible]);
 
+  useEffect(() => {
+    if (!state.visible) return;
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && menuRef.current?.contains(target)) return;
+      setState(hiddenState);
+    };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [state.visible]);
+
   if (!editor || !state.visible) return null;
   const commands = slashCommands(state.query);
 
@@ -140,6 +173,7 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
       ref={menuRef}
       className={styles.menu}
       contentEditable={false}
+      data-placement={state.placement}
       style={{ left: state.left, top: state.top }}
       onMouseDown={(event) => event.preventDefault()}
     >

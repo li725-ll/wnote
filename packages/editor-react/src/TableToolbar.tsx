@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { tableCommands, type EditorCommandDefinition } from "./editor-commands";
+import { centeredFloatingPoint } from "./floating-position";
 import styles from "./TableToolbar.module.css";
 
 interface TableToolbarProps {
@@ -31,6 +32,8 @@ const hiddenState: TableState = {
   pos: 0,
   size: 0,
 };
+
+const tableToolbarBox = { width: 672, height: 32 };
 
 const commandGroups = [
   ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
@@ -64,15 +67,20 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
 
     const tableRect = table.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    const placeBelow = tableRect.top - containerRect.top < 44;
+    const position = centeredFloatingPoint(
+      tableRect,
+      {
+        ...containerRect,
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+      },
+      tableToolbarBox,
+    );
     setState({
       visible: true,
-      left: tableRect.left - containerRect.left + container.scrollLeft,
-      top:
-        (placeBelow ? tableRect.bottom - containerRect.top : tableRect.top - containerRect.top) +
-        container.scrollTop +
-        (placeBelow ? 8 : -8),
-      placement: placeBelow ? "bottom" : "top",
+      left: position.left,
+      top: position.top,
+      placement: position.placement,
       pos: info.pos,
       size: info.node.nodeSize,
     });

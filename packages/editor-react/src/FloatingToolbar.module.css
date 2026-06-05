@@ -10,7 +10,14 @@
   background: var(--color-bg);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
   padding: 2px;
-  transform: translate(-50%, -100%);
+}
+
+.toolbar[data-placement="top"] {
+  transform: none;
+}
+
+.toolbar[data-placement="bottom"] {
+  transform: none;
 }
 
 .popover {

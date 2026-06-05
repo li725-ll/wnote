@@ -3,6 +3,7 @@ import type { Editor as TiptapEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { NodeSelection } from "@tiptap/pm/state";
 import { blockMenuCommands, type EditorCommandDefinition } from "./editor-commands";
+import { sideHandlePoint } from "./floating-position";
 import styles from "./BlockHandle.module.css";
 
 interface BlockHandleProps {
@@ -33,6 +34,8 @@ const hiddenBlock: ActiveBlock = {
   type: "",
 };
 
+const blockHandleBox = { width: 24, height: 24 };
+
 export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
   const [block, setBlock] = useState<ActiveBlock>(hiddenBlock);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,10 +63,27 @@ export function BlockHandle({ editor, containerRef }: BlockHandleProps) {
     const editorRect = editor.view.dom.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
     const blockRect = element?.getBoundingClientRect() ?? editor.view.coordsAtPos(info.pos);
+    const position = sideHandlePoint(
+      editorRect,
+      {
+        left: blockRect.left,
+        right: blockRect.right,
+        top: blockRect.top,
+        bottom: blockRect.bottom,
+        width: blockRect.right - blockRect.left,
+        height: blockRect.bottom - blockRect.top,
+      },
+      {
+        ...containerRect,
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+      },
+      blockHandleBox,
+    );
     setBlock({
       visible: true,
-      left: editorRect.left - containerRect.left + container.scrollLeft - 30,
-      top: blockRect.top - containerRect.top + container.scrollTop + 2,
+      left: position.left,
+      top: position.top,
       pos: info.pos,
       size: info.node.nodeSize,
       type: info.node.type.name,

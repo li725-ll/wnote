@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
+import { centeredFloatingPoint } from "./floating-position";
 import styles from "./FloatingToolbar.module.css";
 
 interface FloatingToolbarProps {
@@ -11,9 +12,11 @@ interface ToolbarState {
   visible: boolean;
   left: number;
   top: number;
+  placement: "top" | "bottom";
 }
 
-const hiddenState: ToolbarState = { visible: false, left: 0, top: 0 };
+const hiddenState: ToolbarState = { visible: false, left: 0, top: 0, placement: "top" };
+const toolbarBox = { width: 220, height: 32 };
 
 export function FloatingToolbar({ editor, containerRef }: FloatingToolbarProps) {
   const [state, setState] = useState<ToolbarState>(hiddenState);
@@ -42,11 +45,26 @@ export function FloatingToolbar({ editor, containerRef }: FloatingToolbarProps) 
     if (!container) return;
     const start = editor.view.coordsAtPos(selection.from);
     const end = editor.view.coordsAtPos(selection.to);
-    const rect = container.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const position = centeredFloatingPoint(
+      {
+        left: Math.min(start.left, end.left),
+        right: Math.max(start.right, end.right),
+        top: Math.min(start.top, end.top),
+        bottom: Math.max(start.bottom, end.bottom),
+        width: Math.abs(end.right - start.left),
+        height: Math.abs(end.bottom - start.top),
+      },
+      {
+        ...containerRect,
+        scrollLeft: container.scrollLeft,
+        scrollTop: container.scrollTop,
+      },
+      toolbarBox,
+    );
     setState({
       visible: true,
-      left: (start.left + end.right) / 2 - rect.left,
-      top: Math.min(start.top, end.top) - rect.top - 8,
+      ...position,
     });
   }, [containerRef, editor, linkOpen]);
 
@@ -98,6 +116,7 @@ export function FloatingToolbar({ editor, containerRef }: FloatingToolbarProps) 
     <div
       className={styles.toolbar}
       contentEditable={false}
+      data-placement={state.placement}
       style={{ left: state.left, top: state.top }}
       onMouseDown={(event) => event.preventDefault()}
     >
