@@ -18,7 +18,7 @@ export function parseAtxHeadingLine(lineText: string): ParsedAtxHeading | null {
   const match = /^(#{1,6})([ \t]+)(.+?)\s*$/.exec(lineText);
   if (!match) return null;
 
-  const text = match[3].replace(/[ \t]+#+\s*$/, "").trim();
+  const text = stripInlineMarkdown(match[3].replace(/[ \t]+#+\s*$/, "").trim());
   if (!text) return null;
 
   return {
@@ -26,6 +26,18 @@ export function parseAtxHeadingLine(lineText: string): ParsedAtxHeading | null {
     text,
     markerEnd: match[1].length + match[2].length,
   };
+}
+
+function stripInlineMarkdown(text: string): string {
+  return text
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\\([\\`*_[\]{}()#+\-.!>])/g, "$1")
+    .trim();
 }
 
 export function slugify(text: string): string {
