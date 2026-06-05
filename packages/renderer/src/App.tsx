@@ -54,6 +54,7 @@ import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
 import { useNavigationIpc } from "./hooks/useNavigationIpc";
+import { useFileIpc } from "./hooks/useFileIpc";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -129,35 +130,13 @@ export default function App() {
   }, []);
   useNavigationIpc(handleNavigate);
 
-  useEffect(() => {
-    const handler = (...args: unknown[]) => {
-      const data = args[0] as OpenDocumentResult;
-      applyOpenedDocument(data);
-    };
-    window.electronAPI.on(IpcChannel.FileOpened, handler);
-    return () => window.electronAPI.off(IpcChannel.FileOpened, handler);
-  }, [applyOpenedDocument]);
-
-  useEffect(() => {
-    const handler = () => newTabRef.current();
-    window.electronAPI.on(IpcChannel.FileNew, handler);
-    return () => window.electronAPI.off(IpcChannel.FileNew, handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => closeTabRef.current(activeTabIdRef.current);
-    window.electronAPI.on(IpcChannel.FileClose, handler);
-    return () => window.electronAPI.off(IpcChannel.FileClose, handler);
-  }, []);
-
-  useEffect(() => {
-    window.electronAPI
-      .invoke<OpenDocumentResult | null>(IpcChannel.LastOpenedFileGet)
-      .then((data) => {
-        if (!data) return;
-        applyOpenedDocument(data);
-      });
-  }, [applyOpenedDocument]);
+  const handleIpcNewFile = useCallback(() => newTabRef.current(), []);
+  const handleIpcCloseFile = useCallback(() => closeTabRef.current(activeTabIdRef.current), []);
+  useFileIpc({
+    onOpened: applyOpenedDocument,
+    onNew: handleIpcNewFile,
+    onClose: handleIpcCloseFile,
+  });
 
   useEffect(() => {
     if (activeTab) {
