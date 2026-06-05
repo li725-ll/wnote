@@ -123,7 +123,7 @@ function imageHtmlAttrs(attributes: Record<string, unknown>) {
   return result;
 }
 
-function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewProps) {
+function ImageView({ node, selected, updateAttributes, deleteNode, extension }: NodeViewProps) {
   const [loaded, setLoaded] = useState(true);
   const [dragWidth, setDragWidth] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -135,7 +135,7 @@ function ImageView({ node, selected, updateAttributes, deleteNode }: NodeViewPro
   const width = normalizeImageWidth(node.attrs.width);
   const align = normalizeImageAlign(node.attrs.align);
   const caption = String(node.attrs.caption ?? "");
-  const assetResolver = node.type.spec.config.options.assetResolver as AssetResolver | undefined;
+  const assetResolver = extension.options.assetResolver as AssetResolver | undefined;
   const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
 
   return (

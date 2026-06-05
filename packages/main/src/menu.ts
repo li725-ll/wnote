@@ -1,10 +1,10 @@
 import { Menu, BrowserWindow, dialog } from "electron";
 import { basename } from "path";
 import { IpcChannel, type AppSettings } from "@wnote/contracts";
-import { openDocument } from "@wnote/storage-main";
-import { addRecentFile, setLastOpenedFile, getRecentFiles, clearRecentFiles } from "./recent-files";
+import { getRecentFiles, clearRecentFiles } from "./recent-files";
 import { saveSettings, loadSettings } from "./settings";
 import { windowManager } from "./window-manager";
+import { openFileInWindow as sendFileToWindow } from "./open-file";
 
 const labels = {
   zh: {
@@ -123,10 +123,7 @@ async function openFileInWindow(win: BrowserWindow) {
   });
   if (result.canceled || result.filePaths.length === 0) return;
   const filePath = result.filePaths[0];
-  const data = await openDocument(filePath);
-  addRecentFile(filePath);
-  setLastOpenedFile(filePath);
-  win.webContents.send(IpcChannel.FileOpened, data);
+  await sendFileToWindow(win, filePath);
   const settings = await loadSettings();
   createAppMenu(win, settings);
 }
@@ -141,10 +138,7 @@ export function createAppMenu(win: BrowserWindow, settings: AppSettings) {
           ...recentFiles.map((f) => ({
             label: basename(f.path),
             click: async () => {
-              const data = await openDocument(f.path);
-              addRecentFile(f.path);
-              setLastOpenedFile(f.path);
-              win.webContents.send(IpcChannel.FileOpened, data);
+              await sendFileToWindow(win, f.path);
               const s = await loadSettings();
               createAppMenu(win, s);
             },

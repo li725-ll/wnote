@@ -10,7 +10,6 @@ import TableRow from "@tiptap/extension-table-row";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import Typography from "@tiptap/extension-typography";
-import Underline from "@tiptap/extension-underline";
 import type { EditorCommandId, HeadingItem } from "@wnote/contracts";
 import { BlockHandle } from "./BlockHandle";
 import { CodeBlock } from "./code-block";
@@ -112,7 +111,6 @@ export function Editor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Typography,
-      Underline,
     ],
     [assetResolver, placeholder],
   );
