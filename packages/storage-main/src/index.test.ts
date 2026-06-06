@@ -5,9 +5,11 @@ import { tmpdir } from "os";
 import {
   createWorkspaceDirectory,
   createWorkspaceFile,
+  deleteWorkspaceEntry,
   deleteAsset,
   importAsset,
   readWorkspace,
+  renameWorkspaceEntry,
   saveAsset,
 } from ".";
 import {
@@ -390,5 +392,86 @@ describe("@wnote/storage-main workspace", () => {
         name: "image.png",
       }),
     ).rejects.toThrow("Unsupported workspace document extension");
+  });
+
+  it("renames workspace files and keeps them readable", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-rename-file-"));
+    const filePath = join(dir, "old.md");
+    await writeFile(filePath, "# Old");
+
+    const result = await renameWorkspaceEntry({
+      rootPath: dir,
+      targetPath: filePath,
+      name: "new",
+    });
+
+    expect(result.oldPath).toBe(filePath);
+    expect(result.newPath).toBe(join(dir, "new.md"));
+    expect(result.nodeType).toBe("file");
+    expect(result.workspace.tree.map((node) => node.name)).toEqual(["new.md"]);
+    await expect(readFile(join(dir, "new.md"), "utf-8")).resolves.toBe("# Old");
+  });
+
+  it("renames workspace directories in place", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-rename-dir-"));
+    await mkdir(join(dir, "drafts"));
+    await writeFile(join(dir, "drafts", "note.md"), "note");
+
+    const result = await renameWorkspaceEntry({
+      rootPath: dir,
+      targetPath: join(dir, "drafts"),
+      name: "notes",
+    });
+
+    expect(result.nodeType).toBe("directory");
+    expect(result.newPath).toBe(join(dir, "notes"));
+    expect(result.workspace.tree[0]?.name).toBe("notes");
+    expect(result.workspace.tree[0]?.children?.[0]?.name).toBe("note.md");
+  });
+
+  it("rejects workspace rename conflicts", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-rename-conflict-"));
+    await writeFile(join(dir, "old.md"), "old");
+    await writeFile(join(dir, "new.md"), "new");
+
+    await expect(
+      renameWorkspaceEntry({
+        rootPath: dir,
+        targetPath: join(dir, "old.md"),
+        name: "new.md",
+      }),
+    ).rejects.toThrow("already exists");
+  });
+
+  it("deletes workspace files and empty directories", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-delete-"));
+    await writeFile(join(dir, "note.md"), "note");
+    await mkdir(join(dir, "empty"));
+
+    const deletedFile = await deleteWorkspaceEntry({
+      rootPath: dir,
+      targetPath: join(dir, "note.md"),
+    });
+    const deletedDirectory = await deleteWorkspaceEntry({
+      rootPath: dir,
+      targetPath: join(dir, "empty"),
+    });
+
+    expect(deletedFile.nodeType).toBe("file");
+    expect(deletedDirectory.nodeType).toBe("directory");
+    expect(deletedDirectory.workspace.tree).toEqual([]);
+  });
+
+  it("rejects deleting non-empty workspace directories", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-delete-non-empty-"));
+    await mkdir(join(dir, "notes"));
+    await writeFile(join(dir, "notes", "note.md"), "note");
+
+    await expect(
+      deleteWorkspaceEntry({
+        rootPath: dir,
+        targetPath: join(dir, "notes"),
+      }),
+    ).rejects.toThrow();
   });
 });

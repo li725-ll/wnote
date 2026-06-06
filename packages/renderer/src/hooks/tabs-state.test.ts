@@ -3,10 +3,12 @@ import type { AssetIndex } from "@wnote/contracts";
 import {
   activeTab,
   closeTab,
+  closeTabsByPath,
   createInitialTabsState,
   createNewTab,
   markActiveTabSaved,
   openFileTab,
+  renameTabsPath,
   setActiveTabAssets,
   switchTab,
   updateActiveTabContent,
@@ -126,6 +128,41 @@ describe("tabs state", () => {
     expect(closeLast).toEqual({
       tabs: [{ id: "fresh", path: null, content: "", dirty: false }],
       activeTabId: "fresh",
+    });
+  });
+
+  it("closes tabs by matching file path", () => {
+    const createId = ids("a", "b", "fresh");
+    const first = openFileTab(createInitialTabsState(createId), {
+      path: "/docs/a.md",
+      content: "a",
+      createId,
+    });
+    const second = openFileTab(first, {
+      path: "/docs/b.md",
+      content: "b",
+      createId,
+    });
+
+    const next = closeTabsByPath(second, "/docs/b.md", createId);
+
+    expect(next.tabs.map((tab) => tab.path)).toEqual(["/docs/a.md"]);
+    expect(next.activeTabId).toBe("a");
+  });
+
+  it("renames tab paths without changing content state", () => {
+    const state = openFileTab(createInitialTabsState(ids("a")), {
+      path: "/docs/old.md",
+      content: "content",
+      createId: ids("unused"),
+    });
+
+    const next = renameTabsPath(state, "/docs/old.md", "/docs/new.md");
+
+    expect(next.tabs[0]).toMatchObject({
+      path: "/docs/new.md",
+      content: "content",
+      dirty: false,
     });
   });
 

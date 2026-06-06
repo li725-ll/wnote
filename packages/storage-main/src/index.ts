@@ -1,7 +1,17 @@
 import { randomUUID } from "crypto";
 import { existsSync } from "fs";
-import { copyFile, mkdir, readFile, readdir, stat, unlink, writeFile } from "fs/promises";
-import { basename, extname, join, relative, resolve } from "path";
+import {
+  copyFile,
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  rmdir,
+  stat,
+  unlink,
+  writeFile,
+} from "fs/promises";
+import { basename, dirname, extname, join, relative, resolve } from "path";
 import {
   buildAssetIndex,
   defaultAssetDirectory,
@@ -18,7 +28,11 @@ import type {
   WorkspaceCreateDirectoryRequest,
   WorkspaceCreateFileRequest,
   WorkspaceCreateFileResult,
+  WorkspaceDeleteRequest,
+  WorkspaceDeleteResult,
   WorkspaceOpenResult,
+  WorkspaceRenameRequest,
+  WorkspaceRenameResult,
   WorkspaceTreeNode,
 } from "@wnote/contracts";
 export {
@@ -99,6 +113,56 @@ export async function createWorkspaceDirectory(
   if (existsSync(directoryPath)) throw new Error("Workspace directory already exists");
   await mkdir(directoryPath);
   return readWorkspace(payload.rootPath);
+}
+
+export async function renameWorkspaceEntry(
+  payload: WorkspaceRenameRequest,
+): Promise<WorkspaceRenameResult> {
+  const targetPath = assertWorkspacePath(payload.rootPath, payload.targetPath);
+  const targetStat = await stat(targetPath);
+  const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
+  if (!nodeType) throw new Error("Workspace target is not a file or directory");
+  const parentPath = await resolveWorkspaceParent(payload.rootPath, dirname(targetPath));
+  const name =
+    nodeType === "file"
+      ? normalizeWorkspaceFileName(payload.name)
+      : normalizeWorkspaceName(payload.name);
+  const newPath = assertWorkspacePath(payload.rootPath, join(parentPath, name));
+  if (newPath === targetPath) {
+    return {
+      workspace: await readWorkspace(payload.rootPath),
+      oldPath: targetPath,
+      newPath,
+      nodeType,
+    };
+  }
+  if (existsSync(newPath)) throw new Error("Workspace target already exists");
+  await rename(targetPath, newPath);
+  return {
+    workspace: await readWorkspace(payload.rootPath),
+    oldPath: targetPath,
+    newPath,
+    nodeType,
+  };
+}
+
+export async function deleteWorkspaceEntry(
+  payload: WorkspaceDeleteRequest,
+): Promise<WorkspaceDeleteResult> {
+  const targetPath = assertWorkspacePath(payload.rootPath, payload.targetPath);
+  const targetStat = await stat(targetPath);
+  const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
+  if (!nodeType) throw new Error("Workspace target is not a file or directory");
+  if (nodeType === "directory") {
+    await rmdir(targetPath);
+  } else {
+    await unlink(targetPath);
+  }
+  return {
+    workspace: await readWorkspace(payload.rootPath),
+    deletedPath: targetPath,
+    nodeType,
+  };
 }
 
 export async function saveDocument(

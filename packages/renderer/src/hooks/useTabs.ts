@@ -3,10 +3,12 @@ import type { AssetIndex } from "@wnote/contracts";
 import {
   activeTab as getActiveTab,
   closeTab as closeTabState,
+  closeTabsByPath,
   createInitialTabsState,
   createNewTab,
   markActiveTabSaved,
   openFileTab,
+  renameTabsPath,
   setActiveTabAssets,
   switchTab as switchTabState,
   updateActiveTabContent,
@@ -51,6 +53,13 @@ export function useTabs() {
     [applyState],
   );
 
+  const closePath = useCallback(
+    (path: string) => {
+      applyState(closeTabsByPath(stateRef.current, path, genId));
+    },
+    [applyState],
+  );
+
   const switchTab = useCallback(
     (id: string) => {
       applyState(switchTabState(stateRef.current, id, contentSnapshotRef.current?.()));
@@ -87,6 +96,13 @@ export function useTabs() {
     [applyState],
   );
 
+  const renamePath = useCallback(
+    (oldPath: string, newPath: string) => {
+      applyState(renameTabsPath(stateRef.current, oldPath, newPath));
+    },
+    [applyState],
+  );
+
   const setAssets = useCallback(
     (assets?: AssetIndex) => {
       applyState(setActiveTabAssets(stateRef.current, assets));
@@ -100,10 +116,12 @@ export function useTabs() {
     activeTabId,
     newTab,
     closeTab,
+    closePath,
     switchTab,
     updateContent,
     openFile,
     markSaved,
+    renamePath,
     setAssets,
     setContentSnapshot,
   };

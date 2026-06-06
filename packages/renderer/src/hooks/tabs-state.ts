@@ -62,11 +62,23 @@ export function closeTab(state: TabsState, id: string, createId: TabIdFactory): 
   return { tabs: remaining, activeTabId: next.id };
 }
 
+export function closeTabsByPath(state: TabsState, path: string, createId: TabIdFactory): TabsState {
+  const matching = state.tabs.filter((tab) => tab.path === path);
+  return matching.reduce((current, tab) => closeTab(current, tab.id, createId), state);
+}
+
 export function switchTab(state: TabsState, id: string, snapshot?: string): TabsState {
   if (id === state.activeTabId || !state.tabs.some((tab) => tab.id === id)) return state;
   return {
     ...snapshotActiveTab(state, snapshot),
     activeTabId: id,
+  };
+}
+
+export function renameTabsPath(state: TabsState, oldPath: string, newPath: string): TabsState {
+  return {
+    ...state,
+    tabs: state.tabs.map((tab) => (tab.path === oldPath ? { ...tab, path: newPath } : tab)),
   };
 }
 

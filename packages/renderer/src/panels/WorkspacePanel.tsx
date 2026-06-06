@@ -4,6 +4,7 @@ import { hasWorkspaceDocuments } from "./workspace-panel-state";
 import styles from "./WorkspacePanel.module.css";
 
 type CreateMode = "file" | "directory";
+type RenameTarget = { path: string; name: string };
 
 interface WorkspacePanelProps {
   name?: string;
@@ -14,6 +15,9 @@ interface WorkspacePanelProps {
   onOpenFile: (filePath: string) => void;
   onCreateFile?: (name: string) => void;
   onCreateDirectory?: (name: string) => void;
+  onRefresh?: () => void;
+  onRename?: (path: string, name: string) => void;
+  onDelete?: (path: string) => void;
 }
 
 export function WorkspacePanel({
@@ -25,11 +29,15 @@ export function WorkspacePanel({
   onOpenFile,
   onCreateFile,
   onCreateDirectory,
+  onRefresh,
+  onRename,
+  onDelete,
 }: WorkspacePanelProps) {
   const hasDocuments = hasWorkspaceDocuments(tree);
   const canCreate = Boolean(name);
   const [createMode, setCreateMode] = useState<CreateMode | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
 
   const startCreate = (mode: CreateMode) => {
     setCreateMode(mode);
@@ -47,6 +55,30 @@ export function WorkspacePanel({
     if (createMode === "file") onCreateFile?.(nextName);
     if (createMode === "directory") onCreateDirectory?.(nextName);
     cancelCreate();
+  };
+
+  const submitRename = () => {
+    const nextName = draftName.trim();
+    if (!nextName || !renameTarget) return;
+    onRename?.(renameTarget.path, nextName);
+    cancelCreate();
+    setRenameTarget(null);
+  };
+
+  const cancelRename = () => {
+    setRenameTarget(null);
+    setDraftName("");
+  };
+
+  const startRename = (node: WorkspaceTreeNode) => {
+    setCreateMode(null);
+    setRenameTarget({ path: node.path, name: node.name });
+    setDraftName(node.name);
+  };
+
+  const submitDelete = (node: WorkspaceTreeNode) => {
+    if (!window.confirm(`删除 ${node.name}？`)) return;
+    onDelete?.(node.path);
   };
 
   return (
@@ -70,6 +102,9 @@ export function WorkspacePanel({
               >
                 + 文件夹
               </button>
+              <button className={styles.actionButton} type="button" onClick={onRefresh}>
+                刷新
+              </button>
             </>
           ) : null}
           <button className={styles.openButton} type="button" onClick={onOpenWorkspace}>
@@ -77,22 +112,28 @@ export function WorkspacePanel({
           </button>
         </div>
       </div>
-      {createMode ? (
+      {createMode || renameTarget ? (
         <div className={styles.createForm}>
           <input
-            aria-label={createMode === "file" ? "文件名" : "文件夹名"}
+            aria-label={renameTarget ? "重命名" : createMode === "file" ? "文件名" : "文件夹名"}
             value={draftName}
             autoFocus
             onChange={(event) => setDraftName(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") submitCreate();
-              if (event.key === "Escape") cancelCreate();
+              if (event.key === "Enter") {
+                if (renameTarget) submitRename();
+                else submitCreate();
+              }
+              if (event.key === "Escape") {
+                if (renameTarget) cancelRename();
+                else cancelCreate();
+              }
             }}
           />
-          <button type="button" onClick={submitCreate}>
-            创建
+          <button type="button" onClick={renameTarget ? submitRename : submitCreate}>
+            {renameTarget ? "保存" : "创建"}
           </button>
-          <button type="button" onClick={cancelCreate}>
+          <button type="button" onClick={renameTarget ? cancelRename : cancelCreate}>
             取消
           </button>
         </div>
@@ -114,6 +155,8 @@ export function WorkspacePanel({
               depth={0}
               activePath={activePath}
               onOpenFile={onOpenFile}
+              onRename={startRename}
+              onDelete={submitDelete}
             />
           ))}
         </ul>
@@ -127,11 +170,15 @@ function WorkspaceNode({
   depth,
   activePath,
   onOpenFile,
+  onRename,
+  onDelete,
 }: {
   node: WorkspaceTreeNode;
   depth: number;
   activePath?: string | null;
   onOpenFile: (filePath: string) => void;
+  onRename: (node: WorkspaceTreeNode) => void;
+  onDelete: (node: WorkspaceTreeNode) => void;
 }) {
   if (node.type === "directory") {
     return (
@@ -140,6 +187,28 @@ function WorkspaceNode({
           <summary className={styles.directory} style={{ paddingLeft: `${depth * 12 + 8}px` }}>
             <span className={styles.icon}>▸</span>
             <span className={styles.name}>{node.name}</span>
+            <span className={styles.nodeActions}>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onRename(node);
+                }}
+              >
+                改名
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDelete(node);
+                }}
+              >
+                删除
+              </button>
+            </span>
           </summary>
           <ul className={styles.children}>
             {(node.children ?? []).map((child) => (
@@ -149,6 +218,8 @@ function WorkspaceNode({
                 depth={depth + 1}
                 activePath={activePath}
                 onOpenFile={onOpenFile}
+                onRename={onRename}
+                onDelete={onDelete}
               />
             ))}
           </ul>
@@ -169,6 +240,42 @@ function WorkspaceNode({
       >
         <span className={styles.fileIcon}>md</span>
         <span className={styles.name}>{node.name}</span>
+        <span className={styles.nodeActions}>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRename(node);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                onRename(node);
+              }
+            }}
+          >
+            改名
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete(node);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                onDelete(node);
+              }
+            }}
+          >
+            删除
+          </span>
+        </span>
       </button>
     </li>
   );

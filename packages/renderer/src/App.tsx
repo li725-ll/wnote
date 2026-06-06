@@ -72,10 +72,12 @@ export default function App() {
     activeTabId,
     newTab,
     closeTab,
+    closePath,
     switchTab,
     updateContent,
     openFile,
     markSaved,
+    renamePath,
     setAssets,
     setContentSnapshot,
   } = useTabs();
@@ -123,11 +125,16 @@ export default function App() {
     workspace,
     loading: workspaceLoading,
     openWorkspace,
+    refreshWorkspace,
     openWorkspaceFile,
     createWorkspaceFile,
     createWorkspaceDirectory,
+    renameWorkspaceEntry,
+    deleteWorkspaceEntry,
   } = useWorkspace({
     onDocumentOpen: applyOpenedDocument,
+    onDeletePath: closePath,
+    onRenamePath: renamePath,
   });
 
   useAppSettingsSync({
@@ -311,6 +318,15 @@ export default function App() {
             }}
             onCreateDirectory={(name) => {
               void createWorkspaceDirectory(name);
+            }}
+            onRefresh={() => {
+              void refreshWorkspace();
+            }}
+            onRename={(path, name) => {
+              void renameWorkspaceEntry(path, name);
+            }}
+            onDelete={(path) => {
+              void deleteWorkspaceEntry(path);
             }}
           />
           <DocumentOutline

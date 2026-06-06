@@ -144,6 +144,41 @@ details[open] > .directory .icon {
   font-weight: 650;
 }
 
+.nodeActions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  opacity: 0;
+}
+
+.directory:hover .nodeActions,
+.file:hover .nodeActions,
+.directory:focus-within .nodeActions,
+.file:focus-within .nodeActions {
+  opacity: 1;
+}
+
+.nodeActions button,
+.nodeActions [role="button"] {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: 600 0.68rem/1 var(--editor-font);
+  padding: 4px 5px;
+}
+
+.nodeActions button:hover,
+.nodeActions [role="button"]:hover,
+.nodeActions [role="button"]:focus {
+  background: var(--color-hover-bg);
+  color: var(--color-accent);
+  outline: none;
+}
+
 .icon,
 .fileIcon {
   display: inline-flex;

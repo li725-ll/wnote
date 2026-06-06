@@ -29,8 +29,12 @@ export type {
   WorkspaceCreateDirectoryRequest,
   WorkspaceCreateFileRequest,
   WorkspaceCreateFileResult,
+  WorkspaceDeleteRequest,
+  WorkspaceDeleteResult,
   WorkspaceOpenResult,
   WorkspaceReadRequest,
+  WorkspaceRenameRequest,
+  WorkspaceRenameResult,
   WorkspaceTreeNode,
 } from "./ipc/types";
 export type { EditorCommandId, HeadingItem } from "./editor";

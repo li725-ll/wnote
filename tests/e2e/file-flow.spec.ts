@@ -111,3 +111,54 @@ test("creates files and folders from the workspace panel", async () => {
     await app.close();
   }
 });
+
+test("renames, refreshes, and deletes workspace files", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "wnote-workspace-manage-e2e-"));
+  writeFileSync(join(dir, "draft.md"), "# Draft\n\nBefore rename.");
+
+  const app = await launchWNote({
+    env: {
+      WNOTE_E2E_WORKSPACE_PATH: dir,
+    },
+  });
+
+  try {
+    await app.page.evaluate(async () => {
+      await window.electronAPI.invoke("layout:set", { leftOpen: true, leftWidth: 380 });
+    });
+    await app.page
+      .getByRole("button", { name: /^(打开|打开目录|切换)$/ })
+      .first()
+      .click();
+    await app.page.getByRole("button", { name: /draft\.md/ }).click();
+    await expect(app.page.locator(".ProseMirror")).toContainText("Draft");
+
+    await app.page
+      .getByRole("button", { name: /draft\.md/ })
+      .getByRole("button", { name: "改名", exact: true })
+      .click();
+    await app.page.getByRole("textbox", { name: "重命名" }).fill("renamed");
+    await app.page.getByRole("button", { name: "保存" }).click();
+    await expect(app.page.getByRole("button", { name: /renamed\.md/ })).toBeVisible();
+    await expect(app.page.getByRole("main").getByText("renamed.md")).toBeVisible();
+    expect(existsSync(join(dir, "draft.md"))).toBe(false);
+    expect(existsSync(join(dir, "renamed.md"))).toBe(true);
+
+    writeFileSync(join(dir, "external.md"), "# External");
+    await app.page.getByRole("button", { name: "刷新" }).click();
+    await expect(app.page.getByRole("button", { name: /external\.md/ })).toBeVisible();
+
+    app.page.once("dialog", async (dialog) => {
+      await dialog.accept();
+    });
+    await app.page
+      .getByRole("button", { name: /renamed\.md/ })
+      .locator('[role="button"]', { hasText: "删除" })
+      .click();
+    await expect(app.page.getByRole("button", { name: /renamed\.md/ })).toHaveCount(0);
+    expect(existsSync(join(dir, "renamed.md"))).toBe(false);
+    expect(app.errors).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});

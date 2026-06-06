@@ -68,6 +68,30 @@ export interface WorkspaceCreateFileResult {
   document: OpenDocumentResult;
 }
 
+export interface WorkspaceRenameRequest {
+  rootPath: string;
+  targetPath: string;
+  name: string;
+}
+
+export interface WorkspaceRenameResult {
+  workspace: WorkspaceOpenResult;
+  oldPath: string;
+  newPath: string;
+  nodeType: WorkspaceTreeNode["type"];
+}
+
+export interface WorkspaceDeleteRequest {
+  rootPath: string;
+  targetPath: string;
+}
+
+export interface WorkspaceDeleteResult {
+  workspace: WorkspaceOpenResult;
+  deletedPath: string;
+  nodeType: WorkspaceTreeNode["type"];
+}
+
 export interface ExportHtmlRequest {
   content: string;
   documentPath?: string;

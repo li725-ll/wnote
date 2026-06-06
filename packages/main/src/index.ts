@@ -13,19 +13,23 @@ import {
   type ShellPathRequest,
   type WorkspaceCreateDirectoryRequest,
   type WorkspaceCreateFileRequest,
+  type WorkspaceDeleteRequest,
   type WorkspaceReadRequest,
+  type WorkspaceRenameRequest,
 } from "@wnote/contracts";
 import {
   createWorkspaceDirectory,
   createWorkspaceFile,
   deleteAsset,
   deleteAssets,
+  deleteWorkspaceEntry,
   exportHtmlDocument,
   extractDocumentPathFromArgs,
   importAsset,
   isSupportedDocumentPath,
   openDocument,
   readWorkspace,
+  renameWorkspaceEntry,
   saveAsset,
   saveDocument,
 } from "@wnote/storage-main";
@@ -182,6 +186,16 @@ ipcMain.handle(
     return createWorkspaceDirectory(payload);
   },
 );
+
+ipcMain.handle(IpcChannel.WorkspaceRename, async (_event, payload: WorkspaceRenameRequest) => {
+  if (!payload?.rootPath || !payload.targetPath) return null;
+  return renameWorkspaceEntry(payload);
+});
+
+ipcMain.handle(IpcChannel.WorkspaceDelete, async (_event, payload: WorkspaceDeleteRequest) => {
+  if (!payload?.rootPath || !payload.targetPath) return null;
+  return deleteWorkspaceEntry(payload);
+});
 
 ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
