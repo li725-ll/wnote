@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { blockMenuCommands, slashCommands, editorCommands, tableCommands } from "./editor-commands";
+import {
+  blockMenuCommands,
+  slashCommandGroups,
+  slashCommands,
+  editorCommands,
+  tableCommands,
+} from "./editor-commands";
 import {
   tableDimensions,
   tableSelectionLabel,
@@ -19,6 +25,17 @@ describe("editor commands", () => {
     ]);
     expect(slashCommands("公式").map((command) => command.id)).toContain("math");
     expect(slashCommands("table").map((command) => command.id)).toEqual(["tableInsert"]);
+    expect(slashCommands("h6").map((command) => command.id)).toEqual(["heading6"]);
+    expect(slashCommands("todo").map((command) => command.id)).toEqual(["taskList"]);
+    expect(slashCommands("diagram").map((command) => command.id)).toEqual(["mermaid"]);
+  });
+
+  it("groups slash commands for menu display", () => {
+    expect(slashCommandGroups("").map((group) => [group.id, group.commands.length])).toEqual([
+      ["block", 12],
+      ["insert", 5],
+    ]);
+    expect(slashCommandGroups("table").map((group) => group.id)).toEqual(["insert"]);
   });
 
   it("keeps block menu commands grouped in menu order", () => {

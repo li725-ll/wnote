@@ -16,6 +16,7 @@ export interface EditorCommandDefinition {
   label: string;
   hint?: string;
   group: EditorCommandGroup;
+  keywords?: readonly string[];
   slash?: boolean;
   blockMenu?: boolean;
   danger?: boolean;
@@ -29,6 +30,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "段落",
     hint: "普通文本",
     group: "block",
+    keywords: ["text", "p", "duanluo", "zhengwen"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).setParagraph().run(),
@@ -38,6 +40,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 1",
     hint: "一级标题",
     group: "block",
+    keywords: ["h1", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 1 }).run(),
@@ -47,6 +50,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 2",
     hint: "二级标题",
     group: "block",
+    keywords: ["h2", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 2 }).run(),
@@ -56,6 +60,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 3",
     hint: "三级标题",
     group: "block",
+    keywords: ["h3", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 3 }).run(),
@@ -65,6 +70,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 4",
     hint: "四级标题",
     group: "block",
+    keywords: ["h4", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 4 }).run(),
@@ -74,6 +80,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 5",
     hint: "五级标题",
     group: "block",
+    keywords: ["h5", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 5 }).run(),
@@ -83,6 +90,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "标题 6",
     hint: "六级标题",
     group: "block",
+    keywords: ["h6", "title", "biaoti"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleHeading({ level: 6 }).run(),
@@ -98,6 +106,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "引用",
     hint: "引用块",
     group: "block",
+    keywords: ["quote", "blockquote", "yinyong"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleBlockquote().run(),
@@ -107,6 +116,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "无序列表",
     hint: "项目符号",
     group: "block",
+    keywords: ["bullet", "ul", "list", "liebiao"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleBulletList().run(),
@@ -116,6 +126,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "有序列表",
     hint: "编号列表",
     group: "block",
+    keywords: ["number", "ol", "list", "liebiao"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleOrderedList().run(),
@@ -125,6 +136,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "任务列表",
     hint: "待办项",
     group: "block",
+    keywords: ["todo", "task", "check", "renwu"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleTaskList().run(),
@@ -134,6 +146,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "代码块",
     hint: "带高亮",
     group: "block",
+    keywords: ["code", "fence", "daima"],
     slash: true,
     blockMenu: true,
     run: (editor, context) => blockChain(editor, context).toggleCodeBlock().run(),
@@ -183,6 +196,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "表格",
     hint: "3 x 3",
     group: "insert",
+    keywords: ["table", "grid", "biaoge"],
     slash: true,
     blockMenu: true,
     run: (editor, context) =>
@@ -198,6 +212,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "图片",
     hint: "占位路径",
     group: "insert",
+    keywords: ["image", "img", "photo", "tupian"],
     slash: true,
     run: (editor, _context, payload) => {
       const src = typeof payload === "string" ? payload : "url";
@@ -209,6 +224,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "公式",
     hint: "块公式",
     group: "insert",
+    keywords: ["math", "latex", "katex", "gongshi"],
     slash: true,
     run: (editor) =>
       editor
@@ -233,6 +249,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "Mermaid",
     hint: "图表",
     group: "insert",
+    keywords: ["diagram", "chart", "flow", "tu"],
     slash: true,
     run: (editor) =>
       editor
@@ -246,6 +263,7 @@ export const editorCommands: EditorCommandDefinition[] = [
     label: "分割线",
     hint: "水平线",
     group: "insert",
+    keywords: ["hr", "line", "divider", "fengexian"],
     slash: true,
     blockMenu: true,
     run: (editor) => editor.chain().focus().setHorizontalRule().run(),
@@ -385,17 +403,44 @@ export const editorCommands: EditorCommandDefinition[] = [
 export const blockMenuCommands = editorCommands.filter((command) => command.blockMenu);
 export const tableCommands = editorCommands.filter((command) => command.group === "table");
 
+export interface SlashCommandGroup {
+  id: EditorCommandGroup;
+  label: string;
+  commands: EditorCommandDefinition[];
+}
+
+const slashGroupLabels: Record<EditorCommandGroup, string> = {
+  block: "文本块",
+  insert: "插入",
+  format: "格式",
+  table: "表格",
+  danger: "危险操作",
+};
+
+const slashGroupOrder: EditorCommandGroup[] = ["block", "insert", "format", "table", "danger"];
+
 export function slashCommands(query: string) {
   const normalized = query.trim().toLowerCase();
   const commands = editorCommands.filter((command) => command.slash);
   if (!normalized) return commands;
   return commands.filter((command) => {
-    const haystack = [command.id, command.label, command.hint]
+    const haystack = [command.id, command.label, command.hint, ...(command.keywords ?? [])]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
     return haystack.includes(normalized);
   });
+}
+
+export function slashCommandGroups(query: string): SlashCommandGroup[] {
+  const commands = slashCommands(query);
+  return slashGroupOrder
+    .map((group) => ({
+      id: group,
+      label: slashGroupLabels[group],
+      commands: commands.filter((command) => command.group === group),
+    }))
+    .filter((group) => group.commands.length > 0);
 }
 
 export function runEditorCommand(

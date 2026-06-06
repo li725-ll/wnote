@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
-import { slashCommands, type EditorCommandDefinition } from "./editor-commands";
+import { slashCommandGroups, slashCommands, type EditorCommandDefinition } from "./editor-commands";
 import { belowFloatingPoint } from "./floating-position";
 import {
   nextSlashMenuSelected,
@@ -187,6 +187,8 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
 
   if (!editor || !state.visible) return null;
   const commands = slashCommands(state.query);
+  const groups = slashCommandGroups(state.query);
+  let commandIndex = 0;
 
   return (
     <div
@@ -202,24 +204,33 @@ export function SlashMenu({ editor, containerRef }: SlashMenuProps) {
       onMouseDown={(event) => event.preventDefault()}
     >
       {commands.length ? (
-        commands.map((item, index) => (
-          <button
-            key={item.id}
-            className={styles.item}
-            data-active={index === state.selected ? "true" : "false"}
-            id={`${menuId}-option-${index}`}
-            role="option"
-            aria-selected={index === state.selected}
-            type="button"
-            onMouseEnter={() => setState((current) => ({ ...current, selected: index }))}
-            onClick={() => {
-              execute(editor, state, item);
-              setState(hiddenState);
-            }}
-          >
-            <span className={styles.label}>{item.label}</span>
-            <span className={styles.hint}>{item.hint}</span>
-          </button>
+        groups.map((group) => (
+          <div key={group.id} className={styles.group}>
+            <div className={styles.groupLabel}>{group.label}</div>
+            {group.commands.map((item) => {
+              const index = commandIndex;
+              commandIndex += 1;
+              return (
+                <button
+                  key={item.id}
+                  className={styles.item}
+                  data-active={index === state.selected ? "true" : "false"}
+                  id={`${menuId}-option-${index}`}
+                  role="option"
+                  aria-selected={index === state.selected}
+                  type="button"
+                  onMouseEnter={() => setState((current) => ({ ...current, selected: index }))}
+                  onClick={() => {
+                    execute(editor, state, item);
+                    setState(hiddenState);
+                  }}
+                >
+                  <span className={styles.label}>{item.label}</span>
+                  <span className={styles.hint}>{item.hint}</span>
+                </button>
+              );
+            })}
+          </div>
         ))
       ) : (
         <div className={styles.empty}>没有匹配的命令</div>
