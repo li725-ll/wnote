@@ -40,6 +40,10 @@ export enum IpcChannel {
   RecentFilesClear = "recent-files:clear",
   LastOpenedFileGet = "last-opened-file:get",
 
+  WorkspaceOpen = "workspace:open",
+  WorkspaceRead = "workspace:read",
+  WorkspaceFileOpen = "workspace:file-open",
+
   FormatBold = "format:bold",
   FormatItalic = "format:italic",
   FormatStrikethrough = "format:strikethrough",

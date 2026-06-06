@@ -11,6 +11,7 @@ import {
   type ExportPreviewRequest,
   type LayoutState,
   type ShellPathRequest,
+  type WorkspaceReadRequest,
 } from "@wnote/contracts";
 import {
   deleteAsset,
@@ -18,7 +19,9 @@ import {
   exportHtmlDocument,
   extractDocumentPathFromArgs,
   importAsset,
+  isSupportedDocumentPath,
   openDocument,
+  readWorkspace,
   saveAsset,
   saveDocument,
 } from "@wnote/storage-main";
@@ -121,6 +124,38 @@ ipcMain.handle(IpcChannel.RecentFilesClear, async () => {
 ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
   const filePath = getLastOpenedFile();
   if (!filePath || !existsSync(filePath)) return null;
+  return openDocument(filePath);
+});
+
+ipcMain.handle(IpcChannel.WorkspaceOpen, async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const overridePath = e2ePath("WNOTE_E2E_WORKSPACE_PATH");
+  const rootPath =
+    overridePath ??
+    (
+      await dialog.showOpenDialog(win, {
+        properties: ["openDirectory"],
+      })
+    ).filePaths[0];
+  if (!rootPath) return null;
+  const workspace = await readWorkspace(rootPath);
+  kvSet("workspacePath", rootPath);
+  log.info("Workspace opened:", rootPath);
+  return workspace;
+});
+
+ipcMain.handle(IpcChannel.WorkspaceRead, async (_event, payload: WorkspaceReadRequest = {}) => {
+  const rootPath = payload.rootPath ?? kvGet<string | null>("workspacePath", null);
+  if (!rootPath || !existsSync(rootPath)) return null;
+  return readWorkspace(rootPath);
+});
+
+ipcMain.handle(IpcChannel.WorkspaceFileOpen, async (_event, filePath: string) => {
+  if (!filePath || !isSupportedDocumentPath(filePath)) return null;
+  rememberOpenedFile(filePath);
+  const settings = await loadSettings();
+  for (const w of windowManager.getAll()) createAppMenu(w, settings);
   return openDocument(filePath);
 });
 

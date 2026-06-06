@@ -15,6 +15,8 @@ import type {
   SaveAssetRequest,
   SaveDocumentRequest,
   SaveDocumentResult,
+  WorkspaceOpenResult,
+  WorkspaceTreeNode,
 } from "@wnote/contracts";
 export {
   exportHtmlDocument,
@@ -25,6 +27,18 @@ export {
 } from "./export-html";
 
 export const SUPPORTED_DOCUMENT_EXTENSIONS = new Set([".md", ".markdown", ".txt"]);
+const IGNORED_WORKSPACE_DIRECTORIES = new Set([
+  ".git",
+  ".hg",
+  ".svn",
+  "node_modules",
+  "dist",
+  "build",
+  "out",
+  ".next",
+  ".vite",
+]);
+const MAX_WORKSPACE_DEPTH = 8;
 
 export function isSupportedDocumentPath(filePath: string): boolean {
   return SUPPORTED_DOCUMENT_EXTENSIONS.has(extname(filePath).toLowerCase()) && existsSync(filePath);
@@ -46,6 +60,16 @@ export async function openDocument(filePath: string): Promise<OpenDocumentResult
     content,
     stat: await getFileStat(filePath),
     assets: await buildDocumentAssetIndex(content, filePath),
+  };
+}
+
+export async function readWorkspace(rootPath: string): Promise<WorkspaceOpenResult> {
+  const rootStat = await stat(rootPath);
+  if (!rootStat.isDirectory()) throw new Error("Workspace path is not a directory");
+  return {
+    rootPath,
+    name: basename(rootPath),
+    tree: await scanWorkspaceDirectory(rootPath, 0),
   };
 }
 
@@ -189,6 +213,48 @@ async function scanDocumentAssets(documentPath: string): Promise<AssetRef[]> {
     });
   }
   return assets;
+}
+
+async function scanWorkspaceDirectory(
+  directory: string,
+  depth: number,
+): Promise<WorkspaceTreeNode[]> {
+  if (depth > MAX_WORKSPACE_DEPTH) return [];
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nodes: WorkspaceTreeNode[] = [];
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue;
+    const fullPath = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (IGNORED_WORKSPACE_DIRECTORIES.has(entry.name)) continue;
+      const children = await scanWorkspaceDirectory(fullPath, depth + 1);
+      if (children.length === 0) continue;
+      nodes.push({
+        name: entry.name,
+        path: fullPath,
+        type: "directory",
+        children,
+      });
+      continue;
+    }
+
+    if (!entry.isFile() || !SUPPORTED_DOCUMENT_EXTENSIONS.has(extname(entry.name).toLowerCase())) {
+      continue;
+    }
+    nodes.push({
+      name: entry.name,
+      path: fullPath,
+      type: "file",
+    });
+  }
+
+  return nodes.sort(compareWorkspaceNodes);
+}
+
+function compareWorkspaceNodes(left: WorkspaceTreeNode, right: WorkspaceTreeNode): number {
+  if (left.type !== right.type) return left.type === "directory" ? -1 : 1;
+  return left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" });
 }
 
 function mimeFromExtension(ext: string): string | undefined {

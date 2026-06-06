@@ -3,6 +3,7 @@ import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import type { SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
+import { WorkspacePanel } from "./panels/WorkspacePanel";
 import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
@@ -25,6 +26,7 @@ import { useEditorAssetActions } from "./hooks/useEditorAssetActions";
 import { useExportActions } from "./hooks/useExportActions";
 import { useWindowTitle } from "./hooks/useWindowTitle";
 import { useDocumentOpen } from "./hooks/useDocumentOpen";
+import { useWorkspace } from "./hooks/useWorkspace";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -116,6 +118,14 @@ export default function App() {
     onDocumentOpen: showEditor,
     openFile,
     setWindowTitle,
+  });
+  const {
+    workspace,
+    loading: workspaceLoading,
+    openWorkspace,
+    openWorkspaceFile,
+  } = useWorkspace({
+    onDocumentOpen: applyOpenedDocument,
   });
 
   useAppSettingsSync({
@@ -250,12 +260,13 @@ export default function App() {
         editorRef.current?.focus();
       },
       openFile: openDocumentDialog,
+      openWorkspace,
       save: handleSave,
       openExportDialog,
       toggleOutline,
       runFormat,
     }),
-    [handleSave, openDocumentDialog, openExportDialog, runFormat, toggleOutline],
+    [handleSave, openDocumentDialog, openExportDialog, openWorkspace, runFormat, toggleOutline],
   );
 
   const handleWelcomeStart = () => {
@@ -283,6 +294,17 @@ export default function App() {
       toggleLeftSignal={toggleOutlineSignal}
       left={
         <>
+          <WorkspacePanel
+            name={workspace?.name}
+            tree={workspace?.tree ?? []}
+            activePath={activeTab.path}
+            loading={workspaceLoading}
+            onOpenWorkspace={openWorkspace}
+            onOpenFile={(filePath) => {
+              void openWorkspaceFile(filePath);
+              editorRef.current?.focus();
+            }}
+          />
           <DocumentOutline
             headings={headings}
             onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}

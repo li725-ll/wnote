@@ -14,6 +14,7 @@ export interface PaletteCommand {
 export interface PaletteCommandActions {
   newFile: () => void;
   openFile: () => void | Promise<void>;
+  openWorkspace: () => void | Promise<void>;
   save: (saveAs?: boolean) => void | Promise<void>;
   openExportDialog: (format: ExportFormat) => void;
   toggleOutline: () => void;
@@ -292,6 +293,13 @@ export function buildPaletteCommands(actions: PaletteCommandActions): PaletteCom
       group: "文件",
       shortcut: "⌘O",
       run: actions.openFile,
+    },
+    {
+      id: "open-workspace",
+      label: "打开工作区",
+      keywords: ["open", "workspace", "folder", "directory", "dakai", "gongzuoqu"],
+      group: "文件",
+      run: actions.openWorkspace,
     },
     {
       id: "save",

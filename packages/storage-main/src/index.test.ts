@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
-import { deleteAsset, importAsset, saveAsset } from ".";
+import { deleteAsset, importAsset, readWorkspace, saveAsset } from ".";
 import {
   exportHtmlDocument,
   renderExportHtml,
@@ -294,5 +294,38 @@ describe("@wnote/storage-main assets", () => {
         content: "",
       }),
     ).rejects.toThrow("outside the document assets directory");
+  });
+});
+
+describe("@wnote/storage-main workspace", () => {
+  it("scans supported documents in a stable directory-first order", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-"));
+    await mkdir(join(dir, "notes"));
+    await mkdir(join(dir, "node_modules"));
+    await mkdir(join(dir, ".hidden"));
+    await writeFile(join(dir, "b.txt"), "b");
+    await writeFile(join(dir, "a.md"), "a");
+    await writeFile(join(dir, "ignore.png"), "png");
+    await writeFile(join(dir, "notes", "daily.markdown"), "daily");
+    await writeFile(join(dir, "node_modules", "package.md"), "ignored");
+    await writeFile(join(dir, ".hidden", "secret.md"), "ignored");
+
+    const workspace = await readWorkspace(dir);
+
+    expect(workspace.rootPath).toBe(dir);
+    expect(workspace.tree.map((node) => `${node.type}:${node.name}`)).toEqual([
+      "directory:notes",
+      "file:a.md",
+      "file:b.txt",
+    ]);
+    expect(workspace.tree[0]?.children?.map((node) => node.name)).toEqual(["daily.markdown"]);
+  });
+
+  it("rejects non-directory workspace paths", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-file-"));
+    const filePath = join(dir, "note.md");
+    await writeFile(filePath, "note");
+
+    await expect(readWorkspace(filePath)).rejects.toThrow("Workspace path is not a directory");
   });
 });

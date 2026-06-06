@@ -5,6 +5,7 @@ function createActions(): PaletteCommandActions {
   return {
     newFile: vi.fn(),
     openFile: vi.fn(),
+    openWorkspace: vi.fn(),
     save: vi.fn(),
     openExportDialog: vi.fn(),
     toggleOutline: vi.fn(),
@@ -16,10 +17,11 @@ describe("palette commands", () => {
   it("builds stable command metadata", () => {
     const commands = buildPaletteCommands(createActions());
 
-    expect(commands).toHaveLength(39);
-    expect(commands.slice(0, 7).map((command) => command.id)).toEqual([
+    expect(commands).toHaveLength(40);
+    expect(commands.slice(0, 8).map((command) => command.id)).toEqual([
       "new-file",
       "open-file",
+      "open-workspace",
       "save",
       "save-as",
       "export-html",
@@ -43,6 +45,7 @@ describe("palette commands", () => {
 
     commands.find((command) => command.id === "new-file")?.run();
     commands.find((command) => command.id === "open-file")?.run();
+    commands.find((command) => command.id === "open-workspace")?.run();
     commands.find((command) => command.id === "save")?.run();
     commands.find((command) => command.id === "save-as")?.run();
     commands.find((command) => command.id === "export-html")?.run();
@@ -51,6 +54,7 @@ describe("palette commands", () => {
 
     expect(actions.newFile).toHaveBeenCalledTimes(1);
     expect(actions.openFile).toHaveBeenCalledTimes(1);
+    expect(actions.openWorkspace).toHaveBeenCalledTimes(1);
     expect(actions.save).toHaveBeenNthCalledWith(1, false);
     expect(actions.save).toHaveBeenNthCalledWith(2, true);
     expect(actions.openExportDialog).toHaveBeenNthCalledWith(1, "html");

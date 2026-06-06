@@ -4,6 +4,6 @@ export interface LayoutState {
 }
 
 export const defaultLayoutState: LayoutState = {
-  leftOpen: false,
+  leftOpen: true,
   leftWidth: 320,
 };

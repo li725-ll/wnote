@@ -26,6 +26,9 @@ export type {
   SaveDocumentResult,
   ShellOpenPathResult,
   ShellPathRequest,
+  WorkspaceOpenResult,
+  WorkspaceReadRequest,
+  WorkspaceTreeNode,
 } from "./ipc/types";
 export type { EditorCommandId, HeadingItem } from "./editor";
 export { defaultSettings } from "./settings";

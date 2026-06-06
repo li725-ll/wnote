@@ -1,6 +1,8 @@
 .sidebar {
   position: relative;
+  z-index: 2;
   height: 100%;
+  min-width: 0;
   overflow: hidden;
   background: var(--sidebar-bg);
   display: flex;

@@ -12,6 +12,9 @@
 }
 
 .center {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
   overflow-y: auto;
   height: 100%;
   scrollbar-width: none;
@@ -23,6 +26,7 @@
 
 .resizer {
   position: relative;
+  z-index: 3;
   width: 1px;
   cursor: col-resize;
   background: var(--sidebar-border);

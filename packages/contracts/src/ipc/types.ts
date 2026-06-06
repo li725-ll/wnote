@@ -33,6 +33,23 @@ export interface SaveDocumentResult {
   assets?: AssetIndex;
 }
 
+export interface WorkspaceTreeNode {
+  name: string;
+  path: string;
+  type: "directory" | "file";
+  children?: WorkspaceTreeNode[];
+}
+
+export interface WorkspaceOpenResult {
+  rootPath: string;
+  name: string;
+  tree: WorkspaceTreeNode[];
+}
+
+export interface WorkspaceReadRequest {
+  rootPath?: string;
+}
+
 export interface ExportHtmlRequest {
   content: string;
   documentPath?: string;
