@@ -6,20 +6,16 @@ import {
   reconcileCommandPaletteSelected,
   type CommandPaletteNavigationKey,
 } from "./command-palette-state";
+import {
+  buildPaletteCommands,
+  type PaletteCommand,
+  type PaletteCommandActions,
+} from "../commands/palette-commands";
 import styles from "./CommandPalette.module.css";
-
-export interface PaletteCommand {
-  id: string;
-  label: string;
-  keywords: string[];
-  group: string;
-  shortcut?: string;
-  run: () => void | Promise<void>;
-}
 
 interface CommandPaletteProps {
   open: boolean;
-  commands: PaletteCommand[];
+  actions: PaletteCommandActions;
   onClose: () => void;
 }
 
@@ -27,8 +23,9 @@ const navigationKeys = new Set<string>(["ArrowDown", "ArrowUp", "Home", "End"]);
 const paletteId = "wnote-command-palette";
 const listId = `${paletteId}-list`;
 
-export function CommandPalette({ open, commands, onClose }: CommandPaletteProps) {
+export function CommandPalette({ open, actions, onClose }: CommandPaletteProps) {
   if (!open) return null;
+  const commands = buildPaletteCommands(actions);
   return <CommandPaletteContent key="open" commands={commands} onClose={onClose} />;
 }
 

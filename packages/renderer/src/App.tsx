@@ -10,7 +10,7 @@ import type { ExportFormat } from "./export/export-state";
 import { Toast } from "./components/Toast";
 import { defaultExportOptions } from "./export/export-state";
 import { buildDocumentAssetIndex } from "./assets/asset-state";
-import { buildPaletteCommands } from "./commands/palette-commands";
+import type { PaletteCommandActions } from "./commands/palette-commands";
 import { useToastController } from "./hooks/useToastController";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
@@ -243,19 +243,18 @@ export default function App() {
     editorRef.current?.focus();
   }, []);
 
-  const commands = useMemo(
-    () =>
-      buildPaletteCommands({
-        newFile: () => {
-          newTabRef.current();
-          editorRef.current?.focus();
-        },
-        openFile: openDocumentDialog,
-        save: handleSave,
-        openExportDialog,
-        toggleOutline,
-        runFormat,
-      }),
+  const commandActions = useMemo<PaletteCommandActions>(
+    () => ({
+      newFile: () => {
+        newTabRef.current();
+        editorRef.current?.focus();
+      },
+      openFile: openDocumentDialog,
+      save: handleSave,
+      openExportDialog,
+      toggleOutline,
+      runFormat,
+    }),
     [handleSave, openDocumentDialog, openExportDialog, runFormat, toggleOutline],
   );
 
@@ -324,7 +323,7 @@ export default function App() {
             {paletteOpen ? (
               <CommandPalette
                 open={paletteOpen}
-                commands={commands}
+                actions={commandActions}
                 onClose={() => {
                   setPaletteOpen(false);
                   editorRef.current?.focus();

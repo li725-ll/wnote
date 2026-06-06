@@ -136,6 +136,24 @@ Build result:
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.
 
+## 2026-06-06 Command Palette Command Split
+
+Fourth bundle-reduction pass:
+
+- Moved command palette command construction into the lazy Command Palette chunk.
+- App now passes only stable command action callbacks to the lazy component.
+- The renderer shell no longer synchronously loads palette command metadata or editor format command
+  lambdas just to boot the editor view.
+
+Build result:
+
+- Renderer HTML entry script dropped from about `129 kB` to about `120 kB` minified.
+- Command Palette lazy chunk increased from about `3 kB` to about `10 kB` minified.
+- No changes to editor, Tiptap vendor, Markdown vendor, or Mermaid core chunk policy.
+
+Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
+E2E.
+
 ## 2026-06-06 Renderer Resource Panel Split
 
 Second bundle-reduction pass:

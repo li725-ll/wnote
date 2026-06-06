@@ -1,7 +1,15 @@
 import type { EditorRef } from "@wnote/editor-react";
-import type { PaletteCommand } from "../components/CommandPalette";
 import type { ExportFormat } from "../export/export-state";
 import { editorFormatCommands, type EditorFormatCommand } from "./editor-format-commands";
+
+export interface PaletteCommand {
+  id: string;
+  label: string;
+  keywords: string[];
+  group: string;
+  shortcut?: string;
+  run: () => void | Promise<void>;
+}
 
 export interface PaletteCommandActions {
   newFile: () => void;
