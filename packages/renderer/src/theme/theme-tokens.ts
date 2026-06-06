@@ -15,6 +15,10 @@ export const requiredThemeTokens = [
   "--color-table-header-bg",
   "--sidebar-bg",
   "--sidebar-border",
+  "--editor-max-width",
+  "--editor-font",
+  "--editor-font-size",
+  "--editor-line-height",
   "--editor-mono-font",
 ] as const;
 
@@ -47,6 +51,11 @@ export const themeTokenValues: Record<ThemeName, Record<ThemeToken, string>> = {
     "--color-table-header-bg": "#f6f8fa",
     "--sidebar-bg": "#f6f8fa",
     "--sidebar-border": "#d0d7de",
+    "--editor-max-width": "860px",
+    "--editor-font":
+      '"HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif',
+    "--editor-font-size": "16px",
+    "--editor-line-height": "1.72",
     "--editor-mono-font":
       '"JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace',
   },
@@ -67,6 +76,11 @@ export const themeTokenValues: Record<ThemeName, Record<ThemeToken, string>> = {
     "--color-table-header-bg": "#161b22",
     "--sidebar-bg": "#010409",
     "--sidebar-border": "#30363d",
+    "--editor-max-width": "860px",
+    "--editor-font":
+      '"HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif',
+    "--editor-font-size": "16px",
+    "--editor-line-height": "1.72",
     "--editor-mono-font":
       '"JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace',
   },

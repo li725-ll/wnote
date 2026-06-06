@@ -27,6 +27,10 @@ describe("renderer theme tokens", () => {
       "--color-table-header-bg",
       "--sidebar-bg",
       "--sidebar-border",
+      "--editor-max-width",
+      "--editor-font",
+      "--editor-font-size",
+      "--editor-line-height",
       "--editor-mono-font",
     ]);
   });

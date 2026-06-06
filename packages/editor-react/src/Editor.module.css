@@ -12,13 +12,23 @@
 }
 
 .editor {
-  max-width: var(--editor-max-width);
+  max-width: var(--editor-max-width, 860px);
   min-height: 100%;
   margin: 0 auto;
   padding: 2.5rem 2rem;
-  font-family: var(--editor-font);
-  font-size: var(--editor-font-size);
-  line-height: var(--editor-line-height);
+  font-family: var(
+    --editor-font,
+    "HarmonyOS Sans SC",
+    "PingFang SC",
+    "Microsoft YaHei",
+    "Noto Sans CJK SC",
+    "Source Han Sans SC",
+    "Helvetica Neue",
+    Arial,
+    sans-serif
+  );
+  font-size: var(--editor-font-size, 16px);
+  line-height: var(--editor-line-height, 1.72);
   outline: none;
 }
 
@@ -34,6 +44,7 @@
 .editor :global(h6) {
   line-height: 1.35;
   margin: 0.8em 0 0.35em;
+  font-weight: 700;
 }
 
 .editor :global(h1) {
@@ -48,19 +59,32 @@
   font-size: 1.25em;
 }
 
+.editor :global(h4) {
+  font-size: 1.1em;
+}
+
+.editor :global(h5) {
+  font-size: 1em;
+}
+
+.editor :global(h6) {
+  font-size: 0.92em;
+  color: var(--color-muted);
+}
+
 .editor :global(pre) {
   position: relative;
   padding: 0.9em 1em;
   overflow-x: auto;
   border-radius: 8px;
-  background: var(--color-code-bg);
-  font-family: var(--editor-mono-font);
+  background: var(--color-code-bg, color-mix(in srgb, var(--color-border) 30%, transparent));
+  font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
 }
 
 .editor :global(code) {
   border-radius: 3px;
-  background: var(--color-code-bg);
-  font-family: var(--editor-mono-font);
+  background: var(--color-code-bg, color-mix(in srgb, var(--color-border) 30%, transparent));
+  font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
   padding: 0.1em 0.25em;
 }
 
