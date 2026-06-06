@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { Selection } from "@tiptap/pm/state";
 import { tableCommands, type EditorCommandDefinition } from "./editor-commands";
 import { centeredFloatingPoint } from "./floating-position";
 import styles from "./TableToolbar.module.css";
@@ -17,6 +18,7 @@ interface TableState {
   placement: "top" | "bottom";
   pos: number;
   size: number;
+  summary: string;
 }
 
 interface TableInfo {
@@ -31,6 +33,7 @@ const hiddenState: TableState = {
   placement: "top",
   pos: 0,
   size: 0,
+  summary: "",
 };
 
 const tableToolbarBox = { width: 672, height: 32 };
@@ -83,6 +86,7 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
       placement: position.placement,
       pos: info.pos,
       size: info.node.nodeSize,
+      summary: tableToolbarSummary(info.node, editor.state.selection),
     });
   }, [containerRef, editor]);
 
@@ -122,6 +126,9 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
       style={{ left: state.left, top: state.top }}
       onMouseDown={(event) => event.preventDefault()}
     >
+      <div className={styles.summary} aria-label="Table selection summary">
+        {state.summary}
+      </div>
       {tableToolbarCommandGroups.map((group, index) => (
         <div
           key={group.join(":")}
@@ -204,4 +211,58 @@ export function tableToolbarShortLabel(id: string): string {
     tableSplitCell: "Split",
   };
   return labels[id] ?? id;
+}
+
+export interface TableDimensions {
+  rows: number;
+  columns: number;
+}
+
+export function tableDimensions(node: ProseMirrorNode): TableDimensions {
+  let columns = 0;
+  node.forEach((row) => {
+    let rowColumns = 0;
+    row.forEach((cell) => {
+      const colspan = Number(cell.attrs.colspan ?? 1);
+      rowColumns += Number.isFinite(colspan) && colspan > 0 ? colspan : 1;
+    });
+    columns = Math.max(columns, rowColumns);
+  });
+
+  return {
+    rows: node.childCount,
+    columns,
+  };
+}
+
+export function tableSelectionLabel(selection: Selection): string | null {
+  const maybeCellSelection = selection as Selection & {
+    isColSelection?: () => boolean;
+    isRowSelection?: () => boolean;
+    ranges?: readonly unknown[];
+  };
+
+  if (
+    typeof maybeCellSelection.isRowSelection === "function" &&
+    maybeCellSelection.isRowSelection()
+  ) {
+    return "row selected";
+  }
+
+  if (
+    typeof maybeCellSelection.isColSelection === "function" &&
+    maybeCellSelection.isColSelection()
+  ) {
+    return "column selected";
+  }
+
+  const rangeCount = maybeCellSelection.ranges?.length ?? 1;
+  return rangeCount > 1 ? `${rangeCount} cells selected` : null;
+}
+
+export function tableToolbarSummary(node: ProseMirrorNode, selection: Selection): string {
+  const dimensions = tableDimensions(node);
+  const selectionLabel = tableSelectionLabel(selection);
+  const sizeLabel = `${dimensions.rows}x${dimensions.columns}`;
+  return selectionLabel ? `${sizeLabel} - ${selectionLabel}` : sizeLabel;
 }

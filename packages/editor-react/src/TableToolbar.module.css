@@ -13,6 +13,21 @@
   padding: 2px;
 }
 
+.summary {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  height: 1.55rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-muted);
+  font: 650 0.68rem/1 var(--editor-font);
+  padding: 0 0.45rem;
+  white-space: nowrap;
+}
+
 .toolbar[data-placement="top"] {
   transform: translateY(-100%);
 }

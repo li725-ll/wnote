@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { blockMenuCommands, slashCommands, editorCommands, tableCommands } from "./editor-commands";
-import { tableToolbarCommandGroups, tableToolbarShortLabel } from "./TableToolbar";
+import {
+  tableDimensions,
+  tableSelectionLabel,
+  tableToolbarCommandGroups,
+  tableToolbarShortLabel,
+} from "./TableToolbar";
 
 describe("editor commands", () => {
   it("filters slash commands by id and labels", () => {
@@ -134,5 +139,36 @@ describe("editor commands", () => {
     expect(tableCommands.filter((command) => command.danger).map((command) => command.id)).toEqual([
       "tableDelete",
     ]);
+  });
+
+  it("summarizes table dimensions from row and cell structure", () => {
+    const node = {
+      childCount: 2,
+      forEach(
+        callback: (row: { forEach: (cellCallback: (cell: unknown) => void) => void }) => void,
+      ) {
+        callback({
+          forEach(cellCallback) {
+            cellCallback({ attrs: { colspan: 1 } });
+            cellCallback({ attrs: { colspan: 2 } });
+          },
+        });
+        callback({
+          forEach(cellCallback) {
+            cellCallback({ attrs: { colspan: 1 } });
+            cellCallback({ attrs: { colspan: 1 } });
+          },
+        });
+      },
+    };
+
+    expect(tableDimensions(node as never)).toEqual({ rows: 2, columns: 3 });
+  });
+
+  it("labels table row, column, and multi-cell selections", () => {
+    expect(tableSelectionLabel({ isRowSelection: () => true } as never)).toBe("row selected");
+    expect(tableSelectionLabel({ isColSelection: () => true } as never)).toBe("column selected");
+    expect(tableSelectionLabel({ ranges: [{}, {}] } as never)).toBe("2 cells selected");
+    expect(tableSelectionLabel({ ranges: [{}] } as never)).toBeNull();
   });
 });
