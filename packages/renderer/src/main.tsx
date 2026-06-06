@@ -4,6 +4,7 @@ import "./global.css";
 import App from "./App";
 import { IpcChannel, type AppSettings } from "@wnote/contracts";
 import { initI18n } from "./i18n";
+import { applyThemeTokens } from "./theme/theme-tokens";
 
 async function bootstrap() {
   const settings = (await window.electronAPI.invoke(IpcChannel.SettingsGet)) as AppSettings;
@@ -14,7 +15,7 @@ async function bootstrap() {
         ? "dark"
         : "light"
       : settings.theme;
-  document.documentElement.setAttribute("data-theme", resolved);
+  applyThemeTokens(document.documentElement, resolved);
 
   await initI18n(settings.locale);
 

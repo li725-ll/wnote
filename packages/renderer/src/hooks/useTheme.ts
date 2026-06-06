@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { IpcChannel, type AppSettings } from "@wnote/contracts";
+import { applyThemeTokens, type ThemeName } from "../theme/theme-tokens";
 
 type Theme = "light" | "dark" | "system";
 
-function applyTheme(resolved: "light" | "dark") {
-  document.documentElement.setAttribute("data-theme", resolved);
+export function applyTheme(resolved: ThemeName) {
+  applyThemeTokens(document.documentElement, resolved);
 }
 
 function getSystemTheme(): "light" | "dark" {
