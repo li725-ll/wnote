@@ -52,7 +52,7 @@
   grid-template-columns: 1fr;
   width: 10rem;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--color-bg) 96%, transparent);
   box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text) 14%, transparent);
   padding: 0.3rem;
@@ -62,7 +62,7 @@
 .menuButton {
   height: 1.8rem;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;

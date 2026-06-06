@@ -4,8 +4,8 @@
   height: 100%;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--color-bg) 94%, var(--color-hover-bg)) 0,
-    var(--color-bg) 16rem
+    color-mix(in srgb, var(--color-hover-bg) 72%, var(--color-bg)) 0,
+    var(--color-bg) 18rem
   );
   color: var(--color-text);
   overflow: auto;
@@ -35,6 +35,11 @@
   line-height: var(--editor-line-height, 1.78);
   outline: none;
   caret-color: var(--color-accent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--color-bg) 88%, var(--color-hover-bg) 12%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-border) 32%, transparent),
+    0 18px 48px color-mix(in srgb, var(--color-text) 5%, transparent);
 }
 
 .editor :global(p) {
@@ -83,13 +88,13 @@
   padding: 1em 1.05em;
   overflow-x: auto;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
-  border-radius: 7px;
+  border-radius: 12px;
   background: var(--color-code-bg, color-mix(in srgb, var(--color-border) 30%, transparent));
   font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
 }
 
 .editor :global(code) {
-  border-radius: 3px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-code-bg) 86%, transparent);
   font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
   padding: 0.1em 0.25em;
@@ -102,8 +107,10 @@
 
 .editor :global(blockquote) {
   margin: 0.9em 0;
-  padding: 0.1em 0 0.1em 1em;
-  border-left: 2px solid var(--color-blockquote-border);
+  padding: 0.18em 0 0.18em 1em;
+  border-left: 3px solid var(--color-blockquote-border);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--color-hover-bg) 38%, transparent);
   color: color-mix(in srgb, var(--color-text) 82%, var(--color-muted));
 }
 
@@ -153,7 +160,7 @@
 .editor :global(img) {
   max-width: 100%;
   max-height: 420px;
-  border-radius: 6px;
+  border-radius: 14px;
 }
 
 .editor :global(table) {
@@ -168,7 +175,7 @@
 .editor :global(.tableWrapper) {
   margin: 0.9em 0;
   overflow-x: auto;
-  border-radius: 7px;
+  border-radius: 12px;
   box-shadow: 0 0 0 1px
     color-mix(in srgb, var(--color-table-border, var(--color-border)) 78%, transparent);
 }

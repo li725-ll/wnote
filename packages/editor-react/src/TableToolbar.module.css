@@ -7,7 +7,7 @@
   max-width: min(100vw - 2rem, 42rem);
   overflow-x: auto;
   border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
-  border-radius: 999px;
+  border-radius: 18px;
   background: color-mix(in srgb, var(--color-bg) 94%, transparent);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--color-text) 12%, transparent);
   padding: 3px;

@@ -27,6 +27,9 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
     loaded: false,
   });
   const [dragging, setDragging] = useState(false);
+  const [writingFocused, setWritingFocused] = useState(false);
+  const [writingActive, setWritingActive] = useState(false);
+  const [sidebarManuallyOpen, setSidebarManuallyOpen] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
   const { leftOpen, leftWidth } = layout;
@@ -42,6 +45,8 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- external menu signal intentionally updates layout state.
     setLayout((prev) => {
       const next = { ...prev, leftOpen: !prev.leftOpen };
+      setSidebarManuallyOpen(next.leftOpen);
+      setWritingActive(false);
       saveLayout({ leftOpen: next.leftOpen });
       return next;
     });
@@ -53,6 +58,8 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
       if (side === "left") {
         setLayout((prev) => {
           const next = { ...prev, leftOpen: !prev.leftOpen };
+          setSidebarManuallyOpen(next.leftOpen);
+          setWritingActive(false);
           saveLayout({ leftOpen: next.leftOpen });
           return next;
         });
@@ -60,6 +67,35 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
     };
     window.electronAPI.on(IpcChannel.ToggleSidebar, handler);
     return () => window.electronAPI.off(IpcChannel.ToggleSidebar, handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      setWritingFocused(
+        Boolean(document.querySelector(".ProseMirror-focused")) &&
+          writingActive &&
+          !sidebarManuallyOpen,
+      );
+    };
+    document.addEventListener("focusin", handler);
+    document.addEventListener("focusout", handler);
+    document.addEventListener("selectionchange", handler);
+    return () => {
+      document.removeEventListener("focusin", handler);
+      document.removeEventListener("focusout", handler);
+      document.removeEventListener("selectionchange", handler);
+    };
+  }, [sidebarManuallyOpen, writingActive]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (!document.querySelector(".ProseMirror-focused")) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      setSidebarManuallyOpen(false);
+      setWritingActive(true);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, []);
 
   const onPointerDown = useCallback(
@@ -88,13 +124,17 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
   }, [dragging, leftWidth]);
 
   const style = {
-    "--left-width": leftOpen ? `${leftWidth}px` : "0px",
+    "--left-width": leftOpen && !writingFocused ? `${leftWidth}px` : "0px",
   } as React.CSSProperties;
 
   if (!layout.loaded) return null;
 
   return (
-    <div className={`${styles.layout} ${dragging ? styles.dragging : ""}`} style={style}>
+    <div
+      className={`${styles.layout} ${dragging ? styles.dragging : ""}`}
+      data-writing-focused={writingFocused ? "true" : "false"}
+      style={style}
+    >
       <Sidebar side="left">{left}</Sidebar>
       <div
         className={styles.resizer}

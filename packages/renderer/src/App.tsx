@@ -311,10 +311,9 @@ export default function App() {
             onOpenWorkspace={openWorkspace}
             onOpenFile={(filePath) => {
               void openWorkspaceFile(filePath);
-              editorRef.current?.focus();
             }}
             onCreateFile={(name) => {
-              void createWorkspaceFile(name).then(() => editorRef.current?.focus());
+              void createWorkspaceFile(name);
             }}
             onCreateDirectory={(name) => {
               void createWorkspaceDirectory(name);

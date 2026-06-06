@@ -55,8 +55,8 @@ describe("renderer theme tokens", () => {
     applyThemeTokens(target, "dark");
 
     expect(target.getAttribute("data-theme")).toBe("dark");
-    expect(target.style.getPropertyValue("--color-bg")).toBe("#0d1117");
-    expect(target.style.getPropertyValue("--color-table-border")).toBe("#30363d");
+    expect(target.style.getPropertyValue("--color-bg")).toBe("#17120d");
+    expect(target.style.getPropertyValue("--color-table-border")).toBe("#4e3f2d");
   });
 });
 

@@ -3,7 +3,7 @@
   grid-template-columns: var(--left-width) 1px 1fr;
   height: 100vh;
   overflow: hidden;
-  transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-columns 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .layout.dragging {
@@ -20,25 +20,17 @@
   scrollbar-width: none;
 }
 
-.layout:has(:global(.ProseMirror-focused)) :global(aside) {
-  opacity: 0.36;
+.layout[data-writing-focused="true"] :global(aside) {
+  opacity: 0;
+  pointer-events: none;
   transition:
-    opacity 180ms ease,
-    background-color 180ms ease;
+    opacity 220ms ease,
+    background-color 220ms ease;
 }
 
-.layout:has(:global(.ProseMirror-focused)) :global(aside:hover),
-.layout:has(:global(.ProseMirror-focused)) :global(aside:focus-within) {
-  opacity: 1;
-}
-
-.layout:has(:global(.ProseMirror-focused)) .resizer {
-  opacity: 0.32;
-}
-
-.layout:has(:global(.ProseMirror-focused)) .resizer:hover,
-.layout:has(:global(.ProseMirror-focused)) .resizer:active {
-  opacity: 1;
+.layout[data-writing-focused="true"] .resizer {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .center::-webkit-scrollbar {
