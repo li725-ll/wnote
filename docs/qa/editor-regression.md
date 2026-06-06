@@ -121,8 +121,8 @@ Manual window interaction still needs a human pass for file save/reopen, rich no
 - Cleared missing local image fallback `net::ERR_FILE_NOT_FOUND` noise.
 - Cleared Block Handle `NaN` positioning warning.
 - Added renderer CSP metadata. Production CSP is covered by tests and does not include
-  `unsafe-eval`; development CSP still allows Vite's eval path and may show Electron's dev-only
-  warning.
+  `unsafe-eval`; development CSP allows Vite's React Refresh preamble and may show Electron's
+  dev-only warning.
 - Remaining DevTools Autofill protocol errors are Chromium DevTools noise, not app-level failures.
 
 ## 2026-06-06 Automated Completion Pass
@@ -149,3 +149,15 @@ git diff --check
 
 `pnpm build` still reports the known large chunk warnings for Tiptap, Mermaid, Cytoscape/Wardley,
 and markdown vendor chunks. Those remain tracked in `docs/qa/build-budget.md`.
+
+## 2026-06-06 Dev CSP Fixture Pass
+
+- Reproduced the renderer startup issue reported as
+  `@vitejs/plugin-react can't detect preamble`.
+- Updated development CSP to allow Vite React Refresh's inline preamble while keeping production
+  `script-src` strict.
+- Re-ran `pnpm dev -- docs/qa/fixtures/editor-regression-sample.md`.
+- Confirmed the React Refresh preamble error no longer appears during fixture startup.
+- Remaining Electron insecure CSP warning is expected in development because Vite requires dev-only
+  script relaxations. This warning will not show once packaged.
+- Remaining DevTools Autofill protocol messages are Chromium DevTools noise.

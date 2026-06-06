@@ -7,7 +7,7 @@ export function rendererContentSecurityPolicy({
 }): string {
   const directives = [
     ["default-src", "'self'"],
-    ["script-src", "'self'", ...(dev ? ["'unsafe-eval'"] : [])],
+    ["script-src", "'self'", ...(dev ? ["'unsafe-eval'", "'unsafe-inline'"] : [])],
     ["style-src", "'self'", "'unsafe-inline'"],
     ["img-src", "'self'", "data:", ...(dev ? ["http:"] : []), "https:", "wnote-asset:"],
     ["font-src", "'self'", "data:"],

@@ -14,7 +14,7 @@ describe("renderer CSP", () => {
   it("allows vite dev server connections only in development", () => {
     const csp = rendererContentSecurityPolicy({ dev: true, devPort: 5190 });
 
-    expect(csp).toContain("script-src 'self' 'unsafe-eval'");
+    expect(csp).toContain("script-src 'self' 'unsafe-eval' 'unsafe-inline'");
     expect(csp).toContain("http://localhost:5190");
     expect(csp).toContain("ws://localhost:5190");
   });
