@@ -9,7 +9,13 @@ import {
   readyRenderState,
   type AsyncRenderState,
 } from "./async-render-state";
-import { copyCodeBlockText } from "./code-block-utils";
+import {
+  codeLanguageLabel,
+  commonCodeLanguages,
+  copyButtonLabel,
+  copyCodeBlockText,
+  normalizeCodeLanguage,
+} from "./code-block-utils";
 import styles from "./CodeBlock.module.css";
 
 export const CodeBlock = CodeBlockLowlight.extend({
@@ -43,7 +49,7 @@ export const CodeBlock = CodeBlockLowlight.extend({
 });
 
 function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
-  const language = normalizeLanguage(node.attrs.language);
+  const language = normalizeCodeLanguage(node.attrs.language);
   const code = node.textContent;
   const [renderState, setRenderState] = useState<AsyncRenderState>(loadingRenderState);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -67,13 +73,20 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
     };
   }, [code, language]);
 
-  const label = useMemo(() => language || "text", [language]);
+  useEffect(() => {
+    if (copyState === "idle") return;
+    const timeout = window.setTimeout(() => setCopyState("idle"), 1400);
+    return () => window.clearTimeout(timeout);
+  }, [copyState]);
+
+  const label = useMemo(() => codeLanguageLabel(language), [language]);
 
   return (
     <NodeViewWrapper className={styles.wrapper} data-selected={selected ? "true" : "false"}>
       <div className={styles.header} contentEditable={false}>
         <button
           className={styles.copyButton}
+          disabled={!code}
           type="button"
           title="复制代码"
           onClick={() => {
@@ -82,7 +95,7 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
               .catch(() => setCopyState("failed"));
           }}
         >
-          {copyState === "copied" ? "Copied" : copyState === "failed" ? "Failed" : "Copy"}
+          {copyButtonLabel(copyState)}
         </button>
         <input
           className={styles.language}
@@ -90,11 +103,29 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
           spellCheck={false}
           aria-label="Code language"
           onChange={(event) => {
-            updateAttributes({ language: normalizeLanguage(event.target.value) });
+            updateAttributes({ language: normalizeCodeLanguage(event.target.value) });
           }}
           onFocus={(event) => event.currentTarget.select()}
         />
       </div>
+      {selected ? (
+        <div className={styles.presets} contentEditable={false}>
+          {commonCodeLanguages.map((preset) => {
+            const presetLanguage = normalizeCodeLanguage(preset);
+            return (
+              <button
+                key={preset}
+                className={styles.presetButton}
+                data-active={language === presetLanguage ? "true" : "false"}
+                type="button"
+                onClick={() => updateAttributes({ language: presetLanguage })}
+              >
+                {preset}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <div className={styles.body}>
         {renderState.status === "ready" ? (
           <div
@@ -108,6 +139,11 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
           </pre>
         )}
         <NodeViewContent className={styles.content} />
+        {!code ? (
+          <div className={styles.placeholder} contentEditable={false}>
+            输入代码
+          </div>
+        ) : null}
       </div>
       {renderState.error ? (
         <div className={styles.error} contentEditable={false}>
@@ -116,10 +152,4 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
       ) : null}
     </NodeViewWrapper>
   );
-}
-
-function normalizeLanguage(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase();
-  return normalized || null;
 }
