@@ -6,6 +6,10 @@ function roundTrip(markdown: string) {
   return htmlToMarkdown(markdownToHtml(markdown)).trim();
 }
 
+function roundTripTwice(markdown: string) {
+  return roundTrip(roundTrip(markdown));
+}
+
 describe("@wnote/markdown", () => {
   it("extracts headings while parsing markdown", () => {
     const result = parseMarkdown("# Title\n\n## Child");
@@ -187,5 +191,50 @@ describe("@wnote/markdown", () => {
       absolutePath: "/docs/note.assets/a.png",
       status: "ok",
     });
+  });
+
+  it("keeps a complex editor document stable after repeated markdown round-trips", () => {
+    const markdown = [
+      "# Fixture",
+      "",
+      "Paragraph with **bold**, _em_, ~~gone~~, `code`, [link](https://e.test), and $x^2$.",
+      "",
+      "- [x] Done",
+      "- [ ] Todo",
+      "",
+      "| Name | Value |",
+      "| :--- | ---: |",
+      "| **A** | `1` |",
+      "| B | 2 |",
+      "",
+      "```ts",
+      "const value = 1;",
+      "```",
+      "",
+      "```mermaid",
+      "graph TD",
+      "  A --> B",
+      "```",
+      "",
+      "$$",
+      "\\sum_i x_i",
+      "$$",
+      "",
+      '<figure data-wnote-image="true" data-align="center"><img src="note.assets/a.png" alt="Alt" title="Title" width="50%"><figcaption>Caption</figcaption></figure>',
+      "",
+      '<aside data-kind="note"><p>Keep me</p></aside>',
+    ].join("\n");
+
+    const normalized = roundTrip(markdown);
+
+    expect(roundTripTwice(markdown)).toBe(normalized);
+    expect(normalized).toContain("# Fixture");
+    expect(normalized).toContain("* [x] Done\n* [ ] Todo");
+    expect(normalized).toContain("```ts\nconst value = 1;\n```");
+    expect(normalized).toContain("```mermaid\ngraph TD\n  A --> B\n```");
+    expect(normalized).toContain("$$\n\\sum_i x_i\n$$");
+    expect(normalized).toContain('data-align="center"');
+    expect(normalized).toContain('width="50%"');
+    expect(normalized).toContain('<aside data-kind="note"><p>Keep me</p></aside>');
   });
 });

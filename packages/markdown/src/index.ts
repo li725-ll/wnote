@@ -427,7 +427,7 @@ function richMarkdownToHtml(html: string): string {
     return `<div data-math-block="${escapeAttribute(formula)}">${escapeHtml(formula)}</div>`;
   });
   html = html.replace(/<p>\s*(<div data-math-block="[^"]*">[\s\S]*?<\/div>)\s*<\/p>/g, "$1");
-  return html.replace(/(?<!\$)\$([^$\n]+)\$(?!\$)/g, (_, source: string) => {
+  return html.replace(/(?<!\$)\$([^$\n]+)(?<!\$)\$(?!\$)/g, (_, source: string) => {
     const formula = source.trim();
     return `<span data-math-inline="${escapeAttribute(formula)}">${escapeHtml(formula)}</span>`;
   });
@@ -448,8 +448,12 @@ function restoreRichMarkdown(markdown: string): string {
   restored = restored.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (_match: string, source: string) => {
     return `$$\n${source.trim()}\n$$`;
   });
-  return restored
+  const normalized = restored
     .replace(/[ \t]+\n/g, "\n")
+    .replace(/```[ \t]+```([A-Za-z0-9_-]*)/g, "```\n\n```$1")
+    .replace(/\$\$[ \t]+</g, "$$\n\n<")
+    .replace(/<\/figure>[ \t]+</g, "</figure>\n\n<")
+    .replace(/^((?:[*+-] \[[ xX]\] .+\n?)+)(?=\|)/gm, "$1\n")
     .replace(/([^\n$])\n{2,}\$\$/g, (_match: string, previous: string) => `${previous}\n$$`)
     .replace(/([^\s])[\t ]*\n?\$\$\n/g, (_match: string, previous: string) => {
       return `${previous}\n\n$$\n`;
@@ -457,6 +461,26 @@ function restoreRichMarkdown(markdown: string): string {
     .replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (_match: string, source: string) => {
       return `$$\n${source.trim()}\n$$`;
     });
+  return repairMathBlockClosers(normalized);
+}
+
+function repairMathBlockClosers(markdown: string): string {
+  let inMathBlock = false;
+  return markdown
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed === "$$") {
+        inMathBlock = !inMathBlock;
+        return line;
+      }
+      if (inMathBlock && trimmed === "$") {
+        inMathBlock = false;
+        return "$$";
+      }
+      return line;
+    })
+    .join("\n");
 }
 
 function nodeText(node: HastNode): string {
