@@ -45,23 +45,23 @@
 :root,
 html[data-theme="light"] {
   color-scheme: light;
-  --color-bg: #ffffff;
-  --color-text: #1f2328;
-  --color-muted: #57606a;
-  --color-border: #d0d7de;
-  --color-hover-bg: #f6f8fa;
-  --color-focus-ring: #2563eb;
-  --color-accent: #2563eb;
-  --color-link: #0969da;
-  --color-code-bg: #f6f8fa;
-  --color-blockquote-border: #d0d7de;
-  --color-placeholder: #8c959f;
-  --color-danger: #cf222e;
-  --color-table-border: #d0d7de;
-  --color-table-header-bg: #f6f8fa;
-  --sidebar-bg: #f6f8fa;
-  --sidebar-border: #d0d7de;
-  --editor-max-width: 860px;
+  --color-bg: #fffdfa;
+  --color-text: #2a2621;
+  --color-muted: #776f64;
+  --color-border: #e6ded2;
+  --color-hover-bg: #f6f0e8;
+  --color-focus-ring: #8a6f45;
+  --color-accent: #8a6f45;
+  --color-link: #7c5f2d;
+  --color-code-bg: #f4eee5;
+  --color-blockquote-border: #d8c7ad;
+  --color-placeholder: #a79d90;
+  --color-danger: #b84a3a;
+  --color-table-border: #ded2c2;
+  --color-table-header-bg: #f3ebdf;
+  --sidebar-bg: #f7f2eb;
+  --sidebar-border: #e1d7c9;
+  --editor-max-width: 800px;
   --editor-font:
     "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
     "Helvetica Neue", Arial, sans-serif;
@@ -72,23 +72,23 @@ html[data-theme="light"] {
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0d1117;
-  --color-text: #e6edf3;
-  --color-muted: #8b949e;
-  --color-border: #30363d;
-  --color-hover-bg: #161b22;
-  --color-focus-ring: #2f81f7;
-  --color-accent: #58a6ff;
-  --color-link: #58a6ff;
-  --color-code-bg: #161b22;
-  --color-blockquote-border: #30363d;
-  --color-placeholder: #6e7681;
-  --color-danger: #ff7b72;
-  --color-table-border: #30363d;
-  --color-table-header-bg: #161b22;
-  --sidebar-bg: #010409;
-  --sidebar-border: #30363d;
-  --editor-max-width: 860px;
+  --color-bg: #171511;
+  --color-text: #ece4d8;
+  --color-muted: #aaa092;
+  --color-border: #3b352b;
+  --color-hover-bg: #242018;
+  --color-focus-ring: #c6a66b;
+  --color-accent: #c6a66b;
+  --color-link: #d4b577;
+  --color-code-bg: #242018;
+  --color-blockquote-border: #554a3a;
+  --color-placeholder: #7d7467;
+  --color-danger: #e07a67;
+  --color-table-border: #40392f;
+  --color-table-header-bg: #211d17;
+  --sidebar-bg: #11100d;
+  --sidebar-border: #342e25;
+  --editor-max-width: 800px;
   --editor-font:
     "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
     "Helvetica Neue", Arial, sans-serif;

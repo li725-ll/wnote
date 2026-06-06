@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor as TiptapEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
@@ -23,6 +23,8 @@ import { BlockMath, InlineMath } from "./math";
 import { MermaidBlock } from "./mermaid";
 import { SlashMenu } from "./SlashMenu";
 import { TableToolbar } from "./TableToolbar";
+import { writingFocusState } from "./writing-focus-state";
+import { WriterKeyboardShortcuts } from "./writer-keyboard-shortcuts";
 
 export type { HeadingItem } from "@wnote/contracts";
 
@@ -80,6 +82,8 @@ export function Editor({
   const onChangeRef = useRef(onChange);
   const onHeadingsChangeRef = useRef(onHeadingsChange);
   const onImageSaveRef = useRef(onImageSave);
+  const [editorFocused, setEditorFocused] = useState(false);
+  const [gutterActive, setGutterActive] = useState(false);
   onChangeRef.current = onChange;
   onHeadingsChangeRef.current = onHeadingsChange;
   onImageSaveRef.current = onImageSave;
@@ -95,6 +99,7 @@ export function Editor({
       BlockMath,
       MermaidBlock,
       MarkdownShortcuts,
+      WriterKeyboardShortcuts,
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -146,6 +151,18 @@ export function Editor({
     onCreate({ editor }) {
       onHeadingsChangeRef.current?.(extractHeadings(editor));
     },
+    onFocus() {
+      setEditorFocused(true);
+    },
+    onBlur() {
+      setEditorFocused(false);
+    },
+  });
+
+  const focusState = writingFocusState({
+    editorFocused,
+    gutterActive,
+    menuOpen: false,
   });
 
   const applyMarkdownContent = useCallback(async (md: string, target: TiptapEditor) => {
@@ -242,7 +259,22 @@ export function Editor({
   }, [editor]);
 
   return (
-    <div ref={containerRef} className={styles.container}>
+    <div
+      ref={containerRef}
+      className={styles.container}
+      data-writing-focus={focusState.focused ? "true" : "false"}
+      data-tools-visible={focusState.toolsVisible ? "true" : "false"}
+      onMouseMove={(event) => {
+        const editorElement = event.currentTarget.querySelector<HTMLElement>(".ProseMirror");
+        const rect = editorElement?.getBoundingClientRect();
+        if (!rect) {
+          setGutterActive(false);
+          return;
+        }
+        setGutterActive(event.clientX >= rect.left - 76 && event.clientX <= rect.left + 28);
+      }}
+      onMouseLeave={() => setGutterActive(false)}
+    >
       <BlockHandle editor={editor} containerRef={containerRef} />
       <FloatingToolbar editor={editor} containerRef={containerRef} />
       <SlashMenu editor={editor} containerRef={containerRef} />

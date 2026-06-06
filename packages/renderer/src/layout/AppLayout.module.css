@@ -20,6 +20,27 @@
   scrollbar-width: none;
 }
 
+.layout:has(:global(.ProseMirror-focused)) :global(aside) {
+  opacity: 0.36;
+  transition:
+    opacity 180ms ease,
+    background-color 180ms ease;
+}
+
+.layout:has(:global(.ProseMirror-focused)) :global(aside:hover),
+.layout:has(:global(.ProseMirror-focused)) :global(aside:focus-within) {
+  opacity: 1;
+}
+
+.layout:has(:global(.ProseMirror-focused)) .resizer {
+  opacity: 0.32;
+}
+
+.layout:has(:global(.ProseMirror-focused)) .resizer:hover,
+.layout:has(:global(.ProseMirror-focused)) .resizer:active {
+  opacity: 1;
+}
+
 .center::-webkit-scrollbar {
   display: none;
 }

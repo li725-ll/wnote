@@ -6,11 +6,12 @@
   gap: 3px;
   max-width: min(100vw - 2rem, 42rem);
   overflow-x: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-bg);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--color-text) 12%, transparent);
   padding: 3px;
+  backdrop-filter: blur(12px);
 }
 
 .summary {
@@ -20,8 +21,8 @@
   justify-content: center;
   min-width: 6.75rem;
   height: 1.7rem;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 7%, transparent);
   color: var(--color-muted);
   font: 650 0.72rem/1 var(--editor-font);
   padding: 0 0.55rem;
@@ -62,7 +63,7 @@
   min-width: 2.25rem;
   height: 1.7rem;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
@@ -72,7 +73,7 @@
 }
 
 .button:hover {
-  background: var(--color-hover-bg);
+  background: color-mix(in srgb, var(--color-accent) 11%, transparent);
   color: var(--color-accent);
 }
 
