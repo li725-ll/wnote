@@ -22,7 +22,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
       loaded: boolean;
     }
   >({
-    leftOpen: true,
+    leftOpen: false,
     leftWidth: 320,
     loaded: false,
   });
