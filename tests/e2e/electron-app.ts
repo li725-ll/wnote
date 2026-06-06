@@ -31,6 +31,11 @@ export interface RunningElectronApp {
   close(): Promise<void>;
 }
 
+export interface LaunchWNoteOptions {
+  env?: Record<string, string>;
+  fixturePath?: string;
+}
+
 export function buildElectronEntrypoints() {
   execFileSync("pnpm", ["--filter", "@wnote/preload", "build"], {
     cwd: root,
@@ -42,7 +47,13 @@ export function buildElectronEntrypoints() {
   });
 }
 
-export async function launchWNote(fixturePath?: string): Promise<RunningElectronApp> {
+export async function launchWNote(
+  fixturePathOrOptions?: string | LaunchWNoteOptions,
+): Promise<RunningElectronApp> {
+  const options =
+    typeof fixturePathOrOptions === "string"
+      ? { fixturePath: fixturePathOrOptions }
+      : (fixturePathOrOptions ?? {});
   const renderer = spawn("pnpm", ["--filter", "@wnote/renderer", "dev"], {
     cwd: root,
     shell: true,
@@ -57,10 +68,11 @@ export async function launchWNote(fixturePath?: string): Promise<RunningElectron
   await waitForRenderer(renderer);
 
   const app = await electron.launch({
-    args: ["packages/main/dist/index.js", ...(fixturePath ? [fixturePath] : [])],
+    args: ["packages/main/dist/index.js", ...(options.fixturePath ? [options.fixturePath] : [])],
     cwd: root,
     env: {
       ...process.env,
+      ...options.env,
       NODE_ENV: "development",
       WNOTE_E2E: "1",
       WNOTE_RENDERER_PORT: rendererPort,

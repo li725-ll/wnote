@@ -37,8 +37,14 @@ import { loadSettings, saveSettings, getDataDirectory } from "./settings";
 import { openFileInWindow as sendFileToWindow, rememberOpenedFile } from "./open-file";
 
 const log = createLog("app");
+const isE2E = process.env.WNOTE_E2E === "1";
 
 let pendingFilePath: string | null = null;
+
+function e2ePath(name: string): string | null {
+  if (!isE2E) return null;
+  return process.env[name] ?? null;
+}
 
 async function openFileInWindow(filePath: string, win?: BrowserWindow) {
   const target = win ?? windowManager.getFocused();
@@ -121,12 +127,16 @@ ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
 ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
-  const result = await dialog.showOpenDialog(win, {
-    properties: ["openFile"],
-    filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
-  });
-  if (result.canceled || result.filePaths.length === 0) return null;
-  const filePath = result.filePaths[0];
+  const overridePath = e2ePath("WNOTE_E2E_OPEN_PATH");
+  const filePath =
+    overridePath ??
+    (
+      await dialog.showOpenDialog(win, {
+        properties: ["openFile"],
+        filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
+      })
+    ).filePaths[0];
+  if (!filePath) return null;
   log.info("File opened via dialog:", filePath);
   const data = await openDocument(filePath);
   addRecentFile(filePath);
@@ -143,12 +153,15 @@ ipcMain.handle(
     if (!win) return null;
     let targetPath = payload.filePath;
     if (!targetPath) {
-      const result = await dialog.showSaveDialog(win, {
-        defaultPath: payload.defaultName ?? "untitled.md",
-        filters: [{ name: "Markdown", extensions: ["md"] }],
-      });
-      if (result.canceled || !result.filePath) return null;
-      targetPath = result.filePath;
+      targetPath = e2ePath("WNOTE_E2E_SAVE_PATH") ?? undefined;
+      if (!targetPath) {
+        const result = await dialog.showSaveDialog(win, {
+          defaultPath: payload.defaultName ?? "untitled.md",
+          filters: [{ name: "Markdown", extensions: ["md"] }],
+        });
+        if (result.canceled || !result.filePath) return null;
+        targetPath = result.filePath;
+      }
     }
     const saved = await saveDocument({ ...payload, filePath: targetPath });
     log.info("File saved:", targetPath);
@@ -163,12 +176,17 @@ ipcMain.handle(
 ipcMain.handle(IpcChannel.ExportHtml, async (event, payload: ExportHtmlRequest) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
-  const result = await dialog.showSaveDialog(win, {
-    defaultPath: payload.defaultName ?? "untitled.html",
-    filters: [{ name: "HTML", extensions: ["html"] }],
-  });
-  if (result.canceled || !result.filePath) return null;
-  const exported = await exportHtmlDocument({ ...payload, filePath: result.filePath });
+  const targetPath = e2ePath("WNOTE_E2E_EXPORT_HTML_PATH");
+  const filePath =
+    targetPath ??
+    (
+      await dialog.showSaveDialog(win, {
+        defaultPath: payload.defaultName ?? "untitled.html",
+        filters: [{ name: "HTML", extensions: ["html"] }],
+      })
+    ).filePath;
+  if (!filePath) return null;
+  const exported = await exportHtmlDocument({ ...payload, filePath });
   log.info("HTML exported:", exported.filePath);
   return exported;
 });
@@ -176,12 +194,17 @@ ipcMain.handle(IpcChannel.ExportHtml, async (event, payload: ExportHtmlRequest) 
 ipcMain.handle(IpcChannel.ExportPdf, async (event, payload: ExportPdfRequest) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
-  const result = await dialog.showSaveDialog(win, {
-    defaultPath: payload.defaultName ?? "untitled.pdf",
-    filters: [{ name: "PDF", extensions: ["pdf"] }],
-  });
-  if (result.canceled || !result.filePath) return null;
-  const exported = await exportPdfDocument({ ...payload, filePath: result.filePath }, (options) =>
+  const targetPath = e2ePath("WNOTE_E2E_EXPORT_PDF_PATH");
+  const filePath =
+    targetPath ??
+    (
+      await dialog.showSaveDialog(win, {
+        defaultPath: payload.defaultName ?? "untitled.pdf",
+        filters: [{ name: "PDF", extensions: ["pdf"] }],
+      })
+    ).filePath;
+  if (!filePath) return null;
+  const exported = await exportPdfDocument({ ...payload, filePath }, (options) =>
     asPdfWindow(new BrowserWindow(options)),
   );
   log.info("PDF exported:", exported.filePath);
