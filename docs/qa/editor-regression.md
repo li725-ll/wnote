@@ -183,3 +183,14 @@ and markdown vendor chunks. Those remain tracked in `docs/qa/build-budget.md`.
   noise.
 - Manual interaction remains required for save/reopen, rich node editing, resource panel actions,
   and HTML/PDF preview inspection.
+
+## 2026-06-06 Packaged App Smoke Pass
+
+- Ran `pnpm run pack` to build the unpacked macOS app under `release/0.0.1/mac-arm64/WNote.app`.
+- The first pack attempt failed because local `node_modules` contained a stale broken workspace
+  symlink at `node_modules/.pnpm/node_modules/@wnote/shared`; removing that stale local symlink made
+  the pack pass. This was local install-state pollution, not a tracked package dependency.
+- electron-builder completed native dependency rebuild for `better-sqlite3`.
+- Code signing was skipped because no local Developer ID identity is configured.
+- Started `release/0.0.1/mac-arm64/WNote.app/Contents/MacOS/WNote` with the regression fixture.
+- Confirmed the packaged executable starts and remains running instead of crashing on launch.
