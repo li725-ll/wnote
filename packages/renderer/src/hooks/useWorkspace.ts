@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { IpcChannel, type OpenDocumentResult, type WorkspaceOpenResult } from "@wnote/contracts";
+import {
+  IpcChannel,
+  type OpenDocumentResult,
+  type WorkspaceCreateFileResult,
+  type WorkspaceOpenResult,
+} from "@wnote/contracts";
 
 export function useWorkspace({
   onDocumentOpen,
@@ -43,10 +48,46 @@ export function useWorkspace({
     [onDocumentOpen],
   );
 
+  const createWorkspaceFile = useCallback(
+    async (name: string, parentPath?: string) => {
+      if (!workspace) return;
+      const result = await window.electronAPI.invoke<WorkspaceCreateFileResult | null>(
+        IpcChannel.WorkspaceCreateFile,
+        {
+          rootPath: workspace.rootPath,
+          parentPath,
+          name,
+        },
+      );
+      if (!result) return;
+      setWorkspace(result.workspace);
+      onDocumentOpen(result.document);
+    },
+    [onDocumentOpen, workspace],
+  );
+
+  const createWorkspaceDirectory = useCallback(
+    async (name: string, parentPath?: string) => {
+      if (!workspace) return;
+      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
+        IpcChannel.WorkspaceCreateDirectory,
+        {
+          rootPath: workspace.rootPath,
+          parentPath,
+          name,
+        },
+      );
+      if (result) setWorkspace(result);
+    },
+    [workspace],
+  );
+
   return {
     workspace,
     loading,
     openWorkspace,
     openWorkspaceFile,
+    createWorkspaceFile,
+    createWorkspaceDirectory,
   };
 }

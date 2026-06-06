@@ -43,6 +43,8 @@ export enum IpcChannel {
   WorkspaceOpen = "workspace:open",
   WorkspaceRead = "workspace:read",
   WorkspaceFileOpen = "workspace:file-open",
+  WorkspaceCreateFile = "workspace:create-file",
+  WorkspaceCreateDirectory = "workspace:create-directory",
 
   FormatBold = "format:bold",
   FormatItalic = "format:italic",

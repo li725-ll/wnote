@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildElectronEntrypoints, launchWNote } from "./electron-app";
@@ -71,6 +71,41 @@ test("opens documents from a workspace tree", async () => {
     await app.page.getByRole("button", { name: /daily\.md/ }).click();
     await expect(app.page.locator(".ProseMirror")).toContainText("Daily Note");
     await expect(app.page.locator(".ProseMirror")).toContainText("Opened from workspace.");
+    expect(app.errors).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
+test("creates files and folders from the workspace panel", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "wnote-workspace-create-e2e-"));
+
+  const app = await launchWNote({
+    env: {
+      WNOTE_E2E_WORKSPACE_PATH: dir,
+    },
+  });
+
+  try {
+    await app.page.evaluate(async () => {
+      await window.electronAPI.invoke("layout:set", { leftOpen: true, leftWidth: 360 });
+    });
+    await app.page
+      .getByRole("button", { name: /^(打开|打开目录|切换)$/ })
+      .first()
+      .click();
+
+    await app.page.getByRole("button", { name: "+ 文件", exact: true }).click();
+    await app.page.getByRole("textbox", { name: "文件名" }).fill("created note");
+    await app.page.getByRole("button", { name: "创建" }).click();
+    await expect(app.page.getByRole("button", { name: /created note\.md/ })).toBeVisible();
+    await expect(app.page.locator(".ProseMirror")).toBeVisible();
+    expect(existsSync(join(dir, "created note.md"))).toBe(true);
+
+    await app.page.getByRole("button", { name: "+ 文件夹", exact: true }).click();
+    await app.page.getByRole("textbox", { name: "文件夹名" }).fill("drafts");
+    await app.page.getByRole("button", { name: "创建" }).click();
+    expect(existsSync(join(dir, "drafts"))).toBe(true);
     expect(app.errors).toEqual([]);
   } finally {
     await app.close();

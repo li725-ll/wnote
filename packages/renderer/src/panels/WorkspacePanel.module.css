@@ -17,6 +17,7 @@
 
 .heading {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   color: var(--color-text);
   font-size: 0.7rem;
@@ -28,8 +29,17 @@
   white-space: nowrap;
 }
 
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
 .openButton,
-.emptyState button {
+.actionButton,
+.emptyState button,
+.createForm button {
   flex: 0 0 auto;
   border: 1px solid var(--color-border);
   border-radius: 5px;
@@ -41,9 +51,34 @@
 }
 
 .openButton:hover,
-.emptyState button:hover {
+.actionButton:hover,
+.emptyState button:hover,
+.createForm button:hover {
   background: var(--color-hover-bg);
   color: var(--color-accent);
+}
+
+.createForm {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px 8px;
+}
+
+.createForm input {
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 500 0.78rem/1.2 var(--editor-font);
+  padding: 5px 7px;
+}
+
+.createForm input:focus {
+  border-color: var(--color-accent);
+  outline: none;
 }
 
 .tree,

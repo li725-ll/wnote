@@ -124,6 +124,8 @@ export default function App() {
     loading: workspaceLoading,
     openWorkspace,
     openWorkspaceFile,
+    createWorkspaceFile,
+    createWorkspaceDirectory,
   } = useWorkspace({
     onDocumentOpen: applyOpenedDocument,
   });
@@ -303,6 +305,12 @@ export default function App() {
             onOpenFile={(filePath) => {
               void openWorkspaceFile(filePath);
               editorRef.current?.focus();
+            }}
+            onCreateFile={(name) => {
+              void createWorkspaceFile(name).then(() => editorRef.current?.focus());
+            }}
+            onCreateDirectory={(name) => {
+              void createWorkspaceDirectory(name);
             }}
           />
           <DocumentOutline

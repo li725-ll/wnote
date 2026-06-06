@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
-import { deleteAsset, importAsset, readWorkspace, saveAsset } from ".";
+import {
+  createWorkspaceDirectory,
+  createWorkspaceFile,
+  deleteAsset,
+  importAsset,
+  readWorkspace,
+  saveAsset,
+} from ".";
 import {
   exportHtmlDocument,
   renderExportHtml,
@@ -327,5 +334,61 @@ describe("@wnote/storage-main workspace", () => {
     await writeFile(filePath, "note");
 
     await expect(readWorkspace(filePath)).rejects.toThrow("Workspace path is not a directory");
+  });
+
+  it("creates markdown files and returns the opened document", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-create-file-"));
+
+    const result = await createWorkspaceFile({
+      rootPath: dir,
+      name: "new note",
+      content: "# New Note",
+    });
+
+    expect(result.document.name).toBe("new note.md");
+    expect(result.document.content).toBe("# New Note");
+    expect(result.workspace.tree.map((node) => node.name)).toEqual(["new note.md"]);
+    await expect(readFile(join(dir, "new note.md"), "utf-8")).resolves.toBe("# New Note");
+  });
+
+  it("creates workspace directories inside the selected root", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-create-dir-"));
+
+    await createWorkspaceDirectory({
+      rootPath: dir,
+      name: "notes",
+    });
+    const result = await createWorkspaceFile({
+      rootPath: dir,
+      parentPath: join(dir, "notes"),
+      name: "daily.md",
+    });
+
+    expect(result.workspace.tree[0]?.name).toBe("notes");
+    expect(result.workspace.tree[0]?.children?.map((node) => node.name)).toEqual(["daily.md"]);
+  });
+
+  it("rejects workspace file creation outside the root", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-outside-"));
+    const outside = await mkdtemp(join(tmpdir(), "wnote-workspace-outside-parent-"));
+
+    await expect(
+      createWorkspaceFile({
+        rootPath: dir,
+        parentPath: outside,
+        name: "escape.md",
+      }),
+    ).rejects.toThrow("outside the workspace");
+  });
+
+  it("rejects unsupported workspace document extensions", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-extension-"));
+
+    await expect(
+      createWorkspaceFile({
+        rootPath: dir,
+        name: "image.png",
+      }),
+    ).rejects.toThrow("Unsupported workspace document extension");
   });
 });

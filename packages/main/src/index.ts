@@ -11,9 +11,13 @@ import {
   type ExportPreviewRequest,
   type LayoutState,
   type ShellPathRequest,
+  type WorkspaceCreateDirectoryRequest,
+  type WorkspaceCreateFileRequest,
   type WorkspaceReadRequest,
 } from "@wnote/contracts";
 import {
+  createWorkspaceDirectory,
+  createWorkspaceFile,
   deleteAsset,
   deleteAssets,
   exportHtmlDocument,
@@ -158,6 +162,26 @@ ipcMain.handle(IpcChannel.WorkspaceFileOpen, async (_event, filePath: string) =>
   for (const w of windowManager.getAll()) createAppMenu(w, settings);
   return openDocument(filePath);
 });
+
+ipcMain.handle(
+  IpcChannel.WorkspaceCreateFile,
+  async (_event, payload: WorkspaceCreateFileRequest) => {
+    if (!payload?.rootPath) return null;
+    const result = await createWorkspaceFile(payload);
+    rememberOpenedFile(result.document.filePath);
+    const settings = await loadSettings();
+    for (const w of windowManager.getAll()) createAppMenu(w, settings);
+    return result;
+  },
+);
+
+ipcMain.handle(
+  IpcChannel.WorkspaceCreateDirectory,
+  async (_event, payload: WorkspaceCreateDirectoryRequest) => {
+    if (!payload?.rootPath) return null;
+    return createWorkspaceDirectory(payload);
+  },
+);
 
 ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);

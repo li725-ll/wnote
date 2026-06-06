@@ -15,6 +15,9 @@ import type {
   SaveAssetRequest,
   SaveDocumentRequest,
   SaveDocumentResult,
+  WorkspaceCreateDirectoryRequest,
+  WorkspaceCreateFileRequest,
+  WorkspaceCreateFileResult,
   WorkspaceOpenResult,
   WorkspaceTreeNode,
 } from "@wnote/contracts";
@@ -71,6 +74,31 @@ export async function readWorkspace(rootPath: string): Promise<WorkspaceOpenResu
     name: basename(rootPath),
     tree: await scanWorkspaceDirectory(rootPath, 0),
   };
+}
+
+export async function createWorkspaceFile(
+  payload: WorkspaceCreateFileRequest,
+): Promise<WorkspaceCreateFileResult> {
+  const parentPath = await resolveWorkspaceParent(payload.rootPath, payload.parentPath);
+  const fileName = normalizeWorkspaceFileName(payload.name);
+  const filePath = assertWorkspacePath(payload.rootPath, join(parentPath, fileName));
+  if (existsSync(filePath)) throw new Error("Workspace file already exists");
+  await writeFile(filePath, payload.content ?? "", "utf-8");
+  return {
+    workspace: await readWorkspace(payload.rootPath),
+    document: await openDocument(filePath),
+  };
+}
+
+export async function createWorkspaceDirectory(
+  payload: WorkspaceCreateDirectoryRequest,
+): Promise<WorkspaceOpenResult> {
+  const parentPath = await resolveWorkspaceParent(payload.rootPath, payload.parentPath);
+  const directoryName = normalizeWorkspaceName(payload.name);
+  const directoryPath = assertWorkspacePath(payload.rootPath, join(parentPath, directoryName));
+  if (existsSync(directoryPath)) throw new Error("Workspace directory already exists");
+  await mkdir(directoryPath);
+  return readWorkspace(payload.rootPath);
 }
 
 export async function saveDocument(
@@ -255,6 +283,49 @@ async function scanWorkspaceDirectory(
 function compareWorkspaceNodes(left: WorkspaceTreeNode, right: WorkspaceTreeNode): number {
   if (left.type !== right.type) return left.type === "directory" ? -1 : 1;
   return left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: "base" });
+}
+
+async function resolveWorkspaceParent(rootPath: string, parentPath?: string): Promise<string> {
+  const rootStat = await stat(rootPath);
+  if (!rootStat.isDirectory()) throw new Error("Workspace path is not a directory");
+  const resolvedParent = assertWorkspacePath(rootPath, parentPath ?? rootPath);
+  const parentStat = await stat(resolvedParent);
+  if (!parentStat.isDirectory()) throw new Error("Workspace parent is not a directory");
+  return resolvedParent;
+}
+
+function assertWorkspacePath(rootPath: string, targetPath: string): string {
+  const resolvedRoot = resolve(rootPath);
+  const resolvedTarget = resolve(targetPath);
+  const relation = relative(resolvedRoot, resolvedTarget);
+  if (relation.startsWith("..") || resolve(relation) === relation) {
+    throw new Error("Workspace target is outside the workspace");
+  }
+  return resolvedTarget;
+}
+
+function normalizeWorkspaceFileName(name: string): string {
+  const normalized = normalizeWorkspaceName(name);
+  const extension = extname(normalized).toLowerCase();
+  if (!extension) return `${normalized}.md`;
+  if (!SUPPORTED_DOCUMENT_EXTENSIONS.has(extension)) {
+    throw new Error("Unsupported workspace document extension");
+  }
+  return normalized;
+}
+
+function normalizeWorkspaceName(name: string): string {
+  const normalized = name.trim();
+  if (!normalized) throw new Error("Workspace name is required");
+  if (
+    normalized.includes("/") ||
+    normalized.includes("\\") ||
+    normalized === "." ||
+    normalized === ".."
+  ) {
+    throw new Error("Workspace name must be a single path segment");
+  }
+  return normalized;
 }
 
 function mimeFromExtension(ext: string): string | undefined {

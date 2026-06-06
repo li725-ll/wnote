@@ -50,6 +50,24 @@ export interface WorkspaceReadRequest {
   rootPath?: string;
 }
 
+export interface WorkspaceCreateFileRequest {
+  rootPath: string;
+  parentPath?: string;
+  name: string;
+  content?: string;
+}
+
+export interface WorkspaceCreateDirectoryRequest {
+  rootPath: string;
+  parentPath?: string;
+  name: string;
+}
+
+export interface WorkspaceCreateFileResult {
+  workspace: WorkspaceOpenResult;
+  document: OpenDocumentResult;
+}
+
 export interface ExportHtmlRequest {
   content: string;
   documentPath?: string;
