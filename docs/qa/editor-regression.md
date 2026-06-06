@@ -10,12 +10,19 @@ Use the regression sample for manual passes:
 pnpm dev -- docs/qa/fixtures/editor-regression-sample.md
 ```
 
+Use the smoke runner for automated startup passes:
+
+```sh
+pnpm smoke:electron
+```
+
 This command is verified to forward the fixture path to Electron and open the document on startup. If it fails in a shell-specific setup, start with `pnpm dev`, then open `docs/qa/fixtures/editor-regression-sample.md` from the app menu.
 
 The sample covers headings, inline marks, links, lists, task lists, blockquote, horizontal rule, tables, code highlighting, unknown code fallback, math, invalid math fallback, Mermaid, invalid Mermaid fallback, remote images, missing local image fallback, and block operations.
 
 ## Startup
 
+- Run `pnpm smoke:electron`.
 - Start the app with `pnpm dev`.
 - Start the app with the regression sample path when doing a manual editor pass.
 - Confirm the main window opens without renderer or main-process crashes.
@@ -92,6 +99,7 @@ The sample covers headings, inline marks, links, lists, task lists, blockquote, 
 Run these before committing:
 
 ```sh
+pnpm smoke:electron
 pnpm test
 pnpm -r run typecheck
 pnpm build
@@ -161,3 +169,17 @@ and markdown vendor chunks. Those remain tracked in `docs/qa/build-budget.md`.
 - Remaining Electron insecure CSP warning is expected in development because Vite requires dev-only
   script relaxations. This warning will not show once packaged.
 - Remaining DevTools Autofill protocol messages are Chromium DevTools noise.
+
+## 2026-06-06 Electron Smoke Runner
+
+- Added `pnpm smoke:electron` for automated startup passes.
+- The smoke runner builds preload/main, starts renderer/main dev watchers, launches Electron with
+  `docs/qa/fixtures/editor-regression-sample.md`, and waits for window creation plus fixture open
+  logs.
+- The runner fails on known app-level startup regressions, including duplicate Tiptap extensions,
+  React Refresh preamble failures, ImageView crashes, BlockHandle `NaN`, and CodeMirror decoration
+  crashes.
+- DevTools Autofill protocol messages and development CSP warnings are filtered as expected dev
+  noise.
+- Manual interaction remains required for save/reopen, rich node editing, resource panel actions,
+  and HTML/PDF preview inspection.
