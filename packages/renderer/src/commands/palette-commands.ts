@@ -57,6 +57,22 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     command: formatCommands.heading4,
   },
   {
+    id: "heading5",
+    label: "标题 5",
+    keywords: ["h5", "heading", "biaoti"],
+    group: "格式",
+    shortcut: "⌘5",
+    command: formatCommands.heading5,
+  },
+  {
+    id: "heading6",
+    label: "标题 6",
+    keywords: ["h6", "heading", "biaoti"],
+    group: "格式",
+    shortcut: "⌘6",
+    command: formatCommands.heading6,
+  },
+  {
     id: "heading-clear",
     label: "清除标题",
     keywords: ["heading clear", "biaoti"],

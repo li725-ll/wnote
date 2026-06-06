@@ -16,7 +16,7 @@ describe("palette commands", () => {
   it("builds stable command metadata", () => {
     const commands = buildPaletteCommands(createActions());
 
-    expect(commands).toHaveLength(37);
+    expect(commands).toHaveLength(39);
     expect(commands.slice(0, 7).map((command) => command.id)).toEqual([
       "new-file",
       "open-file",

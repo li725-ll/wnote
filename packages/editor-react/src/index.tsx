@@ -282,6 +282,8 @@ export const formatCommands = Object.fromEntries(
     "heading2",
     "heading3",
     "heading4",
+    "heading5",
+    "heading6",
     "headingClear",
   ].map((id) => [id, (editor: TiptapEditor) => runCommand(editor, id as EditorCommandId)]),
 ) as Record<EditorCommandId, (editor: TiptapEditor) => boolean>;

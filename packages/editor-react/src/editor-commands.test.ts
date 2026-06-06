@@ -9,6 +9,8 @@ describe("editor commands", () => {
       "heading2",
       "heading3",
       "heading4",
+      "heading5",
+      "heading6",
     ]);
     expect(slashCommands("公式").map((command) => command.id)).toContain("math");
     expect(slashCommands("table").map((command) => command.id)).toEqual(["tableInsert"]);
@@ -16,6 +18,8 @@ describe("editor commands", () => {
 
   it("keeps block menu commands grouped in menu order", () => {
     expect(blockMenuCommands.map((command) => command.group)).toEqual([
+      "block",
+      "block",
       "block",
       "block",
       "block",
@@ -44,6 +48,8 @@ describe("editor commands", () => {
       "heading2",
       "heading3",
       "heading4",
+      "heading5",
+      "heading6",
       "blockquote",
       "unorderedList",
       "orderedList",

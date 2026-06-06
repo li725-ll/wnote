@@ -57,5 +57,7 @@ export enum IpcChannel {
   FormatHeading2 = "format:heading-2",
   FormatHeading3 = "format:heading-3",
   FormatHeading4 = "format:heading-4",
+  FormatHeading5 = "format:heading-5",
+  FormatHeading6 = "format:heading-6",
   FormatHeadingClear = "format:heading-clear",
 }
