@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @wnote/preload build && pnpm --filter @wnote/renderer build && pnpm --filter @wnote/main build",
+    "build:budget": "node scripts/check-build-budget.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

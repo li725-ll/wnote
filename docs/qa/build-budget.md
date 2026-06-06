@@ -6,9 +6,11 @@ Track production build size after renderer or rendering-pipeline changes.
 
 ```sh
 pnpm build
+pnpm build:budget
 ```
 
-Run `pnpm lint`, `pnpm test`, `pnpm -r run typecheck`, and `git diff --check` before commits that change build or rendering behavior.
+Run `pnpm lint`, `pnpm test`, `pnpm -r run typecheck`, and `git diff --check` before commits
+that change build or rendering behavior.
 
 ## 2026-06-06 Baseline
 
@@ -90,3 +92,24 @@ Main process build highlights:
 
 The current warnings are acceptable for Typora-like V1 because the oversized renderer chunks are
 feature-specific editor/rendering dependencies rather than accidental app-shell growth.
+
+## Enforced Budgets
+
+`pnpm build:budget` checks already-built production artifacts. Run `pnpm build` first. When a
+pattern matches multiple hashed files, the checker uses the largest matching artifact.
+
+Current hard limits leave room for normal dependency patch drift while still catching accidental
+entry-point growth:
+
+- Renderer CSS: `45 kB` minified, `10 kB` gzip.
+- Renderer main entry: `300 kB` minified, `75 kB` gzip.
+- Renderer React vendor: `360 kB` minified, `90 kB` gzip.
+- Renderer Markdown vendor: `500 kB` minified, `125 kB` gzip.
+- Renderer Tiptap vendor: `620 kB` minified, `170 kB` gzip.
+- Renderer Mermaid core: `920 kB` minified, `190 kB` gzip.
+- Main process entry: `310 kB` minified, `105 kB` gzip.
+- Main Shiki runtime: `170 kB` minified, `55 kB` gzip.
+- Main KaTeX export chunk: `300 kB` minified, `90 kB` gzip.
+
+If a budget fails, either reduce the chunk size or update this document with a concrete reason for
+the new threshold.
