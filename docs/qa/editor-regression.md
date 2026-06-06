@@ -220,3 +220,30 @@ Known validation notes:
   lock. Run Electron app-level validation commands serially.
 - electron-builder skips macOS signing on this machine because no Developer ID identity is
   configured.
+
+## 2026-06-06 Typora-Like V1 Manual Acceptance
+
+Manual acceptance was completed after the final automated validation pass.
+
+Accepted areas:
+
+- App startup and fixture loading.
+- File create, save, close, and reopen flow.
+- Heading levels H1-H6.
+- Paragraph, quote, horizontal rule, ordered list, unordered list, and task list editing.
+- Inline marks: bold, italic, underline, strikethrough, inline code, and link.
+- Table rendering and editing, including visible table borders.
+- Code block rendering, language highlighting, unknown language fallback, and copy action.
+- Mermaid block rendering and invalid-source fallback.
+- Inline math and block math rendering with invalid-formula fallback.
+- Image rendering, local missing-image fallback, caption, width, and alignment behavior.
+- HTML export and packaged app startup smoke behavior.
+- Focus behavior for slash menu, floating toolbar, block handle, and resource panel interactions.
+
+Current V1 acceptance status:
+
+- Typora-like V1 is accepted as the current development baseline.
+- Remaining work should be tracked as V1.1 experience hardening or performance follow-up, not as
+  V1 blockers.
+- New editor changes should preserve this checklist and extend automated coverage when a manual
+  case becomes repeatable.
