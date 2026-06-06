@@ -154,7 +154,14 @@ export async function deleteWorkspaceEntry(
   const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
   if (!nodeType) throw new Error("Workspace target is not a file or directory");
   if (nodeType === "directory") {
-    await rmdir(targetPath);
+    try {
+      await rmdir(targetPath);
+    } catch (error) {
+      if (isDirectoryNotEmptyError(error)) {
+        throw new Error("Workspace directory is not empty", { cause: error });
+      }
+      throw error;
+    }
   } else {
     await unlink(targetPath);
   }
@@ -321,7 +328,6 @@ async function scanWorkspaceDirectory(
     if (entry.isDirectory()) {
       if (IGNORED_WORKSPACE_DIRECTORIES.has(entry.name)) continue;
       const children = await scanWorkspaceDirectory(fullPath, depth + 1);
-      if (children.length === 0) continue;
       nodes.push({
         name: entry.name,
         path: fullPath,
@@ -390,6 +396,15 @@ function normalizeWorkspaceName(name: string): string {
     throw new Error("Workspace name must be a single path segment");
   }
   return normalized;
+}
+
+function isDirectoryNotEmptyError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as NodeJS.ErrnoException).code === "ENOTEMPTY"
+  );
 }
 
 function mimeFromExtension(ext: string): string | undefined {

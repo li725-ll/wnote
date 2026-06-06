@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { WorkspaceTreeNode } from "@wnote/contracts";
-import { hasWorkspaceDocuments } from "./workspace-panel-state";
+import { hasWorkspaceEntries } from "./workspace-panel-state";
 import styles from "./WorkspacePanel.module.css";
 
 type CreateMode = "file" | "directory";
 type RenameTarget = { path: string; name: string };
+type CreateTarget = { parentPath?: string; label: string };
 
 interface WorkspacePanelProps {
   name?: string;
@@ -13,8 +14,8 @@ interface WorkspacePanelProps {
   loading?: boolean;
   onOpenWorkspace: () => void;
   onOpenFile: (filePath: string) => void;
-  onCreateFile?: (name: string) => void;
-  onCreateDirectory?: (name: string) => void;
+  onCreateFile?: (name: string, parentPath?: string) => void;
+  onCreateDirectory?: (name: string, parentPath?: string) => void;
   onRefresh?: () => void;
   onRename?: (path: string, name: string) => void;
   onDelete?: (path: string) => void;
@@ -33,14 +34,17 @@ export function WorkspacePanel({
   onRename,
   onDelete,
 }: WorkspacePanelProps) {
-  const hasDocuments = hasWorkspaceDocuments(tree);
+  const hasEntries = hasWorkspaceEntries(tree);
   const canCreate = Boolean(name);
   const [createMode, setCreateMode] = useState<CreateMode | null>(null);
+  const [createTarget, setCreateTarget] = useState<CreateTarget>({ label: "工作区" });
   const [draftName, setDraftName] = useState("");
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
 
-  const startCreate = (mode: CreateMode) => {
+  const startCreate = (mode: CreateMode, target: CreateTarget = { label: "工作区" }) => {
+    setRenameTarget(null);
     setCreateMode(mode);
+    setCreateTarget(target);
     setDraftName(mode === "file" ? "untitled.md" : "notes");
   };
 
@@ -52,8 +56,8 @@ export function WorkspacePanel({
   const submitCreate = () => {
     const nextName = draftName.trim();
     if (!nextName || !createMode) return;
-    if (createMode === "file") onCreateFile?.(nextName);
-    if (createMode === "directory") onCreateDirectory?.(nextName);
+    if (createMode === "file") onCreateFile?.(nextName, createTarget.parentPath);
+    if (createMode === "directory") onCreateDirectory?.(nextName, createTarget.parentPath);
     cancelCreate();
   };
 
@@ -114,6 +118,7 @@ export function WorkspacePanel({
       </div>
       {createMode || renameTarget ? (
         <div className={styles.createForm}>
+          {createMode ? <span className={styles.createTarget}>{createTarget.label}</span> : null}
           <input
             aria-label={renameTarget ? "重命名" : createMode === "file" ? "文件名" : "文件夹名"}
             value={draftName}
@@ -139,7 +144,7 @@ export function WorkspacePanel({
         </div>
       ) : null}
       {loading ? <p className={styles.empty}>正在读取...</p> : null}
-      {!loading && !hasDocuments ? (
+      {!loading && !hasEntries ? (
         <div className={styles.emptyState}>
           <p>打开目录以浏览文档。</p>
           <button type="button" onClick={onOpenWorkspace}>
@@ -157,6 +162,7 @@ export function WorkspacePanel({
               onOpenFile={onOpenFile}
               onRename={startRename}
               onDelete={submitDelete}
+              onCreate={startCreate}
             />
           ))}
         </ul>
@@ -172,6 +178,7 @@ function WorkspaceNode({
   onOpenFile,
   onRename,
   onDelete,
+  onCreate,
 }: {
   node: WorkspaceTreeNode;
   depth: number;
@@ -179,8 +186,10 @@ function WorkspaceNode({
   onOpenFile: (filePath: string) => void;
   onRename: (node: WorkspaceTreeNode) => void;
   onDelete: (node: WorkspaceTreeNode) => void;
+  onCreate: (mode: CreateMode, target?: CreateTarget) => void;
 }) {
   if (node.type === "directory") {
+    const target = { parentPath: node.path, label: node.name };
     return (
       <li>
         <details open>
@@ -188,6 +197,28 @@ function WorkspaceNode({
             <span className={styles.icon}>▸</span>
             <span className={styles.name}>{node.name}</span>
             <span className={styles.nodeActions}>
+              <button
+                type="button"
+                title="在此新建文件"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onCreate("file", target);
+                }}
+              >
+                +文件
+              </button>
+              <button
+                type="button"
+                title="在此新建文件夹"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onCreate("directory", target);
+                }}
+              >
+                +文件夹
+              </button>
               <button
                 type="button"
                 onClick={(event) => {
@@ -220,6 +251,7 @@ function WorkspaceNode({
                 onOpenFile={onOpenFile}
                 onRename={onRename}
                 onDelete={onDelete}
+                onCreate={onCreate}
               />
             ))}
           </ul>

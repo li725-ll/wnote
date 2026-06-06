@@ -86,17 +86,17 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
       <div className={styles.header} contentEditable={false}>
         <button
           className={styles.copyButton}
+          data-state={copyState}
           disabled={!code}
           type="button"
-          title="复制代码"
+          title={copyButtonLabel(copyState)}
+          aria-label={copyButtonLabel(copyState)}
           onClick={() => {
             void copyCodeBlockText(code)
               .then((copied) => setCopyState(copied ? "copied" : "failed"))
               .catch(() => setCopyState("failed"));
           }}
-        >
-          {copyButtonLabel(copyState)}
-        </button>
+        />
         <input
           className={styles.language}
           value={label}

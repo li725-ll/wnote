@@ -1,4 +1,3 @@
-import type { EditorRef } from "@wnote/editor-react";
 import type { ExportFormat } from "../export/export-state";
 import { editorFormatCommands, type EditorFormatCommand } from "./editor-format-commands";
 

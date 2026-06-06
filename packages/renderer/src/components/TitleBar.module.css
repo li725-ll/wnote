@@ -17,6 +17,10 @@
   -webkit-backdrop-filter: blur(18px) saturate(1.1);
 }
 
+.titleBar[data-platform="windows"] {
+  grid-template-columns: minmax(3.2rem, 1fr) minmax(0, auto) minmax(8.625rem, 1fr);
+}
+
 .left {
   display: flex;
   align-items: center;
@@ -29,27 +33,36 @@
 .controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   min-width: 0;
+}
+
+.controls[data-platform="mac"] {
+  gap: 0.12rem;
+}
+
+.controls[data-platform="windows"] {
+  justify-content: flex-end;
+  height: 100%;
 }
 
 .control {
   position: relative;
-  width: 0.78rem;
-  height: 0.78rem;
-  border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
-  border-radius: 999px;
+  border: 0;
+  background: transparent;
   cursor: pointer;
   padding: 0;
-  transition:
-    filter 120ms ease,
-    transform 120ms ease,
-    box-shadow 120ms ease;
+  -webkit-app-region: no-drag;
 }
 
-.control:hover {
+.controls[data-platform="mac"] .control {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  transition: filter 120ms ease;
+}
+
+.controls[data-platform="mac"] .control:hover {
   filter: saturate(1.12) brightness(0.98);
-  transform: scale(1.05);
 }
 
 .control:focus-visible {
@@ -57,46 +70,109 @@
   outline-offset: 2px;
 }
 
-.control[data-kind="close"] {
+.controls[data-platform="mac"] .control::after {
+  content: "";
+  position: absolute;
+  inset: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-text) 12%, transparent);
+  border-radius: 999px;
+}
+
+.controls[data-platform="mac"] .control[data-kind="close"]::after {
   background: #f56a5f;
 }
 
-.control[data-kind="minimize"] {
+.controls[data-platform="mac"] .control[data-kind="minimize"]::after {
   background: #f3bd4f;
 }
 
-.control[data-kind="maximize"] {
+.controls[data-platform="mac"] .control[data-kind="maximize"]::after {
   background: #63c96b;
 }
 
 .control::before {
   content: "";
   position: absolute;
-  inset: 0.2rem;
-  border-radius: inherit;
   opacity: 0;
   transition: opacity 120ms ease;
 }
 
-.controls:hover .control::before {
+.controls[data-platform="mac"]:hover .control::before {
   opacity: 0.56;
 }
 
-.control[data-kind="close"]::before {
+.controls[data-platform="mac"] .control[data-kind="close"]::before {
+  inset: 0.44rem;
+  z-index: 1;
   background:
     linear-gradient(45deg, transparent 43%, #5c1612 44% 56%, transparent 57%),
     linear-gradient(-45deg, transparent 43%, #5c1612 44% 56%, transparent 57%);
 }
 
-.control[data-kind="minimize"]::before {
-  inset: 0.35rem 0.22rem;
+.controls[data-platform="mac"] .control[data-kind="minimize"]::before {
+  inset: 0.6rem 0.43rem;
+  z-index: 1;
   background: #654211;
 }
 
-.control[data-kind="maximize"]::before {
-  inset: 0.25rem;
-  border-radius: 0.08rem;
-  border: 1px solid #14551b;
+.controls[data-platform="mac"] .control[data-kind="maximize"]::before {
+  inset: 0.47rem;
+  z-index: 1;
+  background:
+    linear-gradient(135deg, transparent 0 42%, #14551b 43% 56%, transparent 57%) left top / 50% 50%
+      no-repeat,
+    linear-gradient(135deg, transparent 0 42%, #14551b 43% 56%, transparent 57%) right bottom / 50%
+      50% no-repeat;
+}
+
+.controls[data-platform="windows"] .control {
+  width: 2.875rem;
+  height: 2.5rem;
+  color: var(--color-text);
+}
+
+.controls[data-platform="windows"] .control:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.controls[data-platform="windows"] .control[data-kind="close"]:hover {
+  background: #c42b1c;
+  color: #ffffff;
+}
+
+.controls[data-platform="windows"] .control::before {
+  inset: 0;
+  display: block;
+  opacity: 0.78;
+}
+
+.controls[data-platform="windows"] .control[data-kind="minimize"]::before {
+  background: linear-gradient(currentColor, currentColor) center / 0.72rem 1px no-repeat;
+}
+
+.controls[data-platform="windows"] .control[data-kind="maximize"]::before {
+  width: 0.66rem;
+  height: 0.56rem;
+  margin: auto;
+  border: 1px solid currentColor;
+}
+
+.controls[data-platform="windows"] .control[data-kind="close"]::before {
+  background:
+    linear-gradient(
+        45deg,
+        transparent calc(50% - 0.5px),
+        currentColor calc(50% - 0.5px) calc(50% + 0.5px),
+        transparent calc(50% + 0.5px)
+      )
+      center / 0.82rem 0.82rem no-repeat,
+    linear-gradient(
+        -45deg,
+        transparent calc(50% - 0.5px),
+        currentColor calc(50% - 0.5px) calc(50% + 0.5px),
+        transparent calc(50% + 0.5px)
+      )
+      center / 0.82rem 0.82rem no-repeat;
 }
 
 .sidebarButton {
@@ -186,5 +262,9 @@
 }
 
 .spacer {
+  display: flex;
+  justify-content: flex-end;
   min-width: 0;
+  height: 100%;
+  -webkit-app-region: no-drag;
 }

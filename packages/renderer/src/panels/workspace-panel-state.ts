@@ -12,3 +12,7 @@ export function flattenWorkspaceTree(nodes: WorkspaceTreeNode[]): WorkspaceTreeN
 export function hasWorkspaceDocuments(nodes: WorkspaceTreeNode[]): boolean {
   return flattenWorkspaceTree(nodes).some((node) => node.type === "file");
 }
+
+export function hasWorkspaceEntries(nodes: WorkspaceTreeNode[]): boolean {
+  return nodes.length > 0;
+}

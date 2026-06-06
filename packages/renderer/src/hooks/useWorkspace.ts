@@ -12,10 +12,12 @@ export function useWorkspace({
   onDocumentOpen,
   onDeletePath,
   onRenamePath,
+  onError,
 }: {
   onDocumentOpen(data: OpenDocumentResult): void;
   onDeletePath?(path: string): void;
   onRenamePath?(oldPath: string, newPath: string): void;
+  onError?(message: string): void;
 }) {
   const [workspace, setWorkspace] = useState<WorkspaceOpenResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,70 +76,86 @@ export function useWorkspace({
   const createWorkspaceFile = useCallback(
     async (name: string, parentPath?: string) => {
       if (!workspace) return;
-      const result = await window.electronAPI.invoke<WorkspaceCreateFileResult | null>(
-        IpcChannel.WorkspaceCreateFile,
-        {
-          rootPath: workspace.rootPath,
-          parentPath,
-          name,
-        },
-      );
-      if (!result) return;
-      setWorkspace(result.workspace);
-      onDocumentOpen(result.document);
+      try {
+        const result = await window.electronAPI.invoke<WorkspaceCreateFileResult | null>(
+          IpcChannel.WorkspaceCreateFile,
+          {
+            rootPath: workspace.rootPath,
+            parentPath,
+            name,
+          },
+        );
+        if (!result) return;
+        setWorkspace(result.workspace);
+        onDocumentOpen(result.document);
+      } catch (error) {
+        onError?.(workspaceErrorMessage(error));
+      }
     },
-    [onDocumentOpen, workspace],
+    [onDocumentOpen, onError, workspace],
   );
 
   const createWorkspaceDirectory = useCallback(
     async (name: string, parentPath?: string) => {
       if (!workspace) return;
-      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-        IpcChannel.WorkspaceCreateDirectory,
-        {
-          rootPath: workspace.rootPath,
-          parentPath,
-          name,
-        },
-      );
-      if (result) setWorkspace(result);
+      try {
+        const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
+          IpcChannel.WorkspaceCreateDirectory,
+          {
+            rootPath: workspace.rootPath,
+            parentPath,
+            name,
+          },
+        );
+        if (result) setWorkspace(result);
+      } catch (error) {
+        onError?.(workspaceErrorMessage(error));
+      }
     },
-    [workspace],
+    [onError, workspace],
   );
 
   const renameWorkspaceEntry = useCallback(
     async (targetPath: string, name: string) => {
       if (!workspace) return;
-      const result = await window.electronAPI.invoke<WorkspaceRenameResult | null>(
-        IpcChannel.WorkspaceRename,
-        {
-          rootPath: workspace.rootPath,
-          targetPath,
-          name,
-        },
-      );
-      if (!result) return;
-      setWorkspace(result.workspace);
-      if (result.nodeType === "file") onRenamePath?.(result.oldPath, result.newPath);
+      try {
+        const result = await window.electronAPI.invoke<WorkspaceRenameResult | null>(
+          IpcChannel.WorkspaceRename,
+          {
+            rootPath: workspace.rootPath,
+            targetPath,
+            name,
+          },
+        );
+        if (!result) return;
+        setWorkspace(result.workspace);
+        if (result.nodeType === "file") onRenamePath?.(result.oldPath, result.newPath);
+      } catch (error) {
+        onError?.(workspaceErrorMessage(error));
+      }
     },
-    [onRenamePath, workspace],
+    [onError, onRenamePath, workspace],
   );
 
   const deleteWorkspaceEntry = useCallback(
     async (targetPath: string) => {
       if (!workspace) return;
-      const result = await window.electronAPI.invoke<WorkspaceDeleteResult | null>(
-        IpcChannel.WorkspaceDelete,
-        {
-          rootPath: workspace.rootPath,
-          targetPath,
-        },
-      );
-      if (!result) return;
-      setWorkspace(result.workspace);
-      if (result.nodeType === "file") onDeletePath?.(result.deletedPath);
+      try {
+        const result = await window.electronAPI.invoke<WorkspaceDeleteResult | null>(
+          IpcChannel.WorkspaceDelete,
+          {
+            rootPath: workspace.rootPath,
+            targetPath,
+          },
+        );
+        if (!result) return;
+        setWorkspace(result.workspace);
+        if (result.nodeType === "file") onDeletePath?.(result.deletedPath);
+      } catch (error) {
+        onError?.(workspaceErrorMessage(error));
+      }
     },
-    [onDeletePath, workspace],
+    [onDeletePath, onError, workspace],
   );
 
   return {
@@ -151,4 +169,18 @@ export function useWorkspace({
     renameWorkspaceEntry,
     deleteWorkspaceEntry,
   };
+}
+
+function workspaceErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return "工作区操作失败。";
+  if (error.message.includes("already exists")) return "同名文件或文件夹已存在。";
+  if (error.message.includes("Unsupported workspace document extension")) {
+    return "仅支持 .md、.markdown 和 .txt 文档。";
+  }
+  if (error.message.includes("not empty")) return "文件夹不是空的，暂不能删除。";
+  if (error.message.includes("outside the workspace")) return "目标路径不在当前工作区内。";
+  if (error.message.includes("permission") || error.message.includes("EACCES")) {
+    return "没有权限完成该操作。";
+  }
+  return error.message || "工作区操作失败。";
 }

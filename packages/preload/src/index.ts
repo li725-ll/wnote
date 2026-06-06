@@ -23,6 +23,7 @@ function wrappedListener(channel: IpcChannel, listener: Listener): IpcWrappedLis
 }
 
 const api: ElectronAPI = {
+  platform: process.platform,
   send: (channel: IpcChannel, ...args: unknown[]) => ipcRenderer.send(channel, ...args),
   invoke: <T = unknown>(channel: IpcChannel, ...args: unknown[]) =>
     ipcRenderer.invoke(channel, ...args) as Promise<T>,

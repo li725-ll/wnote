@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { WorkspaceTreeNode } from "@wnote/contracts";
-import { flattenWorkspaceTree, hasWorkspaceDocuments } from "./workspace-panel-state";
+import {
+  flattenWorkspaceTree,
+  hasWorkspaceDocuments,
+  hasWorkspaceEntries,
+} from "./workspace-panel-state";
 
 const tree: WorkspaceTreeNode[] = [
   {
@@ -36,5 +40,10 @@ describe("workspace panel state", () => {
     expect(hasWorkspaceDocuments([{ name: "empty", path: "/empty", type: "directory" }])).toBe(
       false,
     );
+  });
+
+  it("detects empty directory entries separately from documents", () => {
+    expect(hasWorkspaceEntries([{ name: "empty", path: "/empty", type: "directory" }])).toBe(true);
+    expect(hasWorkspaceEntries([])).toBe(false);
   });
 });

@@ -147,6 +147,9 @@ export default function App() {
     onDocumentOpen: applyOpenedDocument,
     onDeletePath: closePath,
     onRenamePath: renamePath,
+    onError: (message) => {
+      showToast({ kind: "error", title: "工作区操作失败", message }, 5200);
+    },
   });
 
   useAppSettingsSync({
@@ -341,11 +344,11 @@ export default function App() {
                 onOpenFile={(filePath) => {
                   void openWorkspaceFile(filePath);
                 }}
-                onCreateFile={(name) => {
-                  void createWorkspaceFile(name);
+                onCreateFile={(name, parentPath) => {
+                  void createWorkspaceFile(name, parentPath);
                 }}
-                onCreateDirectory={(name) => {
-                  void createWorkspaceDirectory(name);
+                onCreateDirectory={(name, parentPath) => {
+                  void createWorkspaceDirectory(name, parentPath);
                 }}
                 onRefresh={() => {
                   void refreshWorkspace();

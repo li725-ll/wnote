@@ -12,35 +12,17 @@ function invokeWindow(channel: IpcChannel) {
 }
 
 export function TitleBar({ title, dirty = false, onToggleSidebar }: TitleBarProps) {
+  const platform = window.electronAPI.platform;
+  const isMac = platform === "darwin";
+
   return (
     <header
       className={styles.titleBar}
+      data-platform={isMac ? "mac" : "windows"}
       onDoubleClick={() => invokeWindow(IpcChannel.WindowMaximize)}
     >
       <div className={styles.left} onDoubleClick={(event) => event.stopPropagation()}>
-        <div className={styles.controls} aria-label="窗口控制">
-          <button
-            className={styles.control}
-            data-kind="close"
-            type="button"
-            aria-label="关闭窗口"
-            onClick={() => invokeWindow(IpcChannel.WindowClose)}
-          />
-          <button
-            className={styles.control}
-            data-kind="minimize"
-            type="button"
-            aria-label="最小化窗口"
-            onClick={() => invokeWindow(IpcChannel.WindowMinimize)}
-          />
-          <button
-            className={styles.control}
-            data-kind="maximize"
-            type="button"
-            aria-label="最大化窗口"
-            onClick={() => invokeWindow(IpcChannel.WindowMaximize)}
-          />
-        </div>
+        {isMac ? <WindowControls platform="mac" /> : null}
         {onToggleSidebar ? (
           <button
             className={styles.sidebarButton}
@@ -59,7 +41,37 @@ export function TitleBar({ title, dirty = false, onToggleSidebar }: TitleBarProp
         <span className={styles.document}>{title}</span>
         {dirty ? <span className={styles.dirty} aria-label="未保存" /> : null}
       </div>
-      <div className={styles.spacer} />
+      <div className={styles.spacer}>{isMac ? null : <WindowControls platform="windows" />}</div>
     </header>
+  );
+}
+
+function WindowControls({ platform }: { platform: "mac" | "windows" }) {
+  const controls =
+    platform === "mac"
+      ? [
+          { kind: "close", label: "关闭窗口", channel: IpcChannel.WindowClose },
+          { kind: "minimize", label: "最小化窗口", channel: IpcChannel.WindowMinimize },
+          { kind: "maximize", label: "最大化窗口", channel: IpcChannel.WindowMaximize },
+        ]
+      : [
+          { kind: "minimize", label: "最小化窗口", channel: IpcChannel.WindowMinimize },
+          { kind: "maximize", label: "最大化窗口", channel: IpcChannel.WindowMaximize },
+          { kind: "close", label: "关闭窗口", channel: IpcChannel.WindowClose },
+        ];
+
+  return (
+    <div className={styles.controls} data-platform={platform} aria-label="窗口控制">
+      {controls.map((control) => (
+        <button
+          key={control.kind}
+          className={styles.control}
+          data-kind={control.kind}
+          type="button"
+          aria-label={control.label}
+          onClick={() => invokeWindow(control.channel)}
+        />
+      ))}
+    </div>
   );
 }

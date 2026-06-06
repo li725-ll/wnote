@@ -356,7 +356,7 @@ describe("@wnote/storage-main workspace", () => {
   it("creates workspace directories inside the selected root", async () => {
     const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-create-dir-"));
 
-    await createWorkspaceDirectory({
+    const directoryResult = await createWorkspaceDirectory({
       rootPath: dir,
       name: "notes",
     });
@@ -366,8 +366,28 @@ describe("@wnote/storage-main workspace", () => {
       name: "daily.md",
     });
 
+    expect(directoryResult.tree.map((node) => node.name)).toEqual(["notes"]);
+    expect(directoryResult.tree[0]?.children).toEqual([]);
     expect(result.workspace.tree[0]?.name).toBe("notes");
     expect(result.workspace.tree[0]?.children?.map((node) => node.name)).toEqual(["daily.md"]);
+  });
+
+  it("creates nested workspace directories", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-create-nested-dir-"));
+    await createWorkspaceDirectory({
+      rootPath: dir,
+      name: "notes",
+    });
+
+    const result = await createWorkspaceDirectory({
+      rootPath: dir,
+      parentPath: join(dir, "notes"),
+      name: "daily",
+    });
+
+    expect(result.tree[0]?.name).toBe("notes");
+    expect(result.tree[0]?.children?.map((node) => node.name)).toEqual(["daily"]);
+    expect(result.tree[0]?.children?.[0]?.children).toEqual([]);
   });
 
   it("rejects workspace file creation outside the root", async () => {
@@ -472,6 +492,6 @@ describe("@wnote/storage-main workspace", () => {
         rootPath: dir,
         targetPath: join(dir, "notes"),
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow("Workspace directory is not empty");
   });
 });
