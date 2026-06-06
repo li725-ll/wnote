@@ -100,9 +100,12 @@ Run these before committing:
 
 ```sh
 pnpm smoke:electron
+pnpm test:e2e
 pnpm test
 pnpm -r run typecheck
+pnpm lint
 pnpm build
+pnpm run pack
 git diff --check
 ```
 
@@ -194,3 +197,26 @@ and markdown vendor chunks. Those remain tracked in `docs/qa/build-budget.md`.
 - Code signing was skipped because no local Developer ID identity is configured.
 - Started `release/0.0.1/mac-arm64/WNote.app/Contents/MacOS/WNote` with the regression fixture.
 - Confirmed the packaged executable starts and remains running instead of crashing on launch.
+
+## 2026-06-06 Typora-Like V1 Final Validation
+
+- Added Playwright Electron coverage for renderer startup, file save/reopen, and HTML export.
+- Re-ran the full automated gate after the editor architecture and Typora-like editor batches.
+- `pnpm smoke:electron` passed with the regression fixture and runtime-error filters enabled.
+- `pnpm test:e2e` passed all Electron flows:
+  - fixture startup without renderer runtime errors.
+  - save a new document and reopen it through the app file flow.
+  - export the active document to HTML through Electron IPC.
+- `pnpm test` passed all unit and integration suites.
+- `pnpm -r run typecheck` passed all workspace packages.
+- `pnpm lint` passed.
+- `pnpm build` passed. Vite still reports known large chunk warnings for editor/rendering vendors.
+- `pnpm run pack` passed and produced the unpacked macOS app.
+- `git diff --check` passed.
+
+Known validation notes:
+
+- A parallel run of `pnpm smoke:electron` and `pnpm test:e2e` can hit Electron's single-instance
+  lock. Run Electron app-level validation commands serially.
+- electron-builder skips macOS signing on this machine because no Developer ID identity is
+  configured.

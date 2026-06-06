@@ -48,7 +48,7 @@ Validated after the Electron smoke runner and packaged app pass.
 
 Renderer build highlights:
 
-- Main renderer entry: about `234 kB` minified, `54 kB` gzip.
+- Main renderer entry: about `238 kB` minified, `54 kB` gzip.
 - Shiki runtime chunk: about `201 kB` minified, `51 kB` gzip.
 - Tiptap vendor chunk: about `554 kB` minified, `148 kB` gzip.
 - Mermaid core chunk: about `844 kB` minified, `168 kB` gzip.
@@ -67,3 +67,26 @@ Decision:
   non-editor first-run route becomes a product requirement.
 - Keep Mermaid and Shiki behind dynamic imports; avoid private Mermaid package path trimming unless
   a supported public API exists.
+
+## 2026-06-06 Final Validation Snapshot
+
+Captured from `pnpm run pack`, which runs the production renderer and main builds before packaging.
+
+Renderer build highlights:
+
+- CSS entry: about `34 kB` minified, `7 kB` gzip.
+- Main renderer entry: about `238 kB` minified, `54 kB` gzip.
+- React vendor chunk: about `317 kB` minified, `77 kB` gzip.
+- KaTeX vendor chunk: about `329 kB` minified, `82 kB` gzip.
+- Markdown vendor chunk: about `447 kB` minified, `109 kB` gzip.
+- Tiptap vendor chunk: about `554 kB` minified, `148 kB` gzip.
+- Mermaid core chunk: about `844 kB` minified, `168 kB` gzip.
+
+Main process build highlights:
+
+- Main process entry: about `259 kB` minified, `84 kB` gzip.
+- Shiki runtime chunk: about `138 kB` minified, `44 kB` gzip.
+- KaTeX export chunk: about `262 kB` minified, `78 kB` gzip.
+
+The current warnings are acceptable for Typora-like V1 because the oversized renderer chunks are
+feature-specific editor/rendering dependencies rather than accidental app-shell growth.
