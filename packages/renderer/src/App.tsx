@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import type { SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
-import { SettingsPage } from "./pages/SettingsPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
-import { CommandPalette } from "./components/CommandPalette";
-import { ExportDialog, type ExportFormat } from "./components/ExportDialog";
+import type { ExportFormat } from "./export/export-state";
 import { Toast } from "./components/Toast";
 import { ResourcePanel } from "./panels/ResourcePanel";
 import { defaultExportOptions } from "./export/export-state";
@@ -32,6 +30,16 @@ import { useWindowTitle } from "./hooks/useWindowTitle";
 import { useDocumentOpen } from "./hooks/useDocumentOpen";
 
 const STORAGE_KEY = "wnote:welcomed";
+
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })),
+);
+const CommandPalette = lazy(() =>
+  import("./components/CommandPalette").then((module) => ({ default: module.CommandPalette })),
+);
+const ExportDialog = lazy(() =>
+  import("./components/ExportDialog").then((module) => ({ default: module.ExportDialog })),
+);
 
 export default function App() {
   const [view, setView] = useState<"welcome" | "editor" | "settings">(() => {
@@ -249,7 +257,11 @@ export default function App() {
   }
 
   if (view === "settings") {
-    return <SettingsPage onBack={() => setView("editor")} onThemeChange={setTheme} />;
+    return (
+      <Suspense fallback={null}>
+        <SettingsPage onBack={() => setView("editor")} onThemeChange={setTheme} />
+      </Suspense>
+    );
   }
 
   return (
@@ -289,29 +301,35 @@ export default function App() {
               assetResolver={resolveEditorAsset}
             />
           </div>
-          <CommandPalette
-            open={paletteOpen}
-            commands={commands}
-            onClose={() => {
-              setPaletteOpen(false);
-              editorRef.current?.focus();
-            }}
-          />
-          <ExportDialog
-            open={exportDialogOpen}
-            format={exportFormat}
-            initialOptions={exportOptions}
-            onCancel={() => {
-              setExportDialogOpen(false);
-              editorRef.current?.focus();
-            }}
-            onConfirm={(format, options) => {
-              void handleExport(format, options);
-            }}
-            onPreview={(format, options) => {
-              void handleExportPreview(format, options);
-            }}
-          />
+          <Suspense fallback={null}>
+            {paletteOpen ? (
+              <CommandPalette
+                open={paletteOpen}
+                commands={commands}
+                onClose={() => {
+                  setPaletteOpen(false);
+                  editorRef.current?.focus();
+                }}
+              />
+            ) : null}
+            {exportDialogOpen ? (
+              <ExportDialog
+                open={exportDialogOpen}
+                format={exportFormat}
+                initialOptions={exportOptions}
+                onCancel={() => {
+                  setExportDialogOpen(false);
+                  editorRef.current?.focus();
+                }}
+                onConfirm={(format, options) => {
+                  void handleExport(format, options);
+                }}
+                onPreview={(format, options) => {
+                  void handleExportPreview(format, options);
+                }}
+              />
+            ) : null}
+          </Suspense>
           <Toast toast={toast} onClose={closeToast} />
         </div>
       }

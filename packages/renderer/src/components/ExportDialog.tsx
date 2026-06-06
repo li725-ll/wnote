@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ExportHtmlOptions } from "@wnote/contracts";
+import type { ExportFormat } from "../export/export-state";
 import styles from "./ExportDialog.module.css";
-
-export type ExportFormat = "html" | "pdf";
 
 interface ExportDialogProps {
   open: boolean;

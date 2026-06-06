@@ -76,6 +76,7 @@ export function Editor({
   contentSyncRef.current.setOnChange(onChange);
   const containerRef = useRef<HTMLDivElement>(null);
   const suppressUpdateRef = useRef(false);
+  const pendingContentRef = useRef<string | null>(null);
   const onChangeRef = useRef(onChange);
   const onHeadingsChangeRef = useRef(onHeadingsChange);
   const onImageSaveRef = useRef(onImageSave);
@@ -158,7 +159,10 @@ export function Editor({
 
   useEffect(() => {
     if (!editor) return;
-    void applyMarkdownContent(contentSyncRef.current?.getContent() ?? initialContent, editor);
+    const content =
+      pendingContentRef.current ?? contentSyncRef.current?.getContent() ?? initialContent;
+    pendingContentRef.current = null;
+    void applyMarkdownContent(content, editor);
   }, [applyMarkdownContent, editor]);
 
   useImperativeHandle(
@@ -173,6 +177,7 @@ export function Editor({
       },
       setContent(md: string) {
         if (!editor) {
+          pendingContentRef.current = md;
           void contentSyncRef.current?.applyMarkdownContent(md);
           return;
         }

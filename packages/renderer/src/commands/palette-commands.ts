@@ -1,7 +1,7 @@
 import { formatCommands } from "@wnote/editor-react";
 import type { EditorRef } from "@wnote/editor-react";
-import type { ExportFormat } from "../components/ExportDialog";
 import type { PaletteCommand } from "../components/CommandPalette";
+import type { ExportFormat } from "../export/export-state";
 
 export type EditorFormatCommand = (view: NonNullable<ReturnType<EditorRef["getView"]>>) => boolean;
 

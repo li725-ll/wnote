@@ -9,7 +9,7 @@ import {
 } from "@wnote/contracts";
 import type { EditorRef } from "@wnote/editor-react";
 import type { ToastState } from "../components/Toast";
-import type { ExportFormat } from "../components/ExportDialog";
+import type { ExportFormat } from "../export/export-state";
 import { createExportSuccessActions, describeExport } from "../export/export-state";
 import type { DocumentTab } from "./useTabs";
 

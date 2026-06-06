@@ -113,3 +113,24 @@ entry-point growth:
 
 If a budget fails, either reduce the chunk size or update this document with a concrete reason for
 the new threshold.
+
+## 2026-06-06 Renderer Lazy UI Split
+
+First bundle-reduction pass:
+
+- Moved Settings Page, Command Palette, and Export Dialog behind React lazy boundaries.
+- Kept the editor, tab bar, outline, resource panel, and toast in the primary editor route.
+- Restored the regression fixture to valid Markdown so startup E2E keeps checking table/code rich
+  rendering instead of raw Markdown fallback.
+
+Build result:
+
+- Renderer CSS entry dropped from about `35 kB` to about `30 kB` minified.
+- Renderer main entry dropped from about `238 kB` to about `216 kB` minified.
+- Lazy UI chunks added:
+  - Command Palette: about `3 kB` JS and `1 kB` CSS.
+  - Settings Page: about `5 kB` JS and `2 kB` CSS.
+  - Export Dialog: about `8 kB` JS and `2 kB` CSS.
+
+Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
+E2E.

@@ -1,6 +1,7 @@
 import { IpcChannel, type ExportHtmlOptions } from "@wnote/contracts";
 import type { ToastAction } from "../components/Toast";
-import type { ExportFormat } from "../components/ExportDialog";
+
+export type ExportFormat = "html" | "pdf";
 
 export const defaultExportOptions: Required<ExportHtmlOptions> = {
   inlineLocalImages: false,
