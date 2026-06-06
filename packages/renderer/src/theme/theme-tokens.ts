@@ -52,12 +52,10 @@ export const themeTokenValues: Record<ThemeName, Record<ThemeToken, string>> = {
     "--sidebar-bg": "#f1e4d2",
     "--sidebar-border": "#dcc7ad",
     "--editor-max-width": "800px",
-    "--editor-font":
-      '"HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif',
+    "--editor-font": '"HarmonyOS Sans SC", sans-serif',
     "--editor-font-size": "16px",
     "--editor-line-height": "1.72",
-    "--editor-mono-font":
-      '"JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace',
+    "--editor-mono-font": '"JetBrains Mono", monospace',
   },
   dark: {
     "--color-bg": "#17120d",
@@ -77,12 +75,10 @@ export const themeTokenValues: Record<ThemeName, Record<ThemeToken, string>> = {
     "--sidebar-bg": "#100d0a",
     "--sidebar-border": "#3c3022",
     "--editor-max-width": "800px",
-    "--editor-font":
-      '"HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif',
+    "--editor-font": '"HarmonyOS Sans SC", sans-serif',
     "--editor-font-size": "16px",
     "--editor-line-height": "1.72",
-    "--editor-mono-font":
-      '"JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace',
+    "--editor-mono-font": '"JetBrains Mono", monospace',
   },
 };
 

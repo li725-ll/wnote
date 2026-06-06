@@ -19,27 +19,12 @@
   max-width: var(--editor-max-width, 860px);
   min-height: 100%;
   margin: 0 auto;
-  padding: clamp(2.75rem, 7vh, 5.25rem) clamp(1.35rem, 4vw, 2.5rem) 5.5rem;
-  font-family: var(
-    --editor-font,
-    "HarmonyOS Sans SC",
-    "PingFang SC",
-    "Microsoft YaHei",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-    "Helvetica Neue",
-    Arial,
-    sans-serif
-  );
+  padding: clamp(3.75rem, 8vh, 6.5rem) clamp(1.35rem, 4vw, 2.5rem) 6rem;
+  font-family: var(--editor-font, "HarmonyOS Sans SC", sans-serif);
   font-size: var(--editor-font-size, 16.5px);
   line-height: var(--editor-line-height, 1.78);
   outline: none;
   caret-color: var(--color-accent);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--color-bg) 88%, var(--color-hover-bg) 12%);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--color-border) 32%, transparent),
-    0 18px 48px color-mix(in srgb, var(--color-text) 5%, transparent);
 }
 
 .editor :global(p) {
@@ -90,13 +75,13 @@
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
   border-radius: 12px;
   background: var(--color-code-bg, color-mix(in srgb, var(--color-border) 30%, transparent));
-  font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
+  font-family: var(--editor-mono-font, "JetBrains Mono", monospace);
 }
 
 .editor :global(code) {
   border-radius: 6px;
   background: color-mix(in srgb, var(--color-code-bg) 86%, transparent);
-  font-family: var(--editor-mono-font, "JetBrains Mono", "SFMono-Regular", Consolas, monospace);
+  font-family: var(--editor-mono-font, "JetBrains Mono", monospace);
   padding: 0.1em 0.25em;
 }
 

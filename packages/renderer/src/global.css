@@ -62,12 +62,10 @@ html[data-theme="light"] {
   --sidebar-bg: #f7f2eb;
   --sidebar-border: #e1d7c9;
   --editor-max-width: 800px;
-  --editor-font:
-    "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
-    "Helvetica Neue", Arial, sans-serif;
+  --editor-font: "HarmonyOS Sans SC", sans-serif;
   --editor-font-size: 16px;
   --editor-line-height: 1.72;
-  --editor-mono-font: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --editor-mono-font: "JetBrains Mono", monospace;
 }
 
 html[data-theme="dark"] {
@@ -89,12 +87,10 @@ html[data-theme="dark"] {
   --sidebar-bg: #11100d;
   --sidebar-border: #342e25;
   --editor-max-width: 800px;
-  --editor-font:
-    "HarmonyOS Sans SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC",
-    "Helvetica Neue", Arial, sans-serif;
+  --editor-font: "HarmonyOS Sans SC", sans-serif;
   --editor-font-size: 16px;
   --editor-line-height: 1.72;
-  --editor-mono-font: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --editor-mono-font: "JetBrains Mono", monospace;
 }
 
 html,
@@ -111,21 +107,11 @@ body,
 }
 
 body {
-  font-family: var(
-    --editor-font,
-    "HarmonyOS Sans SC",
-    "PingFang SC",
-    "Microsoft YaHei",
-    "Noto Sans CJK SC",
-    "Source Han Sans SC",
-    "Helvetica Neue",
-    Arial,
-    sans-serif
-  );
+  font-family: var(--editor-font, "HarmonyOS Sans SC", sans-serif);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--color-bg);
+  background: transparent;
   color: var(--color-text);
 }
 
