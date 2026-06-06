@@ -16,6 +16,10 @@ function saveLayout(partial: Partial<LayoutState>) {
   window.electronAPI.invoke(IpcChannel.LayoutSet, partial);
 }
 
+function saveSidebarWidth(leftWidth: number) {
+  saveLayout({ leftWidth });
+}
+
 export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps) {
   const [layout, setLayout] = useState<
     Pick<LayoutState, "leftOpen" | "leftWidth"> & {
@@ -36,7 +40,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
 
   useEffect(() => {
     window.electronAPI.invoke<LayoutState>(IpcChannel.LayoutGet).then((state) => {
-      setLayout({ leftOpen: state.leftOpen, leftWidth: state.leftWidth, loaded: true });
+      setLayout({ leftOpen: false, leftWidth: state.leftWidth, loaded: true });
     });
   }, []);
 
@@ -47,7 +51,6 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
       const next = { ...prev, leftOpen: !prev.leftOpen };
       setSidebarManuallyOpen(next.leftOpen);
       setWritingActive(false);
-      saveLayout({ leftOpen: next.leftOpen });
       return next;
     });
   }, [toggleLeftSignal]);
@@ -60,7 +63,6 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
           const next = { ...prev, leftOpen: !prev.leftOpen };
           setSidebarManuallyOpen(next.leftOpen);
           setWritingActive(false);
-          saveLayout({ leftOpen: next.leftOpen });
           return next;
         });
       }
@@ -119,7 +121,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
   );
 
   const onPointerUp = useCallback(() => {
-    if (dragging) saveLayout({ leftWidth });
+    if (dragging) saveSidebarWidth(leftWidth);
     setDragging(false);
   }, [dragging, leftWidth]);
 
@@ -132,6 +134,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
   return (
     <div
       className={`${styles.layout} ${dragging ? styles.dragging : ""}`}
+      data-left-open={leftOpen && !writingFocused ? "true" : "false"}
       data-writing-focused={writingFocused ? "true" : "false"}
       style={style}
     >

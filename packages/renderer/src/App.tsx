@@ -6,7 +6,9 @@ import { DocumentOutline } from "./panels/FileTree";
 import { WorkspacePanel } from "./panels/WorkspacePanel";
 import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
+import styles from "./App.module.css";
 import { TabBar } from "./components/TabBar";
+import { TitleBar } from "./components/TitleBar";
 import type { ExportFormat } from "./export/export-state";
 import { Toast } from "./components/Toast";
 import { defaultExportOptions } from "./export/export-state";
@@ -81,6 +83,16 @@ export default function App() {
     setAssets,
     setContentSnapshot,
   } = useTabs();
+
+  const appTitle = useMemo(() => {
+    if (view === "welcome") return "欢迎";
+    if (view === "settings") return "设置";
+    if (activeTab.path) {
+      const parts = activeTab.path.split(/[/\\]/);
+      return parts[parts.length - 1] || "未命名";
+    }
+    return "未命名";
+  }, [activeTab.path, view]);
 
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
@@ -284,118 +296,137 @@ export default function App() {
 
   if (view === "welcome") {
     return (
-      <Suspense fallback={null}>
-        <WelcomePage onStart={handleWelcomeStart} />
-      </Suspense>
+      <div className={styles.shell}>
+        <TitleBar title={appTitle} />
+        <div className={styles.content}>
+          <Suspense fallback={null}>
+            <WelcomePage onStart={handleWelcomeStart} />
+          </Suspense>
+        </div>
+      </div>
     );
   }
 
   if (view === "settings") {
     return (
-      <Suspense fallback={null}>
-        <SettingsPage onBack={() => setView("editor")} onThemeChange={setTheme} />
-      </Suspense>
+      <div className={styles.shell}>
+        <TitleBar title={appTitle} />
+        <div className={styles.content}>
+          <Suspense fallback={null}>
+            <SettingsPage onBack={() => setView("editor")} onThemeChange={setTheme} />
+          </Suspense>
+        </div>
+      </div>
     );
   }
 
   return (
-    <AppLayout
-      toggleLeftSignal={toggleOutlineSignal}
-      left={
-        <>
-          <WorkspacePanel
-            name={workspace?.name}
-            tree={workspace?.tree ?? []}
-            activePath={activeTab.path}
-            loading={workspaceLoading}
-            onOpenWorkspace={openWorkspace}
-            onOpenFile={(filePath) => {
-              void openWorkspaceFile(filePath);
-            }}
-            onCreateFile={(name) => {
-              void createWorkspaceFile(name);
-            }}
-            onCreateDirectory={(name) => {
-              void createWorkspaceDirectory(name);
-            }}
-            onRefresh={() => {
-              void refreshWorkspace();
-            }}
-            onRename={(path, name) => {
-              void renameWorkspaceEntry(path, name);
-            }}
-            onDelete={(path) => {
-              void deleteWorkspaceEntry(path);
-            }}
-          />
-          <DocumentOutline
-            headings={headings}
-            onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
-          />
-          <Suspense fallback={null}>
-            <ResourcePanel
-              assets={activeTab.assets}
-              onReferenceClick={handleResourceClick}
-              onReferenceDelete={handleResourceDelete}
-              onReferenceRelocate={handleResourceRelocate}
-              onUnusedDelete={handleUnusedDelete}
-              onUnusedDeleteAll={handleUnusedDeleteAll}
-            />
-          </Suspense>
-        </>
-      }
-      center={
-        <div style={{ position: "relative", height: "100%" }}>
-          <TabBar
-            tabs={tabs}
-            activeTabId={activeTabId}
-            onSwitch={handleSwitchTab}
-            onClose={handleCloseTab}
-            onNew={handleNewTab}
-          />
-          <div style={{ height: "100%", overflow: "hidden" }}>
-            <Suspense fallback={null}>
-              <Editor
-                ref={setEditorInstance}
-                onHeadingsChange={setHeadings}
-                onChange={handleChange}
-                onImageSave={handleImageSave}
-                assetResolver={resolveEditorAsset}
-              />
-            </Suspense>
-          </div>
-          <Suspense fallback={null}>
-            {paletteOpen ? (
-              <CommandPalette
-                open={paletteOpen}
-                actions={commandActions}
-                onClose={() => {
-                  setPaletteOpen(false);
-                  editorRef.current?.focus();
+    <div className={styles.shell}>
+      <TitleBar
+        title={appTitle}
+        dirty={activeTab.dirty}
+        onToggleSidebar={() => setToggleOutlineSignal((value) => value + 1)}
+      />
+      <div className={styles.content}>
+        <AppLayout
+          toggleLeftSignal={toggleOutlineSignal}
+          left={
+            <>
+              <WorkspacePanel
+                name={workspace?.name}
+                tree={workspace?.tree ?? []}
+                activePath={activeTab.path}
+                loading={workspaceLoading}
+                onOpenWorkspace={openWorkspace}
+                onOpenFile={(filePath) => {
+                  void openWorkspaceFile(filePath);
+                }}
+                onCreateFile={(name) => {
+                  void createWorkspaceFile(name);
+                }}
+                onCreateDirectory={(name) => {
+                  void createWorkspaceDirectory(name);
+                }}
+                onRefresh={() => {
+                  void refreshWorkspace();
+                }}
+                onRename={(path, name) => {
+                  void renameWorkspaceEntry(path, name);
+                }}
+                onDelete={(path) => {
+                  void deleteWorkspaceEntry(path);
                 }}
               />
-            ) : null}
-            {exportDialogOpen ? (
-              <ExportDialog
-                open={exportDialogOpen}
-                format={exportFormat}
-                initialOptions={exportOptions}
-                onCancel={() => {
-                  setExportDialogOpen(false);
-                  editorRef.current?.focus();
-                }}
-                onConfirm={(format, options) => {
-                  void handleExport(format, options);
-                }}
-                onPreview={(format, options) => {
-                  void handleExportPreview(format, options);
-                }}
+              <DocumentOutline
+                headings={headings}
+                onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
               />
-            ) : null}
-          </Suspense>
-          <Toast toast={toast} onClose={closeToast} />
-        </div>
-      }
-    />
+              <Suspense fallback={null}>
+                <ResourcePanel
+                  assets={activeTab.assets}
+                  onReferenceClick={handleResourceClick}
+                  onReferenceDelete={handleResourceDelete}
+                  onReferenceRelocate={handleResourceRelocate}
+                  onUnusedDelete={handleUnusedDelete}
+                  onUnusedDeleteAll={handleUnusedDeleteAll}
+                />
+              </Suspense>
+            </>
+          }
+          center={
+            <div style={{ position: "relative", height: "100%" }}>
+              <TabBar
+                tabs={tabs}
+                activeTabId={activeTabId}
+                onSwitch={handleSwitchTab}
+                onClose={handleCloseTab}
+                onNew={handleNewTab}
+              />
+              <div style={{ height: "100%", overflow: "hidden" }}>
+                <Suspense fallback={null}>
+                  <Editor
+                    ref={setEditorInstance}
+                    onHeadingsChange={setHeadings}
+                    onChange={handleChange}
+                    onImageSave={handleImageSave}
+                    assetResolver={resolveEditorAsset}
+                  />
+                </Suspense>
+              </div>
+              <Suspense fallback={null}>
+                {paletteOpen ? (
+                  <CommandPalette
+                    open={paletteOpen}
+                    actions={commandActions}
+                    onClose={() => {
+                      setPaletteOpen(false);
+                      editorRef.current?.focus();
+                    }}
+                  />
+                ) : null}
+                {exportDialogOpen ? (
+                  <ExportDialog
+                    open={exportDialogOpen}
+                    format={exportFormat}
+                    initialOptions={exportOptions}
+                    onCancel={() => {
+                      setExportDialogOpen(false);
+                      editorRef.current?.focus();
+                    }}
+                    onConfirm={(format, options) => {
+                      void handleExport(format, options);
+                    }}
+                    onPreview={(format, options) => {
+                      void handleExportPreview(format, options);
+                    }}
+                  />
+                ) : null}
+              </Suspense>
+              <Toast toast={toast} onClose={closeToast} />
+            </div>
+          }
+        />
+      </div>
+    </div>
   );
 }

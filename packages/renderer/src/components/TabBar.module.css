@@ -11,7 +11,6 @@
   border-bottom: 1px solid var(--sidebar-border, #e5e5e5);
   padding: 0 4px;
   gap: 2px;
-  -webkit-app-region: drag;
   transform: translateY(calc(-100% + 4px));
   user-select: none;
   opacity: 0;
@@ -33,7 +32,6 @@
   overflow-x: auto;
   flex: 1;
   scrollbar-width: none;
-  -webkit-app-region: no-drag;
 }
 
 .tabs::-webkit-scrollbar {
@@ -124,7 +122,6 @@
   color: var(--color-placeholder, #999);
   cursor: pointer;
   flex-shrink: 0;
-  -webkit-app-region: no-drag;
 }
 
 .newBtn:hover {

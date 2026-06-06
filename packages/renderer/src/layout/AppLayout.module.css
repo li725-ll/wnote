@@ -1,7 +1,7 @@
 .layout {
   display: grid;
   grid-template-columns: var(--left-width) 1px 1fr;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   transition: grid-template-columns 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -26,6 +26,15 @@
   transition:
     opacity 220ms ease,
     background-color 220ms ease;
+}
+
+.layout[data-left-open="false"] :global(aside[data-side="left"]) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.layout[data-left-open="false"] :global(aside[data-side="left"] > *) {
+  visibility: hidden;
 }
 
 .layout[data-writing-focused="true"] .resizer {

@@ -8,6 +8,13 @@ test.beforeAll(() => {
   buildElectronEntrypoints();
 });
 
+async function openLeftSidebar(app: Awaited<ReturnType<typeof launchWNote>>) {
+  await app.page.getByRole("button", { name: "切换侧边栏" }).click();
+  await expect(
+    app.page.getByRole("button", { name: /^(打开|打开目录|切换)$/ }).first(),
+  ).toBeVisible();
+}
+
 test("saves a new document and reopens it through the app file flow", async () => {
   const dir = mkdtempSync(join(tmpdir(), "wnote-e2e-"));
   const savedPath = join(dir, "saved-note.md");
@@ -60,9 +67,7 @@ test("opens documents from a workspace tree", async () => {
   });
 
   try {
-    await app.page.evaluate(async () => {
-      await window.electronAPI.invoke("layout:set", { leftOpen: true, leftWidth: 320 });
-    });
+    await openLeftSidebar(app);
     await app.page
       .getByRole("button", { name: /^(打开|打开目录|切换)$/ })
       .first()
@@ -87,9 +92,7 @@ test("creates files and folders from the workspace panel", async () => {
   });
 
   try {
-    await app.page.evaluate(async () => {
-      await window.electronAPI.invoke("layout:set", { leftOpen: true, leftWidth: 360 });
-    });
+    await openLeftSidebar(app);
     await app.page
       .getByRole("button", { name: /^(打开|打开目录|切换)$/ })
       .first()
@@ -123,9 +126,7 @@ test("renames, refreshes, and deletes workspace files", async () => {
   });
 
   try {
-    await app.page.evaluate(async () => {
-      await window.electronAPI.invoke("layout:set", { leftOpen: true, leftWidth: 380 });
-    });
+    await openLeftSidebar(app);
     await app.page
       .getByRole("button", { name: /^(打开|打开目录|切换)$/ })
       .first()
