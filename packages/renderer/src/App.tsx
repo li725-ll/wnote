@@ -4,13 +4,11 @@ import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import type { SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
 import { DocumentOutline } from "./panels/FileTree";
-import { WelcomePage } from "./pages/WelcomePage";
 import { useTheme } from "./hooks/useTheme";
 import { useTabs } from "./hooks/useTabs";
 import { TabBar } from "./components/TabBar";
 import type { ExportFormat } from "./export/export-state";
 import { Toast } from "./components/Toast";
-import { ResourcePanel } from "./panels/ResourcePanel";
 import { defaultExportOptions } from "./export/export-state";
 import { buildDocumentAssetIndex } from "./assets/asset-state";
 import { buildPaletteCommands } from "./commands/palette-commands";
@@ -31,6 +29,9 @@ import { useDocumentOpen } from "./hooks/useDocumentOpen";
 
 const STORAGE_KEY = "wnote:welcomed";
 
+const WelcomePage = lazy(() =>
+  import("./pages/WelcomePage").then((module) => ({ default: module.WelcomePage })),
+);
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })),
 );
@@ -39,6 +40,9 @@ const CommandPalette = lazy(() =>
 );
 const ExportDialog = lazy(() =>
   import("./components/ExportDialog").then((module) => ({ default: module.ExportDialog })),
+);
+const ResourcePanel = lazy(() =>
+  import("./panels/ResourcePanel").then((module) => ({ default: module.ResourcePanel })),
 );
 
 export default function App() {
@@ -253,7 +257,11 @@ export default function App() {
   };
 
   if (view === "welcome") {
-    return <WelcomePage onStart={handleWelcomeStart} />;
+    return (
+      <Suspense fallback={null}>
+        <WelcomePage onStart={handleWelcomeStart} />
+      </Suspense>
+    );
   }
 
   if (view === "settings") {
@@ -273,14 +281,16 @@ export default function App() {
             headings={headings}
             onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
           />
-          <ResourcePanel
-            assets={activeTab.assets}
-            onReferenceClick={handleResourceClick}
-            onReferenceDelete={handleResourceDelete}
-            onReferenceRelocate={handleResourceRelocate}
-            onUnusedDelete={handleUnusedDelete}
-            onUnusedDeleteAll={handleUnusedDeleteAll}
-          />
+          <Suspense fallback={null}>
+            <ResourcePanel
+              assets={activeTab.assets}
+              onReferenceClick={handleResourceClick}
+              onReferenceDelete={handleResourceDelete}
+              onReferenceRelocate={handleResourceRelocate}
+              onUnusedDelete={handleUnusedDelete}
+              onUnusedDeleteAll={handleUnusedDeleteAll}
+            />
+          </Suspense>
         </>
       }
       center={

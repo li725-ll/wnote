@@ -134,3 +134,24 @@ Build result:
 
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.
+
+## 2026-06-06 Renderer Resource Panel Split
+
+Second bundle-reduction pass:
+
+- Moved Welcome Page and Resource Panel behind React lazy boundaries.
+- Kept editor asset action hooks in the primary route because image paste/drop saving and preview
+  resolution are editor-first behavior.
+- Mermaid runtime was already behind `import("@wnote/renderers/mermaid")`; the Mermaid node view
+  stays inside the editor extension bundle for now to avoid fragmenting the ProseMirror schema path.
+
+Build result:
+
+- Renderer CSS entry dropped from about `30 kB` to about `26 kB` minified.
+- Renderer main entry dropped from about `216 kB` to about `206 kB` minified.
+- Lazy UI chunks added:
+  - Welcome Page: about `2 kB` JS and `1 kB` CSS.
+  - Resource Panel: about `5 kB` JS and `3 kB` CSS.
+
+Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
+E2E.
