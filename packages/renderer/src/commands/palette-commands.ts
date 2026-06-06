@@ -1,9 +1,7 @@
-import { formatCommands } from "@wnote/editor-react";
 import type { EditorRef } from "@wnote/editor-react";
 import type { PaletteCommand } from "../components/CommandPalette";
 import type { ExportFormat } from "../export/export-state";
-
-export type EditorFormatCommand = (view: NonNullable<ReturnType<EditorRef["getView"]>>) => boolean;
+import { editorFormatCommands, type EditorFormatCommand } from "./editor-format-commands";
 
 export interface PaletteCommandActions {
   newFile: () => void;
@@ -30,7 +28,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h1", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘1",
-    command: formatCommands.heading1,
+    command: editorFormatCommands.heading1,
   },
   {
     id: "heading2",
@@ -38,7 +36,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h2", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘2",
-    command: formatCommands.heading2,
+    command: editorFormatCommands.heading2,
   },
   {
     id: "heading3",
@@ -46,7 +44,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h3", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘3",
-    command: formatCommands.heading3,
+    command: editorFormatCommands.heading3,
   },
   {
     id: "heading4",
@@ -54,7 +52,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h4", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘4",
-    command: formatCommands.heading4,
+    command: editorFormatCommands.heading4,
   },
   {
     id: "heading5",
@@ -62,7 +60,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h5", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘5",
-    command: formatCommands.heading5,
+    command: editorFormatCommands.heading5,
   },
   {
     id: "heading6",
@@ -70,7 +68,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["h6", "heading", "biaoti"],
     group: "格式",
     shortcut: "⌘6",
-    command: formatCommands.heading6,
+    command: editorFormatCommands.heading6,
   },
   {
     id: "heading-clear",
@@ -78,7 +76,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["heading clear", "biaoti"],
     group: "格式",
     shortcut: "⌘0",
-    command: formatCommands.headingClear,
+    command: editorFormatCommands.headingClear,
   },
   {
     id: "bold",
@@ -86,7 +84,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["bold", "strong", "cuti"],
     group: "格式",
     shortcut: "⌘B",
-    command: formatCommands.bold,
+    command: editorFormatCommands.bold,
   },
   {
     id: "italic",
@@ -94,7 +92,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["italic", "xieti"],
     group: "格式",
     shortcut: "⌘I",
-    command: formatCommands.italic,
+    command: editorFormatCommands.italic,
   },
   {
     id: "strike",
@@ -102,14 +100,14 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["strike", "del", "shanchu"],
     group: "格式",
     shortcut: "⇧⌘X",
-    command: formatCommands.strikethrough,
+    command: editorFormatCommands.strikethrough,
   },
   {
     id: "link",
     label: "链接",
     keywords: ["link", "url", "lianjie"],
     group: "格式",
-    command: formatCommands.link,
+    command: editorFormatCommands.link,
   },
   {
     id: "inline-code",
@@ -117,7 +115,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["code", "inline", "daima"],
     group: "格式",
     shortcut: "⌘E",
-    command: formatCommands.inlineCode,
+    command: editorFormatCommands.inlineCode,
   },
   {
     id: "code-block",
@@ -125,14 +123,14 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["codeblock", "fence", "daimakuai"],
     group: "格式",
     shortcut: "⇧⌘`",
-    command: formatCommands.codeBlock,
+    command: editorFormatCommands.codeBlock,
   },
   {
     id: "mermaid",
     label: "Mermaid 图表",
     keywords: ["mermaid", "diagram", "flowchart", "liuchengtu"],
     group: "格式",
-    command: formatCommands.mermaid,
+    command: editorFormatCommands.mermaid,
   },
   {
     id: "blockquote",
@@ -140,7 +138,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["quote", "blockquote", "yinyong"],
     group: "格式",
     shortcut: "⇧⌘B",
-    command: formatCommands.blockquote,
+    command: editorFormatCommands.blockquote,
   },
   {
     id: "unordered-list",
@@ -148,7 +146,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["ul", "list", "bullet", "wuxu"],
     group: "格式",
     shortcut: "⇧⌘U",
-    command: formatCommands.unorderedList,
+    command: editorFormatCommands.unorderedList,
   },
   {
     id: "ordered-list",
@@ -156,7 +154,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["ol", "list", "ordered", "youxu"],
     group: "格式",
     shortcut: "⇧⌘O",
-    command: formatCommands.orderedList,
+    command: editorFormatCommands.orderedList,
   },
   {
     id: "task-list",
@@ -164,7 +162,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["task", "todo", "renwu"],
     group: "格式",
     shortcut: "⇧⌘T",
-    command: formatCommands.taskList,
+    command: editorFormatCommands.taskList,
   },
   {
     id: "horizontal-rule",
@@ -172,84 +170,84 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["hr", "divider", "fengexian"],
     group: "格式",
     shortcut: "⌘↵",
-    command: formatCommands.horizontalRule,
+    command: editorFormatCommands.horizontalRule,
   },
   {
     id: "table-insert",
     label: "插入表格",
     keywords: ["table", "insert", "biaoge"],
     group: "表格",
-    command: formatCommands.tableInsert,
+    command: editorFormatCommands.tableInsert,
   },
   {
     id: "table-add-row-before",
     label: "上方插入行",
     keywords: ["table", "row", "before", "shangfang"],
     group: "表格",
-    command: formatCommands.tableAddRowBefore,
+    command: editorFormatCommands.tableAddRowBefore,
   },
   {
     id: "table-add-row-after",
     label: "下方插入行",
     keywords: ["table", "row", "after", "xiafang"],
     group: "表格",
-    command: formatCommands.tableAddRowAfter,
+    command: editorFormatCommands.tableAddRowAfter,
   },
   {
     id: "table-delete-row",
     label: "删除当前行",
     keywords: ["table", "row", "delete", "shanchu"],
     group: "表格",
-    command: formatCommands.tableDeleteRow,
+    command: editorFormatCommands.tableDeleteRow,
   },
   {
     id: "table-add-column-before",
     label: "左侧插入列",
     keywords: ["table", "column", "before", "zuoce"],
     group: "表格",
-    command: formatCommands.tableAddColumnBefore,
+    command: editorFormatCommands.tableAddColumnBefore,
   },
   {
     id: "table-add-column-after",
     label: "右侧插入列",
     keywords: ["table", "column", "after", "youce"],
     group: "表格",
-    command: formatCommands.tableAddColumnAfter,
+    command: editorFormatCommands.tableAddColumnAfter,
   },
   {
     id: "table-delete-column",
     label: "删除当前列",
     keywords: ["table", "column", "delete", "shanchu"],
     group: "表格",
-    command: formatCommands.tableDeleteColumn,
+    command: editorFormatCommands.tableDeleteColumn,
   },
   {
     id: "table-toggle-header-row",
     label: "切换表头行",
     keywords: ["table", "header", "biaotou"],
     group: "表格",
-    command: formatCommands.tableToggleHeaderRow,
+    command: editorFormatCommands.tableToggleHeaderRow,
   },
   {
     id: "table-merge-cells",
     label: "合并单元格",
     keywords: ["table", "merge", "hebing"],
     group: "表格",
-    command: formatCommands.tableMergeCells,
+    command: editorFormatCommands.tableMergeCells,
   },
   {
     id: "table-split-cell",
     label: "拆分单元格",
     keywords: ["table", "split", "chaifen"],
     group: "表格",
-    command: formatCommands.tableSplitCell,
+    command: editorFormatCommands.tableSplitCell,
   },
   {
     id: "table-delete",
     label: "删除表格",
     keywords: ["table", "delete", "shanchu"],
     group: "表格",
-    command: formatCommands.tableDelete,
+    command: editorFormatCommands.tableDelete,
   },
   {
     id: "image",
@@ -257,7 +255,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["image", "img", "tupian"],
     group: "格式",
     shortcut: "⇧⌘I",
-    command: formatCommands.image,
+    command: editorFormatCommands.image,
   },
   {
     id: "math",
@@ -265,7 +263,7 @@ const formatPaletteCommands: FormatPaletteCommandDefinition[] = [
     keywords: ["math", "formula", "shuxue"],
     group: "格式",
     shortcut: "⌘M",
-    command: formatCommands.math,
+    command: editorFormatCommands.math,
   },
 ];
 

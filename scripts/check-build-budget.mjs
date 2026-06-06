@@ -17,6 +17,7 @@ const budgets = [
     label: "renderer entry",
     directory: "packages/renderer/dist/assets",
     match: /^index-.*\.js$/,
+    entryHtml: "packages/renderer/dist/index.html",
     maxBytes: 300 * 1024,
     maxGzipBytes: 75 * 1024,
   },
@@ -74,7 +75,7 @@ const budgets = [
 let failed = false;
 
 for (const budget of budgets) {
-  const filePath = findSingleFile(budget.directory, budget.match);
+  const filePath = findBudgetFile(budget);
   if (!filePath) {
     failed = true;
     console.error(`Missing build artifact for ${budget.label}`);
@@ -98,12 +99,21 @@ if (failed) {
   process.exit(1);
 }
 
-function findSingleFile(directory, match) {
-  const absoluteDirectory = join(root, directory);
+function findBudgetFile(budget) {
+  const htmlEntry = budget.entryHtml ? findHtmlScriptEntry(budget.entryHtml) : null;
+  if (htmlEntry) return join(root, budget.directory, htmlEntry);
+
+  const absoluteDirectory = join(root, budget.directory);
   const matches = readdirSync(absoluteDirectory)
-    .filter((fileName) => match.test(fileName))
+    .filter((fileName) => budget.match.test(fileName))
     .map((fileName) => join(absoluteDirectory, fileName));
   return matches.sort((left, right) => statSync(right).size - statSync(left).size)[0] ?? null;
+}
+
+function findHtmlScriptEntry(entryHtml) {
+  const html = readFileSync(join(root, entryHtml), "utf-8");
+  const source = /<script[^>]+type="module"[^>]+src="\.\/assets\/([^"]+)"/.exec(html)?.[1];
+  return source ?? null;
 }
 
 function formatBytes(bytes) {

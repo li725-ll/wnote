@@ -96,7 +96,8 @@ feature-specific editor/rendering dependencies rather than accidental app-shell 
 ## Enforced Budgets
 
 `pnpm build:budget` checks already-built production artifacts. Run `pnpm build` first. When a
-pattern matches multiple hashed files, the checker uses the largest matching artifact.
+budget points at an HTML entry, the checker follows that module script. Otherwise, if a pattern
+matches multiple hashed files, the checker uses the largest matching artifact.
 
 Current hard limits leave room for normal dependency patch drift while still catching accidental
 entry-point growth:
@@ -152,6 +153,29 @@ Build result:
 - Lazy UI chunks added:
   - Welcome Page: about `2 kB` JS and `1 kB` CSS.
   - Resource Panel: about `5 kB` JS and `3 kB` CSS.
+
+Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
+E2E.
+
+## 2026-06-06 Renderer Editor Split
+
+Third bundle-reduction pass:
+
+- Moved `@wnote/editor-react` behind the editor view lazy boundary.
+- Replaced renderer command metadata's runtime `formatCommands` import with lightweight renderer
+  command lambdas so command palette and menu IPC no longer pull the editor package into the shell.
+- Added an editor ready signal so active tab content is replayed after the lazy editor instance
+  mounts. This keeps startup file open and reopen flows stable.
+- Updated the build budget checker to follow `dist/index.html` for the renderer entry instead of
+  guessing from all `index-*.js` chunks.
+
+Build result:
+
+- Renderer HTML entry script is about `129 kB` minified, `33 kB` gzip.
+- Shell-adjacent lazy chunk is about `77 kB` minified, `17 kB` gzip.
+- Editor lazy chunk is about `133 kB` minified, `34 kB` gzip.
+- Entry CSS is now split into about `8 kB` shell CSS and `18 kB` editor CSS.
+- Tiptap vendor, Markdown vendor, and Mermaid core stay on their existing budget tracks.
 
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.

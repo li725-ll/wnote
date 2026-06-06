@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Editor } from "@wnote/editor-react";
 import type { EditorRef, HeadingItem } from "@wnote/editor-react";
 import type { SaveDocumentResult } from "@wnote/contracts";
 import { AppLayout } from "./layout/AppLayout";
@@ -44,6 +43,9 @@ const ExportDialog = lazy(() =>
 const ResourcePanel = lazy(() =>
   import("./panels/ResourcePanel").then((module) => ({ default: module.ResourcePanel })),
 );
+const Editor = lazy(() =>
+  import("@wnote/editor-react").then((module) => ({ default: module.Editor })),
+);
 
 export default function App() {
   const [view, setView] = useState<"welcome" | "editor" | "settings">(() => {
@@ -56,6 +58,7 @@ export default function App() {
   const [exportOptions, setExportOptions] = useState(defaultExportOptions);
   const [toggleOutlineSignal, setToggleOutlineSignal] = useState(0);
   const editorRef = useRef<EditorRef>(null);
+  const [editorReadySignal, setEditorReadySignal] = useState(0);
   const exportingRef = useRef(false);
   const { setTheme } = useTheme();
   const { toast, showToast, closeToast } = useToastController();
@@ -103,6 +106,10 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, "1");
     setView("editor");
   }, []);
+  const setEditorInstance = useCallback((instance: EditorRef | null) => {
+    editorRef.current = instance;
+    if (instance) setEditorReadySignal((value) => value + 1);
+  }, []);
   const { applyOpenedDocument, openDocumentDialog } = useDocumentOpen({
     editorRef,
     getActiveTabId,
@@ -129,7 +136,7 @@ export default function App() {
     onClose: handleIpcCloseFile,
   });
 
-  useActiveTabEditorSync({ activeTab, activeTabId, editorRef, setWindowTitle });
+  useActiveTabEditorSync({ activeTab, activeTabId, editorRef, editorReadySignal, setWindowTitle });
 
   const handleSaved = useCallback(
     (result: SaveDocumentResult) => {
@@ -303,13 +310,15 @@ export default function App() {
             onNew={handleNewTab}
           />
           <div style={{ height: "100%", overflow: "hidden" }}>
-            <Editor
-              ref={editorRef}
-              onHeadingsChange={setHeadings}
-              onChange={handleChange}
-              onImageSave={handleImageSave}
-              assetResolver={resolveEditorAsset}
-            />
+            <Suspense fallback={null}>
+              <Editor
+                ref={setEditorInstance}
+                onHeadingsChange={setHeadings}
+                onChange={handleChange}
+                onImageSave={handleImageSave}
+                assetResolver={resolveEditorAsset}
+              />
+            </Suspense>
           </div>
           <Suspense fallback={null}>
             {paletteOpen ? (
