@@ -10,7 +10,8 @@
   background: color-mix(in srgb, var(--color-bg) 94%, transparent);
   box-shadow: 0 12px 30px color-mix(in srgb, var(--color-text) 12%, transparent);
   padding: 2px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
 }
 
 .toolbar[data-placement="top"] {
@@ -28,12 +29,14 @@
   display: flex;
   gap: 4px;
   width: min(22rem, calc(100vw - 2rem));
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-bg) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text) 14%, transparent);
   padding: 4px;
   transform: translateX(-50%);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
 }
 
 .button {
@@ -69,8 +72,8 @@
   flex: 1;
   height: 1.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-bg);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
   color: var(--color-text);
   font: 0.78rem/1 var(--editor-font);
   outline: none;
@@ -84,7 +87,7 @@
 .apply {
   height: 1.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 999px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;

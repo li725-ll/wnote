@@ -52,11 +52,12 @@
   grid-template-columns: 1fr;
   width: 10rem;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-bg) 96%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text) 14%, transparent);
   padding: 0.3rem;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
 }
 
 .menuButton {

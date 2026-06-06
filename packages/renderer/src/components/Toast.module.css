@@ -7,19 +7,33 @@
   gap: 4px;
   width: min(360px, calc(100vw - 40px));
   padding: 12px 14px;
-  border: 1px solid var(--sidebar-border);
-  border-radius: 8px;
-  background: var(--color-bg);
-  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+  border: 1px solid color-mix(in srgb, var(--sidebar-border) 72%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 20%, transparent), transparent 54%),
+    color-mix(in srgb, var(--color-bg) 86%, transparent);
+  box-shadow:
+    0 18px 44px color-mix(in srgb, var(--color-text) 16%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 40%, transparent);
   color: var(--color-text);
+  backdrop-filter: blur(18px) saturate(1.12);
+  -webkit-backdrop-filter: blur(18px) saturate(1.12);
 }
 
 .toast[data-kind="success"] {
   border-color: rgba(22, 163, 74, 0.42);
+  background:
+    linear-gradient(135deg, rgba(22, 163, 74, 0.1), transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 20%, transparent), transparent 54%),
+    color-mix(in srgb, var(--color-bg) 86%, transparent);
 }
 
 .toast[data-kind="error"] {
   border-color: rgba(220, 38, 38, 0.42);
+  background:
+    linear-gradient(135deg, rgba(220, 38, 38, 0.1), transparent 46%),
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 20%, transparent), transparent 54%),
+    color-mix(in srgb, var(--color-bg) 86%, transparent);
 }
 
 .title {
@@ -42,9 +56,9 @@
 }
 
 .button {
-  border: 1px solid var(--sidebar-border);
-  border-radius: 6px;
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--sidebar-border) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg) 58%, transparent);
   color: var(--color-text);
   cursor: pointer;
   font-size: 12px;
