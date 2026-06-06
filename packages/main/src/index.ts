@@ -34,7 +34,7 @@ import {
   setLastOpenedFile,
 } from "./recent-files";
 import { loadSettings, saveSettings, getDataDirectory } from "./settings";
-import { openFileInWindow as sendFileToWindow } from "./open-file";
+import { openFileInWindow as sendFileToWindow, rememberOpenedFile } from "./open-file";
 
 const log = createLog("app");
 
@@ -311,6 +311,7 @@ app.whenReady().then(async () => {
   if (startupFile) {
     log.info("Startup file:", startupFile);
     pendingFilePath = null;
+    rememberOpenedFile(startupFile);
     await openFileInWindow(startupFile, win);
   }
 

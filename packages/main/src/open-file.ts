@@ -5,10 +5,14 @@ import { addRecentFile, setLastOpenedFile } from "./recent-files";
 
 export async function openFileInWindow(win: BrowserWindow, filePath: string): Promise<void> {
   const data = await openDocument(filePath);
-  addRecentFile(filePath);
-  setLastOpenedFile(filePath);
+  rememberOpenedFile(filePath);
   await waitForWindowContent(win);
   win.webContents.send(IpcChannel.FileOpened, data);
+}
+
+export function rememberOpenedFile(filePath: string): void {
+  addRecentFile(filePath);
+  setLastOpenedFile(filePath);
 }
 
 export function waitForWindowContent(win: BrowserWindow): Promise<void> {

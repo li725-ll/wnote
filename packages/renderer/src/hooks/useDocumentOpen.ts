@@ -6,23 +6,26 @@ import { shouldApplyOpenedDocument } from "../files/file-state";
 export function useDocumentOpen({
   editorRef,
   getActiveTabId,
+  onDocumentOpen,
   openFile,
   setWindowTitle,
 }: {
   editorRef: RefObject<EditorRef | null>;
   getActiveTabId(): string;
+  onDocumentOpen?: () => void;
   openFile(path: string, content: string, assets: OpenDocumentResult["assets"]): string;
   setWindowTitle(title: string): void;
 }) {
   const applyOpenedDocument = useCallback(
     (data: OpenDocumentResult) => {
+      onDocumentOpen?.();
       const tabId = openFile(data.filePath, data.content, data.assets);
       if (shouldApplyOpenedDocument(tabId, getActiveTabId())) {
         editorRef.current?.setContent(data.content);
         setWindowTitle(data.name);
       }
     },
-    [editorRef, getActiveTabId, openFile, setWindowTitle],
+    [editorRef, getActiveTabId, onDocumentOpen, openFile, setWindowTitle],
   );
 
   const openDocumentDialog = useCallback(async () => {

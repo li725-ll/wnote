@@ -87,9 +87,14 @@ export default function App() {
   const getCurrentTab = useCallback(() => activeTabRef.current, []);
   const getActiveTabId = useCallback(() => activeTabIdRef.current, []);
   const setWindowTitle = useWindowTitle();
+  const showEditor = useCallback(() => {
+    localStorage.setItem(STORAGE_KEY, "1");
+    setView("editor");
+  }, []);
   const { applyOpenedDocument, openDocumentDialog } = useDocumentOpen({
     editorRef,
     getActiveTabId,
+    onDocumentOpen: showEditor,
     openFile,
     setWindowTitle,
   });
@@ -236,8 +241,7 @@ export default function App() {
   );
 
   const handleWelcomeStart = () => {
-    localStorage.setItem(STORAGE_KEY, "1");
-    setView("editor");
+    showEditor();
   };
 
   if (view === "welcome") {
