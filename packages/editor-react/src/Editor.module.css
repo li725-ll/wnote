@@ -127,6 +127,8 @@
 
 .editor :global(table) {
   width: 100%;
+  margin: 0.9em 0;
+  border: 1px solid var(--color-table-border, var(--color-border));
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -137,12 +139,16 @@
   border-radius: 6px;
 }
 
+.editor :global(.tableWrapper table) {
+  margin: 0;
+}
+
 .editor :global(th),
 .editor :global(td) {
   position: relative;
   min-width: 5rem;
-  border: 1px solid var(--color-table-border);
-  padding: 0.4em 0.7em;
+  border: 1px solid var(--color-table-border, var(--color-border));
+  padding: 0.45em 0.7em;
   vertical-align: top;
 }
 
@@ -153,8 +159,26 @@
 }
 
 .editor :global(th) {
-  background: var(--color-table-header-bg);
+  background: var(
+    --color-table-header-bg,
+    color-mix(in srgb, var(--color-border) 35%, transparent)
+  );
   font-weight: 650;
+}
+
+.editor :global(th p),
+.editor :global(td p) {
+  margin: 0.25em 0;
+}
+
+.editor :global(th p:first-child),
+.editor :global(td p:first-child) {
+  margin-top: 0;
+}
+
+.editor :global(th p:last-child),
+.editor :global(td p:last-child) {
+  margin-bottom: 0;
 }
 
 .editor :global(.selectedCell::after) {
