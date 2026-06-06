@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import type { HeadingItem } from "@wnote/editor-react";
 import styles from "./FileTree.module.css";
 
@@ -8,15 +7,13 @@ interface DocumentOutlineProps {
 }
 
 export function DocumentOutline({ headings, onHeadingClick }: DocumentOutlineProps) {
-  const { t } = useTranslation();
-
   return (
     <div className={styles.root}>
       <div className={styles.header}>
-        <span className={styles.heading}>{t("outline.title")}</span>
+        <span className={styles.heading}>文档大纲</span>
       </div>
       {headings.length === 0 ? (
-        <p className={styles.empty}>{t("outline.empty")}</p>
+        <p className={styles.empty}>暂无标题</p>
       ) : (
         <ul className={styles.list}>
           {headings.map((h) => (

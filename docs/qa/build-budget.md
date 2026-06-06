@@ -136,6 +136,27 @@ Build result:
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.
 
+## 2026-06-06 Renderer Resource Panel Split
+
+Second bundle-reduction pass:
+
+- Moved Welcome Page and Resource Panel behind React lazy boundaries.
+- Kept editor asset action hooks in the primary route because image paste/drop saving and preview
+  resolution are editor-first behavior.
+- Mermaid runtime was already behind `import("@wnote/renderers/mermaid")`; the Mermaid node view
+  stays inside the editor extension bundle for now to avoid fragmenting the ProseMirror schema path.
+
+Build result:
+
+- Renderer CSS entry dropped from about `30 kB` to about `26 kB` minified.
+- Renderer main entry dropped from about `216 kB` to about `206 kB` minified.
+- Lazy UI chunks added:
+  - Welcome Page: about `2 kB` JS and `1 kB` CSS.
+  - Resource Panel: about `5 kB` JS and `3 kB` CSS.
+
+Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
+E2E.
+
 ## 2026-06-06 Command Palette Command Split
 
 Fourth bundle-reduction pass:
@@ -154,23 +175,19 @@ Build result:
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.
 
-## 2026-06-06 Renderer Resource Panel Split
+## 2026-06-06 Outline I18n Split
 
-Second bundle-reduction pass:
+Fifth bundle-reduction pass:
 
-- Moved Welcome Page and Resource Panel behind React lazy boundaries.
-- Kept editor asset action hooks in the primary route because image paste/drop saving and preview
-  resolution are editor-first behavior.
-- Mermaid runtime was already behind `import("@wnote/renderers/mermaid")`; the Mermaid node view
-  stays inside the editor extension bundle for now to avoid fragmenting the ProseMirror schema path.
+- Removed `react-i18next` from the always-mounted document outline.
+- Welcome Page and Settings Page still own translated copy inside their lazy chunks.
+- The renderer shell no longer needs the i18n runtime for the default editor view.
 
 Build result:
 
-- Renderer CSS entry dropped from about `30 kB` to about `26 kB` minified.
-- Renderer main entry dropped from about `216 kB` to about `206 kB` minified.
-- Lazy UI chunks added:
-  - Welcome Page: about `2 kB` JS and `1 kB` CSS.
-  - Resource Panel: about `5 kB` JS and `3 kB` CSS.
+- Renderer HTML entry script dropped from about `120 kB` to about `117 kB` minified.
+- `react-i18next` runtime is now emitted as a small lazy-side chunk used by translated secondary
+  pages.
 
 Validated with `pnpm build`, `pnpm build:budget`, renderer tests/typecheck, and full Playwright
 E2E.
