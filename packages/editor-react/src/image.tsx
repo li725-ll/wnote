@@ -10,6 +10,7 @@ import {
   imageDisplaySource,
   imageFigureAttrs,
   imageStyle,
+  imageWidthLabel,
   normalizeImageAlign,
   normalizeImageWidth,
   normalizeNullableText,
@@ -204,6 +205,24 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               </button>
               <button
                 className={styles.toolButton}
+                data-active={width === "50%" ? "true" : "false"}
+                title="50% 宽度"
+                type="button"
+                onClick={() => updateAttributes({ width: "50%" })}
+              >
+                50
+              </button>
+              <button
+                className={styles.toolButton}
+                data-active={width === "75%" ? "true" : "false"}
+                title="75% 宽度"
+                type="button"
+                onClick={() => updateAttributes({ width: "75%" })}
+              >
+                75
+              </button>
+              <button
+                className={styles.toolButton}
                 disabled={!width}
                 title="清除固定宽度"
                 type="button"
@@ -307,7 +326,7 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               placeholder="title"
               onChange={(event) => updateAttributes({ title: event.target.value })}
             />
-            {width ? <span className={styles.widthBadge}>{width}</span> : null}
+            <span className={styles.widthBadge}>{imageWidthLabel(width, dragWidth)}</span>
           </div>
         ) : null}
       </div>

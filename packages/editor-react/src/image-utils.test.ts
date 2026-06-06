@@ -5,6 +5,7 @@ import {
   imageDisplaySource,
   imageFigureAttrs,
   imageStyle,
+  imageWidthLabel,
   normalizeImageAlign,
   normalizeImageWidth,
   normalizeNullableText,
@@ -40,6 +41,12 @@ describe("image utils", () => {
   it("creates image style only for normalized width", () => {
     expect(imageStyle(normalizeImageWidth("320px"))).toEqual({ width: "320px" });
     expect(imageStyle(normalizeImageWidth("bad"))).toBeUndefined();
+  });
+
+  it("labels image width state", () => {
+    expect(imageWidthLabel(null)).toBe("Auto");
+    expect(imageWidthLabel("75%")).toBe("75%");
+    expect(imageWidthLabel("75%", "320px")).toBe("320px");
   });
 
   it("normalizes optional text", () => {

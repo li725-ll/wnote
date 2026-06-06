@@ -36,6 +36,10 @@ export function imageStyle(width: string | null): { width: string } | undefined 
   return width ? { width } : undefined;
 }
 
+export function imageWidthLabel(width: string | null, dragWidth?: string | null): string {
+  return dragWidth || width || "Auto";
+}
+
 export function normalizeNullableText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
