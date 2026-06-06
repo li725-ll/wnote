@@ -165,6 +165,29 @@ describe("assets", () => {
     );
   });
 
+  it("keeps mixed markdown and figure references independently addressable", () => {
+    const markdown = [
+      "![A](note.assets/a.png)",
+      '<figure data-wnote-image="true" data-align="center"><img src="note.assets/a.png" alt="A" width="50%"><figcaption>A</figcaption></figure>',
+    ].join("\n");
+    const references = buildAssetIndex(markdown, {
+      documentPath: "/docs/note.md",
+      exists: (path) => path === "/docs/note.assets/a.png",
+    }).references;
+
+    expect(references).toHaveLength(2);
+    expect(references.map((reference) => reference.position)).toEqual([
+      0,
+      markdown.indexOf("<img"),
+    ]);
+    expect(replaceAssetReference(markdown, references[1]!, "note.assets/b.png")).toBe(
+      '![A](note.assets/a.png)\n<figure data-wnote-image="true" data-align="center"><img src="note.assets/b.png" alt="A" width="50%"><figcaption>A</figcaption></figure>',
+    );
+    expect(deleteAssetReference(markdown, references[0]!)).toBe(
+      '<figure data-wnote-image="true" data-align="center"><img src="note.assets/a.png" alt="A" width="50%"><figcaption>A</figcaption></figure>',
+    );
+  });
+
   it("detects unused assets from scanned files", () => {
     const index = buildAssetIndex("![A](note.assets/a.png)", {
       documentPath: "/docs/note.md",
