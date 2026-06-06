@@ -3,14 +3,14 @@
   z-index: 16;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   max-width: min(100vw - 2rem, 42rem);
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: 6px;
   background: var(--color-bg);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--color-text) 14%, transparent);
-  padding: 2px;
+  padding: 3px;
 }
 
 .summary {
@@ -18,13 +18,13 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-width: 3.5rem;
-  height: 1.55rem;
+  min-width: 6.75rem;
+  height: 1.7rem;
   border-radius: 4px;
   background: color-mix(in srgb, var(--color-accent) 8%, transparent);
   color: var(--color-muted);
-  font: 650 0.68rem/1 var(--editor-font);
-  padding: 0 0.45rem;
+  font: 650 0.72rem/1 var(--editor-font);
+  padding: 0 0.55rem;
   white-space: nowrap;
 }
 
@@ -39,13 +39,19 @@
 .group {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   flex: 0 0 auto;
 }
 
 .group + .group {
   border-left: 1px solid var(--color-border);
-  padding-left: 2px;
+  padding-left: 3px;
+}
+
+.group[data-danger="true"] {
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+  padding-inline: 3px;
 }
 
 .button {
@@ -53,20 +59,26 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-width: 1.85rem;
-  height: 1.55rem;
+  min-width: 2.25rem;
+  height: 1.7rem;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  font: 600 0.68rem/1 var(--editor-font);
-  padding: 0 0.4rem;
+  font: 650 0.72rem/1 var(--editor-font);
+  padding: 0 0.45rem;
+  white-space: nowrap;
 }
 
 .button:hover {
   background: var(--color-hover-bg);
   color: var(--color-accent);
+}
+
+.button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 75%, transparent);
+  outline-offset: 1px;
 }
 
 .button:disabled {

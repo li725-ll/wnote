@@ -10,7 +10,10 @@ test("opens the regression fixture without renderer runtime errors", async () =>
 
   try {
     await expect(app.page.locator(".ProseMirror")).toContainText("WNote Editor Regression Sample");
-    await expect(app.page.locator(".ProseMirror table")).toBeVisible();
+    const table = app.page.locator(".ProseMirror table");
+    await expect(table).toBeVisible();
+    await expect(table).toHaveCSS("border-top-style", "solid");
+    await expect(table).toHaveCSS("border-top-width", "1px");
     await expect(app.page.locator(".ProseMirror pre").first()).toBeVisible();
     expect(app.errors).toEqual([]);
   } finally {

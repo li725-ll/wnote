@@ -174,7 +174,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
     >
-      {tableToolbarShortLabel(command.id)}
+      {tableToolbarLabel(command.id)}
     </button>
   );
 }
@@ -197,21 +197,23 @@ function tableElement(editor: TiptapEditor, pos: number): HTMLElement | null {
   return null;
 }
 
-export function tableToolbarShortLabel(id: string): string {
+export function tableToolbarLabel(id: string): string {
   const labels: Record<string, string> = {
-    tableAddRowBefore: "+Row↑",
-    tableAddRowAfter: "+Row↓",
-    tableDeleteRow: "-Row",
-    tableAddColumnBefore: "+Col←",
-    tableAddColumnAfter: "+Col→",
-    tableDeleteColumn: "-Col",
-    tableDelete: "Del",
-    tableToggleHeaderRow: "TH",
-    tableMergeCells: "Merge",
-    tableSplitCell: "Split",
+    tableAddRowBefore: "行↑",
+    tableAddRowAfter: "行↓",
+    tableDeleteRow: "删行",
+    tableAddColumnBefore: "列←",
+    tableAddColumnAfter: "列→",
+    tableDeleteColumn: "删列",
+    tableDelete: "删表",
+    tableToggleHeaderRow: "表头",
+    tableMergeCells: "合并",
+    tableSplitCell: "拆分",
   };
   return labels[id] ?? id;
 }
+
+export const tableToolbarShortLabel = tableToolbarLabel;
 
 export interface TableDimensions {
   rows: number;
@@ -246,23 +248,23 @@ export function tableSelectionLabel(selection: Selection): string | null {
     typeof maybeCellSelection.isRowSelection === "function" &&
     maybeCellSelection.isRowSelection()
   ) {
-    return "row selected";
+    return "已选中行";
   }
 
   if (
     typeof maybeCellSelection.isColSelection === "function" &&
     maybeCellSelection.isColSelection()
   ) {
-    return "column selected";
+    return "已选中列";
   }
 
   const rangeCount = maybeCellSelection.ranges?.length ?? 1;
-  return rangeCount > 1 ? `${rangeCount} cells selected` : null;
+  return rangeCount > 1 ? `已选 ${rangeCount} 个单元格` : null;
 }
 
 export function tableToolbarSummary(node: ProseMirrorNode, selection: Selection): string {
   const dimensions = tableDimensions(node);
   const selectionLabel = tableSelectionLabel(selection);
-  const sizeLabel = `${dimensions.rows}x${dimensions.columns}`;
+  const sizeLabel = `${dimensions.rows} 行 x ${dimensions.columns} 列`;
   return selectionLabel ? `${sizeLabel} - ${selectionLabel}` : sizeLabel;
 }

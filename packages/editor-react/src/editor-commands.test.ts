@@ -11,6 +11,7 @@ import {
   tableSelectionLabel,
   tableToolbarCommandGroups,
   tableToolbarShortLabel,
+  tableToolbarSummary,
 } from "./TableToolbar";
 
 describe("editor commands", () => {
@@ -135,16 +136,16 @@ describe("editor commands", () => {
 
   it("keeps table toolbar labels compact", () => {
     expect(tableCommands.map((command) => tableToolbarShortLabel(command.id))).toEqual([
-      "+Row↑",
-      "+Row↓",
-      "-Row",
-      "+Col←",
-      "+Col→",
-      "-Col",
-      "Del",
-      "TH",
-      "Merge",
-      "Split",
+      "行↑",
+      "行↓",
+      "删行",
+      "列←",
+      "列→",
+      "删列",
+      "删表",
+      "表头",
+      "合并",
+      "拆分",
     ]);
   });
 
@@ -183,9 +184,35 @@ describe("editor commands", () => {
   });
 
   it("labels table row, column, and multi-cell selections", () => {
-    expect(tableSelectionLabel({ isRowSelection: () => true } as never)).toBe("row selected");
-    expect(tableSelectionLabel({ isColSelection: () => true } as never)).toBe("column selected");
-    expect(tableSelectionLabel({ ranges: [{}, {}] } as never)).toBe("2 cells selected");
+    expect(tableSelectionLabel({ isRowSelection: () => true } as never)).toBe("已选中行");
+    expect(tableSelectionLabel({ isColSelection: () => true } as never)).toBe("已选中列");
+    expect(tableSelectionLabel({ ranges: [{}, {}] } as never)).toBe("已选 2 个单元格");
     expect(tableSelectionLabel({ ranges: [{}] } as never)).toBeNull();
+  });
+
+  it("summarizes table size and selection in Chinese", () => {
+    const node = {
+      childCount: 2,
+      forEach(
+        callback: (row: { forEach: (cellCallback: (cell: unknown) => void) => void }) => void,
+      ) {
+        callback({
+          forEach(cellCallback) {
+            cellCallback({ attrs: { colspan: 1 } });
+            cellCallback({ attrs: { colspan: 1 } });
+          },
+        });
+        callback({
+          forEach(cellCallback) {
+            cellCallback({ attrs: { colspan: 1 } });
+            cellCallback({ attrs: { colspan: 1 } });
+          },
+        });
+      },
+    };
+
+    expect(tableToolbarSummary(node as never, { ranges: [{}, {}] } as never)).toBe(
+      "2 行 x 2 列 - 已选 2 个单元格",
+    );
   });
 });
