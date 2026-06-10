@@ -2,11 +2,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-hover-bg) 72%, var(--color-bg)) 0,
-    var(--color-bg) 18rem
-  );
+  background: var(--color-bg);
   color: var(--color-text);
   overflow: auto;
 }
@@ -16,10 +12,10 @@
 }
 
 .editor {
-  max-width: var(--editor-max-width, 860px);
+  width: min(100%, var(--editor-max-width, 1040px));
   min-height: 100%;
   margin: 0 auto;
-  padding: clamp(3.75rem, 8vh, 6.5rem) clamp(1.35rem, 4vw, 2.5rem) 6rem;
+  padding: clamp(2.5rem, 6vh, 4.5rem) clamp(1rem, 3.5vw, 2.75rem) 5rem;
   font-family: var(--editor-font, "HarmonyOS Sans SC", sans-serif);
   font-size: var(--editor-font-size, 16.5px);
   line-height: var(--editor-line-height, 1.78);
@@ -73,8 +69,8 @@
   padding: 1em 1.05em;
   overflow-x: auto;
   border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
-  border-radius: 12px;
-  background: var(--color-code-bg, color-mix(in srgb, var(--color-border) 30%, transparent));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-code-bg) 82%, var(--color-bg));
   font-family: var(--editor-mono-font, "JetBrains Mono", monospace);
 }
 
@@ -94,8 +90,7 @@
   margin: 0.9em 0;
   padding: 0.18em 0 0.18em 1em;
   border-left: 3px solid var(--color-blockquote-border);
-  border-radius: 0 10px 10px 0;
-  background: color-mix(in srgb, var(--color-hover-bg) 38%, transparent);
+  background: color-mix(in srgb, var(--color-hover-bg) 24%, transparent);
   color: color-mix(in srgb, var(--color-text) 82%, var(--color-muted));
 }
 
@@ -145,7 +140,7 @@
 .editor :global(img) {
   max-width: 100%;
   max-height: 420px;
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 .editor :global(table) {
@@ -160,7 +155,7 @@
 .editor :global(.tableWrapper) {
   margin: 0.9em 0;
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 0 0 1px
     color-mix(in srgb, var(--color-table-border, var(--color-border)) 78%, transparent);
 }
