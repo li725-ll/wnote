@@ -2,7 +2,7 @@ import ImageExtension from "@tiptap/extension-image";
 import { mergeAttributes } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AssetResolver } from "./index";
 import {
   clampImageWidth,
@@ -139,6 +139,10 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
   const caption = String(node.attrs.caption ?? "");
   const assetResolver = imageAssetResolverFromExtension(extension);
   const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
+
+  useEffect(() => {
+    setLoaded(true);
+  }, [displaySrc]);
 
   return (
     <NodeViewWrapper

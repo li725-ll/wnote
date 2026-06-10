@@ -55,7 +55,7 @@ export function imageDisplaySource(
   previewSrc: string | null | undefined,
   resolveAsset?: (src: string) => string | null,
 ): string | null {
-  if (previewSrc) return previewSrc;
+  if (previewSrc != null) return previewSrc || null;
   if (resolveAsset) return resolveAsset(src);
   return src;
 }
