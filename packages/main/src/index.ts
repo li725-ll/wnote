@@ -14,6 +14,7 @@ import {
   type WorkspaceCreateDirectoryRequest,
   type WorkspaceCreateFileRequest,
   type WorkspaceDeleteRequest,
+  type WorkspaceMoveRequest,
   type WorkspaceReadRequest,
   type WorkspaceRenameRequest,
 } from "@wnote/contracts";
@@ -27,6 +28,7 @@ import {
   extractDocumentPathFromArgs,
   importAsset,
   isSupportedDocumentPath,
+  moveWorkspaceEntry,
   openDocument,
   readWorkspace,
   renameWorkspaceEntry,
@@ -190,6 +192,11 @@ ipcMain.handle(
 ipcMain.handle(IpcChannel.WorkspaceRename, async (_event, payload: WorkspaceRenameRequest) => {
   if (!payload?.rootPath || !payload.targetPath) return null;
   return renameWorkspaceEntry(payload);
+});
+
+ipcMain.handle(IpcChannel.WorkspaceMove, async (_event, payload: WorkspaceMoveRequest) => {
+  if (!payload?.rootPath || !payload.sourcePath) return null;
+  return moveWorkspaceEntry(payload);
 });
 
 ipcMain.handle(IpcChannel.WorkspaceDelete, async (_event, payload: WorkspaceDeleteRequest) => {

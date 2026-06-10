@@ -4,11 +4,13 @@ import {
   activeTab as getActiveTab,
   closeTab as closeTabState,
   closeTabsByPath,
+  closeTabsByPathPrefix,
   createInitialTabsState,
   createNewTab,
   markActiveTabSaved,
   openFileTab,
   renameTabsPath,
+  renameTabsPathPrefix,
   setActiveTabAssets,
   switchTab as switchTabState,
   updateActiveTabContent,
@@ -60,6 +62,13 @@ export function useTabs() {
     [applyState],
   );
 
+  const closePathPrefix = useCallback(
+    (path: string) => {
+      applyState(closeTabsByPathPrefix(stateRef.current, path, genId));
+    },
+    [applyState],
+  );
+
   const switchTab = useCallback(
     (id: string) => {
       applyState(switchTabState(stateRef.current, id, contentSnapshotRef.current?.()));
@@ -103,6 +112,13 @@ export function useTabs() {
     [applyState],
   );
 
+  const renamePathPrefix = useCallback(
+    (oldPath: string, newPath: string) => {
+      applyState(renameTabsPathPrefix(stateRef.current, oldPath, newPath));
+    },
+    [applyState],
+  );
+
   const setAssets = useCallback(
     (assets?: AssetIndex) => {
       applyState(setActiveTabAssets(stateRef.current, assets));
@@ -117,11 +133,13 @@ export function useTabs() {
     newTab,
     closeTab,
     closePath,
+    closePathPrefix,
     switchTab,
     updateContent,
     openFile,
     markSaved,
     renamePath,
+    renamePathPrefix,
     setAssets,
     setContentSnapshot,
   };

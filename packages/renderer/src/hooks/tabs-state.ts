@@ -67,6 +67,15 @@ export function closeTabsByPath(state: TabsState, path: string, createId: TabIdF
   return matching.reduce((current, tab) => closeTab(current, tab.id, createId), state);
 }
 
+export function closeTabsByPathPrefix(
+  state: TabsState,
+  pathPrefix: string,
+  createId: TabIdFactory,
+): TabsState {
+  const matching = state.tabs.filter((tab) => tab.path && pathInDirectory(tab.path, pathPrefix));
+  return matching.reduce((current, tab) => closeTab(current, tab.id, createId), state);
+}
+
 export function switchTab(state: TabsState, id: string, snapshot?: string): TabsState {
   if (id === state.activeTabId || !state.tabs.some((tab) => tab.id === id)) return state;
   return {
@@ -79,6 +88,20 @@ export function renameTabsPath(state: TabsState, oldPath: string, newPath: strin
   return {
     ...state,
     tabs: state.tabs.map((tab) => (tab.path === oldPath ? { ...tab, path: newPath } : tab)),
+  };
+}
+
+export function renameTabsPathPrefix(
+  state: TabsState,
+  oldPrefix: string,
+  newPrefix: string,
+): TabsState {
+  return {
+    ...state,
+    tabs: state.tabs.map((tab) => {
+      if (!tab.path || !pathInDirectory(tab.path, oldPrefix)) return tab;
+      return { ...tab, path: joinPath(newPrefix, relativePath(oldPrefix, tab.path)) };
+    }),
   };
 }
 
@@ -155,4 +178,20 @@ export function setActiveTabAssets(state: TabsState, assets?: AssetIndex): TabsS
     ...state,
     tabs: state.tabs.map((tab) => (tab.id === state.activeTabId ? { ...tab, assets } : tab)),
   };
+}
+
+function pathInDirectory(path: string, directory: string): boolean {
+  return (
+    path === directory || path.startsWith(`${directory}/`) || path.startsWith(`${directory}\\`)
+  );
+}
+
+function relativePath(prefix: string, path: string): string {
+  return path.slice(prefix.length).replace(/^[/\\]/, "");
+}
+
+function joinPath(directory: string, child: string): string {
+  if (!child) return directory;
+  const separator = directory.includes("\\") ? "\\" : "/";
+  return `${directory}${separator}${child}`;
 }

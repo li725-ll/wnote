@@ -8,6 +8,7 @@ import {
   deleteWorkspaceEntry,
   deleteAsset,
   importAsset,
+  moveWorkspaceEntry,
   readWorkspace,
   renameWorkspaceEntry,
   saveAsset,
@@ -463,6 +464,76 @@ describe("@wnote/storage-main workspace", () => {
     ).rejects.toThrow("already exists");
   });
 
+  it("moves workspace files into another directory", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-move-file-"));
+    await mkdir(join(dir, "notes"));
+    await writeFile(join(dir, "draft.md"), "draft");
+
+    const result = await moveWorkspaceEntry({
+      rootPath: dir,
+      sourcePath: join(dir, "draft.md"),
+      targetDirectoryPath: join(dir, "notes"),
+    });
+
+    expect(result.nodeType).toBe("file");
+    expect(result.oldPath).toBe(join(dir, "draft.md"));
+    expect(result.newPath).toBe(join(dir, "notes", "draft.md"));
+    expect(result.workspace.tree[0]?.children?.map((node) => node.name)).toEqual(["draft.md"]);
+    await expect(readFile(join(dir, "notes", "draft.md"), "utf-8")).resolves.toBe("draft");
+  });
+
+  it("moves workspace directories and keeps descendants readable", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-move-dir-"));
+    await mkdir(join(dir, "archive"));
+    await mkdir(join(dir, "drafts"));
+    await writeFile(join(dir, "drafts", "note.md"), "note");
+
+    const result = await moveWorkspaceEntry({
+      rootPath: dir,
+      sourcePath: join(dir, "drafts"),
+      targetDirectoryPath: join(dir, "archive"),
+    });
+
+    expect(result.nodeType).toBe("directory");
+    expect(result.newPath).toBe(join(dir, "archive", "drafts"));
+    expect(result.workspace.tree[0]?.name).toBe("archive");
+    expect(result.workspace.tree[0]?.children?.[0]?.children?.[0]?.name).toBe("note.md");
+    await expect(readFile(join(dir, "archive", "drafts", "note.md"), "utf-8")).resolves.toBe(
+      "note",
+    );
+  });
+
+  it("rejects unsafe workspace moves", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-move-unsafe-"));
+    const outside = await mkdtemp(join(tmpdir(), "wnote-workspace-move-outside-"));
+    await mkdir(join(dir, "notes"));
+    await mkdir(join(dir, "notes", "nested"));
+    await writeFile(join(dir, "note.md"), "note");
+    await writeFile(join(dir, "notes", "note.md"), "conflict");
+
+    await expect(
+      moveWorkspaceEntry({
+        rootPath: dir,
+        sourcePath: join(dir, "note.md"),
+        targetDirectoryPath: join(dir, "notes"),
+      }),
+    ).rejects.toThrow("already exists");
+    await expect(
+      moveWorkspaceEntry({
+        rootPath: dir,
+        sourcePath: join(dir, "notes"),
+        targetDirectoryPath: join(dir, "notes", "nested"),
+      }),
+    ).rejects.toThrow("cannot be moved into itself");
+    await expect(
+      moveWorkspaceEntry({
+        rootPath: dir,
+        sourcePath: join(dir, "note.md"),
+        targetDirectoryPath: outside,
+      }),
+    ).rejects.toThrow("outside the workspace");
+  });
+
   it("deletes workspace files and empty directories", async () => {
     const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-delete-"));
     await writeFile(join(dir, "note.md"), "note");
@@ -493,5 +564,21 @@ describe("@wnote/storage-main workspace", () => {
         targetPath: join(dir, "notes"),
       }),
     ).rejects.toThrow("Workspace directory is not empty");
+  });
+
+  it("recursively deletes non-empty directories only when requested", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-workspace-delete-recursive-"));
+    await mkdir(join(dir, "notes"));
+    await writeFile(join(dir, "notes", "note.md"), "note");
+
+    const result = await deleteWorkspaceEntry({
+      rootPath: dir,
+      targetPath: join(dir, "notes"),
+      recursive: true,
+    });
+
+    expect(result.nodeType).toBe("directory");
+    expect(result.workspace.tree).toEqual([]);
+    await expect(stat(join(dir, "notes"))).rejects.toThrow();
   });
 });

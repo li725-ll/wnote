@@ -4,19 +4,23 @@ import {
   type OpenDocumentResult,
   type WorkspaceCreateFileResult,
   type WorkspaceDeleteResult,
+  type WorkspaceMoveResult,
   type WorkspaceOpenResult,
   type WorkspaceRenameResult,
+  type WorkspaceTreeNode,
 } from "@wnote/contracts";
 
 export function useWorkspace({
   onDocumentOpen,
   onDeletePath,
+  onMovePath,
   onRenamePath,
   onError,
 }: {
   onDocumentOpen(data: OpenDocumentResult): void;
-  onDeletePath?(path: string): void;
-  onRenamePath?(oldPath: string, newPath: string): void;
+  onDeletePath?(path: string, nodeType: WorkspaceTreeNode["type"]): void;
+  onMovePath?(oldPath: string, newPath: string, nodeType: WorkspaceTreeNode["type"]): void;
+  onRenamePath?(oldPath: string, newPath: string, nodeType: WorkspaceTreeNode["type"]): void;
   onError?(message: string): void;
 }) {
   const [workspace, setWorkspace] = useState<WorkspaceOpenResult | null>(null);
@@ -129,7 +133,7 @@ export function useWorkspace({
         );
         if (!result) return;
         setWorkspace(result.workspace);
-        if (result.nodeType === "file") onRenamePath?.(result.oldPath, result.newPath);
+        onRenamePath?.(result.oldPath, result.newPath, result.nodeType);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
@@ -137,8 +141,30 @@ export function useWorkspace({
     [onError, onRenamePath, workspace],
   );
 
+  const moveWorkspaceEntry = useCallback(
+    async (sourcePath: string, targetDirectoryPath?: string) => {
+      if (!workspace) return;
+      try {
+        const result = await window.electronAPI.invoke<WorkspaceMoveResult | null>(
+          IpcChannel.WorkspaceMove,
+          {
+            rootPath: workspace.rootPath,
+            sourcePath,
+            targetDirectoryPath,
+          },
+        );
+        if (!result) return;
+        setWorkspace(result.workspace);
+        onMovePath?.(result.oldPath, result.newPath, result.nodeType);
+      } catch (error) {
+        onError?.(workspaceErrorMessage(error));
+      }
+    },
+    [onError, onMovePath, workspace],
+  );
+
   const deleteWorkspaceEntry = useCallback(
-    async (targetPath: string) => {
+    async (targetPath: string, recursive?: boolean) => {
       if (!workspace) return;
       try {
         const result = await window.electronAPI.invoke<WorkspaceDeleteResult | null>(
@@ -146,11 +172,12 @@ export function useWorkspace({
           {
             rootPath: workspace.rootPath,
             targetPath,
+            recursive,
           },
         );
         if (!result) return;
         setWorkspace(result.workspace);
-        if (result.nodeType === "file") onDeletePath?.(result.deletedPath);
+        onDeletePath?.(result.deletedPath, result.nodeType);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
@@ -167,6 +194,7 @@ export function useWorkspace({
     createWorkspaceFile,
     createWorkspaceDirectory,
     renameWorkspaceEntry,
+    moveWorkspaceEntry,
     deleteWorkspaceEntry,
   };
 }
@@ -179,6 +207,7 @@ function workspaceErrorMessage(error: unknown): string {
   }
   if (error.message.includes("not empty")) return "文件夹不是空的，暂不能删除。";
   if (error.message.includes("outside the workspace")) return "目标路径不在当前工作区内。";
+  if (error.message.includes("cannot be moved into itself")) return "不能将文件夹移动到自身内部。";
   if (error.message.includes("permission") || error.message.includes("EACCES")) {
     return "没有权限完成该操作。";
   }

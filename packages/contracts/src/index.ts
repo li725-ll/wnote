@@ -31,6 +31,8 @@ export type {
   WorkspaceCreateFileResult,
   WorkspaceDeleteRequest,
   WorkspaceDeleteResult,
+  WorkspaceMoveRequest,
+  WorkspaceMoveResult,
   WorkspaceOpenResult,
   WorkspaceReadRequest,
   WorkspaceRenameRequest,

@@ -82,9 +82,23 @@ export interface WorkspaceRenameResult {
   nodeType: WorkspaceTreeNode["type"];
 }
 
+export interface WorkspaceMoveRequest {
+  rootPath: string;
+  sourcePath: string;
+  targetDirectoryPath?: string;
+}
+
+export interface WorkspaceMoveResult {
+  workspace: WorkspaceOpenResult;
+  oldPath: string;
+  newPath: string;
+  nodeType: WorkspaceTreeNode["type"];
+}
+
 export interface WorkspaceDeleteRequest {
   rootPath: string;
   targetPath: string;
+  recursive?: boolean;
 }
 
 export interface WorkspaceDeleteResult {

@@ -75,11 +75,13 @@ export default function App() {
     newTab,
     closeTab,
     closePath,
+    closePathPrefix,
     switchTab,
     updateContent,
     openFile,
     markSaved,
     renamePath,
+    renamePathPrefix,
     setAssets,
     setContentSnapshot,
   } = useTabs();
@@ -142,11 +144,22 @@ export default function App() {
     createWorkspaceFile,
     createWorkspaceDirectory,
     renameWorkspaceEntry,
+    moveWorkspaceEntry,
     deleteWorkspaceEntry,
   } = useWorkspace({
     onDocumentOpen: applyOpenedDocument,
-    onDeletePath: closePath,
-    onRenamePath: renamePath,
+    onDeletePath: (path, nodeType) => {
+      if (nodeType === "directory") closePathPrefix(path);
+      else closePath(path);
+    },
+    onMovePath: (oldPath, newPath, nodeType) => {
+      if (nodeType === "directory") renamePathPrefix(oldPath, newPath);
+      else renamePath(oldPath, newPath);
+    },
+    onRenamePath: (oldPath, newPath, nodeType) => {
+      if (nodeType === "directory") renamePathPrefix(oldPath, newPath);
+      else renamePath(oldPath, newPath);
+    },
     onError: (message) => {
       showToast({ kind: "error", title: "工作区操作失败", message }, 5200);
     },
@@ -356,8 +369,11 @@ export default function App() {
                 onRename={(path, name) => {
                   void renameWorkspaceEntry(path, name);
                 }}
-                onDelete={(path) => {
-                  void deleteWorkspaceEntry(path);
+                onMove={(sourcePath, targetDirectoryPath) => {
+                  void moveWorkspaceEntry(sourcePath, targetDirectoryPath);
+                }}
+                onDelete={(path, recursive) => {
+                  void deleteWorkspaceEntry(path, recursive);
                 }}
               />
               <DocumentOutline

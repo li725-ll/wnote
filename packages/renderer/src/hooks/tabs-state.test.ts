@@ -4,11 +4,13 @@ import {
   activeTab,
   closeTab,
   closeTabsByPath,
+  closeTabsByPathPrefix,
   createInitialTabsState,
   createNewTab,
   markActiveTabSaved,
   openFileTab,
   renameTabsPath,
+  renameTabsPathPrefix,
   setActiveTabAssets,
   switchTab,
   updateActiveTabContent,
@@ -164,6 +166,57 @@ describe("tabs state", () => {
       content: "content",
       dirty: false,
     });
+  });
+
+  it("renames all tab paths inside a directory", () => {
+    const createId = ids("a", "b", "c");
+    const first = openFileTab(createInitialTabsState(createId), {
+      path: "/docs/drafts/a.md",
+      content: "a",
+      createId,
+    });
+    const second = openFileTab(first, {
+      path: "/docs/drafts/nested/b.md",
+      content: "b",
+      createId,
+    });
+    const third = openFileTab(second, {
+      path: "/docs/other.md",
+      content: "other",
+      createId,
+    });
+
+    const next = renameTabsPathPrefix(third, "/docs/drafts", "/docs/archive/drafts");
+
+    expect(next.tabs.map((tab) => tab.path)).toEqual([
+      "/docs/archive/drafts/a.md",
+      "/docs/archive/drafts/nested/b.md",
+      "/docs/other.md",
+    ]);
+  });
+
+  it("closes all tabs inside a deleted directory", () => {
+    const createId = ids("a", "b", "c", "fresh");
+    const first = openFileTab(createInitialTabsState(createId), {
+      path: "/docs/drafts/a.md",
+      content: "a",
+      createId,
+    });
+    const second = openFileTab(first, {
+      path: "/docs/drafts/nested/b.md",
+      content: "b",
+      createId,
+    });
+    const third = openFileTab(second, {
+      path: "/docs/other.md",
+      content: "other",
+      createId,
+    });
+
+    const next = closeTabsByPathPrefix(third, "/docs/drafts", createId);
+
+    expect(next.tabs.map((tab) => tab.path)).toEqual(["/docs/other.md"]);
+    expect(next.activeTabId).toBe("c");
   });
 
   it("updates content, save state, and asset index on the active tab", () => {

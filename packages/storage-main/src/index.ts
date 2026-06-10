@@ -6,6 +6,7 @@ import {
   readFile,
   readdir,
   rename,
+  rm,
   rmdir,
   stat,
   unlink,
@@ -30,6 +31,8 @@ import type {
   WorkspaceCreateFileResult,
   WorkspaceDeleteRequest,
   WorkspaceDeleteResult,
+  WorkspaceMoveRequest,
+  WorkspaceMoveResult,
   WorkspaceOpenResult,
   WorkspaceRenameRequest,
   WorkspaceRenameResult,
@@ -119,9 +122,7 @@ export async function renameWorkspaceEntry(
   payload: WorkspaceRenameRequest,
 ): Promise<WorkspaceRenameResult> {
   const targetPath = assertWorkspacePath(payload.rootPath, payload.targetPath);
-  const targetStat = await stat(targetPath);
-  const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
-  if (!nodeType) throw new Error("Workspace target is not a file or directory");
+  const nodeType = await workspaceNodeType(targetPath);
   const parentPath = await resolveWorkspaceParent(payload.rootPath, dirname(targetPath));
   const name =
     nodeType === "file"
@@ -146,14 +147,56 @@ export async function renameWorkspaceEntry(
   };
 }
 
+export async function moveWorkspaceEntry(
+  payload: WorkspaceMoveRequest,
+): Promise<WorkspaceMoveResult> {
+  const sourcePath = assertWorkspacePath(payload.rootPath, payload.sourcePath);
+  const targetDirectoryPath = await resolveWorkspaceParent(
+    payload.rootPath,
+    payload.targetDirectoryPath,
+  );
+  const nodeType = await workspaceNodeType(sourcePath);
+  const newPath = assertWorkspacePath(
+    payload.rootPath,
+    join(targetDirectoryPath, basename(sourcePath)),
+  );
+
+  if (sourcePath === newPath) {
+    return {
+      workspace: await readWorkspace(payload.rootPath),
+      oldPath: sourcePath,
+      newPath,
+      nodeType,
+    };
+  }
+  if (nodeType === "directory" && isSameOrDescendant(sourcePath, targetDirectoryPath)) {
+    throw new Error("Workspace directory cannot be moved into itself");
+  }
+  if (existsSync(newPath)) throw new Error("Workspace target already exists");
+
+  await rename(sourcePath, newPath);
+  return {
+    workspace: await readWorkspace(payload.rootPath),
+    oldPath: sourcePath,
+    newPath,
+    nodeType,
+  };
+}
+
 export async function deleteWorkspaceEntry(
   payload: WorkspaceDeleteRequest,
 ): Promise<WorkspaceDeleteResult> {
   const targetPath = assertWorkspacePath(payload.rootPath, payload.targetPath);
-  const targetStat = await stat(targetPath);
-  const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
-  if (!nodeType) throw new Error("Workspace target is not a file or directory");
+  const nodeType = await workspaceNodeType(targetPath);
   if (nodeType === "directory") {
+    if (payload.recursive) {
+      await rm(targetPath, { recursive: true });
+      return {
+        workspace: await readWorkspace(payload.rootPath),
+        deletedPath: targetPath,
+        nodeType,
+      };
+    }
     try {
       await rmdir(targetPath);
     } catch (error) {
@@ -372,6 +415,18 @@ function assertWorkspacePath(rootPath: string, targetPath: string): string {
     throw new Error("Workspace target is outside the workspace");
   }
   return resolvedTarget;
+}
+
+async function workspaceNodeType(targetPath: string): Promise<WorkspaceTreeNode["type"]> {
+  const targetStat = await stat(targetPath);
+  const nodeType = targetStat.isDirectory() ? "directory" : targetStat.isFile() ? "file" : null;
+  if (!nodeType) throw new Error("Workspace target is not a file or directory");
+  return nodeType;
+}
+
+function isSameOrDescendant(parentPath: string, candidatePath: string): boolean {
+  const relation = relative(resolve(parentPath), resolve(candidatePath));
+  return relation === "" || (!relation.startsWith("..") && resolve(relation) !== relation);
 }
 
 function normalizeWorkspaceFileName(name: string): string {
