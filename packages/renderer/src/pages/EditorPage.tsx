@@ -7,6 +7,7 @@ import { WorkspacePanel } from "../panels/WorkspacePanel";
 import { useTabs } from "../hooks/useTabs";
 import styles from "../App.module.css";
 import { TabBar } from "../components/TabBar";
+import { TitleBar } from "../components/TitleBar";
 import { Toast } from "../components/Toast";
 import { buildDocumentAssetIndex } from "../assets/asset-state";
 import type { PaletteCommandActions } from "../commands/palette-commands";
@@ -80,6 +81,14 @@ export function EditorPage() {
     setAssets,
     setContentSnapshot,
   } = useTabs();
+
+  const appTitle = useMemo(() => {
+    if (activeTab.path) {
+      const parts = activeTab.path.split(/[/\\]/);
+      return parts[parts.length - 1] || "未命名";
+    }
+    return "未命名";
+  }, [activeTab.path]);
 
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
@@ -283,6 +292,7 @@ export function EditorPage() {
 
   return (
     <div className={styles.shell}>
+      <TitleBar title={appTitle} dirty={activeTab.dirty} onToggleSidebar={triggerToggleOutline} />
       <div className={styles.content}>
         <AppLayout
           toggleLeftSignal={toggleOutlineSignal}

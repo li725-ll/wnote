@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import styles from "./App.module.css";
+import { TitleBar } from "./components/TitleBar";
 import { useNavigationIpc } from "./hooks/useNavigationIpc";
 import { useWorkspaceStore } from "./stores/workspace-store";
 import { useTheme } from "./hooks/useTheme";
@@ -34,6 +35,7 @@ function WelcomeRoute() {
 
   return (
     <div className={styles.shell}>
+      <TitleBar title="欢迎" />
       <div className={styles.content}>
         <Suspense fallback={null}>
           <WelcomePage
@@ -53,6 +55,7 @@ function SettingsRoute() {
 
   return (
     <div className={styles.shell}>
+      <TitleBar title="设置" />
       <div className={styles.content}>
         <Suspense fallback={null}>
           <SettingsPage onBack={() => navigate("/editor")} />

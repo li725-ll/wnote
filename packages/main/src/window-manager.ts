@@ -17,6 +17,9 @@ export function mainWindowOptions(opts: WindowOptions = {}): BrowserWindowConstr
   return {
     width: opts.width ?? 1200,
     height: opts.height ?? 800,
+    frame: false,
+    transparent: true,
+    backgroundColor: "#00000000",
     webPreferences: {
       preload: join(__dirname, "../../preload/dist/index.js"),
       contextIsolation: true,
