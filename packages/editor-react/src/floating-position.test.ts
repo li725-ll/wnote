@@ -5,6 +5,7 @@ import {
   clamp,
   clampFloatingPoint,
   finitePoint,
+  nearbyFloatingPoint,
   sideHandlePoint,
   viewportPoint,
   type RectLike,
@@ -83,6 +84,28 @@ describe("floating-position", () => {
         height: 120,
       }),
     ).toEqual({ left: 40, top: 164, placement: "top" });
+  });
+
+  it("places context panels near the focus point inside the anchor", () => {
+    expect(
+      nearbyFloatingPoint(
+        rect({ left: 180, top: 160, right: 360, bottom: 240 }),
+        { left: 330, top: 220 },
+        container,
+        { width: 120, height: 36 },
+      ),
+    ).toEqual({ left: 180, top: 86, placement: "top" });
+  });
+
+  it("flips context panels to the side near vertical edges", () => {
+    expect(
+      nearbyFloatingPoint(
+        rect({ left: 180, top: 55, right: 360, bottom: 330 }),
+        { left: 350, top: 72 },
+        container,
+        { width: 120, height: 220 },
+      ),
+    ).toEqual({ left: 278, top: 28, placement: "right" });
   });
 
   it("keeps block handles inside the container", () => {

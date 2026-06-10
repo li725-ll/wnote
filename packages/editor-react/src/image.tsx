@@ -13,7 +13,6 @@ import {
   imageWidthLabel,
   normalizeImageAlign,
   normalizeImageWidth,
-  normalizeNullableText,
 } from "./image-utils";
 import { withNodeViewErrorBoundary } from "./NodeViewErrorBoundary";
 import styles from "./Image.module.css";
@@ -124,6 +123,31 @@ export const Image = ImageExtension.extend({
   },
 });
 
+export function selectedImageInfo(editor: {
+  state: {
+    selection: { from: number };
+    doc: {
+      nodeAt(
+        pos: number,
+      ): { type: { name: string }; attrs: Record<string, unknown>; nodeSize: number } | null;
+    };
+  };
+  view: { nodeDOM(pos: number): Node | null };
+}): { pos: number; nodeSize: number; attrs: Record<string, unknown>; element: HTMLElement } | null {
+  const pos = editor.state.selection.from;
+  const node = editor.state.doc.nodeAt(pos);
+  if (node?.type.name !== "image") return null;
+  const dom = editor.view.nodeDOM(pos);
+  const element =
+    dom instanceof HTMLElement
+      ? dom.matches("[data-wnote-image-view]")
+        ? dom
+        : dom.querySelector<HTMLElement>("[data-wnote-image-view]")
+      : null;
+  if (!element) return null;
+  return { pos, nodeSize: node.nodeSize, attrs: node.attrs, element };
+}
+
 function imageHtmlAttrs(attributes: Record<string, unknown>) {
   const result = { ...attributes };
   delete result.align;
@@ -132,33 +156,35 @@ function imageHtmlAttrs(attributes: Record<string, unknown>) {
   return result;
 }
 
-function ImageView({ node, selected, updateAttributes, deleteNode, extension }: NodeViewProps) {
+function ImageView({ node, selected, updateAttributes, extension }: NodeViewProps) {
   const [loaded, setLoaded] = useState(true);
-  const [replacing, setReplacing] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState<string | null | undefined>(undefined);
   const [dragWidth, setDragWidth] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const figureRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const src = String(node.attrs.src ?? "");
-  const previewSrc = String(node.attrs.previewSrc ?? "");
+  const previewSrc =
+    typeof node.attrs.previewSrc === "string" && node.attrs.previewSrc
+      ? node.attrs.previewSrc
+      : null;
   const alt = String(node.attrs.alt ?? "");
   const title = String(node.attrs.title ?? "");
   const width = normalizeImageWidth(node.attrs.width);
   const align = normalizeImageAlign(node.attrs.align);
   const caption = String(node.attrs.caption ?? "");
   const assetResolver = imageAssetResolverFromExtension(extension);
-  const imageSave = imageSaveFromExtension(extension);
-  const imageReveal = imageRevealFromExtension(extension);
-  const imagePathCopy = imagePathCopyFromExtension(extension);
-  const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
+  const displaySrc =
+    resolvedSrc !== undefined ? resolvedSrc : imageDisplaySource(src, previewSrc, assetResolver);
 
   useEffect(() => {
+    setResolvedSrc(undefined);
     setLoaded(true);
-  }, [displaySrc]);
+  }, [src, previewSrc, assetResolver]);
 
   return (
     <NodeViewWrapper
       className={styles.wrapper}
+      data-wnote-image-view="true"
       data-align={align || undefined}
       data-selected={selected ? "true" : "false"}
     >
@@ -172,141 +198,6 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
         }}
       >
         <div className={styles.imageWrap}>
-          {selected ? (
-            <div className={styles.toolbar}>
-              <button
-                className={styles.toolButton}
-                data-active={!align ? "true" : "false"}
-                title="自动对齐"
-                type="button"
-                onClick={() => updateAttributes({ align: null })}
-              >
-                A
-              </button>
-              <button
-                className={styles.toolButton}
-                data-active={align === "left" ? "true" : "false"}
-                title="左对齐"
-                type="button"
-                onClick={() => updateAttributes({ align: "left" })}
-              >
-                L
-              </button>
-              <button
-                className={styles.toolButton}
-                data-active={align === "center" ? "true" : "false"}
-                title="居中"
-                type="button"
-                onClick={() => updateAttributes({ align: "center" })}
-              >
-                C
-              </button>
-              <button
-                className={styles.toolButton}
-                data-active={align === "right" ? "true" : "false"}
-                title="右对齐"
-                type="button"
-                onClick={() => updateAttributes({ align: "right" })}
-              >
-                R
-              </button>
-              <span className={styles.divider} />
-              <button
-                className={styles.toolButton}
-                title="适应页面宽度"
-                type="button"
-                onClick={() => updateAttributes({ width: "100%" })}
-              >
-                Fit
-              </button>
-              <button
-                className={styles.toolButton}
-                data-active={width === "50%" ? "true" : "false"}
-                title="50% 宽度"
-                type="button"
-                onClick={() => updateAttributes({ width: "50%" })}
-              >
-                50
-              </button>
-              <button
-                className={styles.toolButton}
-                data-active={width === "75%" ? "true" : "false"}
-                title="75% 宽度"
-                type="button"
-                onClick={() => updateAttributes({ width: "75%" })}
-              >
-                75
-              </button>
-              <button
-                className={styles.toolButton}
-                disabled={!width}
-                title="清除固定宽度"
-                type="button"
-                onClick={() => updateAttributes({ width: null })}
-              >
-                Rst
-              </button>
-              <span className={styles.divider} />
-              <button
-                className={styles.toolButton}
-                disabled={!imageSave || replacing}
-                title="替换图片"
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Rep
-              </button>
-              <button
-                className={styles.toolButton}
-                disabled={!src || !imageReveal}
-                title="在文件夹中显示"
-                type="button"
-                onClick={() => imageReveal?.(src)}
-              >
-                Rev
-              </button>
-              <button
-                className={styles.toolButton}
-                disabled={!src || !imagePathCopy}
-                title="复制路径"
-                type="button"
-                onClick={() => imagePathCopy?.(src)}
-              >
-                Path
-              </button>
-              <span className={styles.divider} />
-              <button
-                className={styles.toolButton}
-                title="删除图片"
-                type="button"
-                onClick={deleteNode}
-              >
-                Del
-              </button>
-              <input
-                ref={fileInputRef}
-                className={styles.fileInput}
-                type="file"
-                accept="image/*"
-                tabIndex={-1}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file || !imageSave) return;
-                  setReplacing(true);
-                  void imageSave(file)
-                    .then((asset) => {
-                      if (!asset) return;
-                      updateAttributes({
-                        src: asset.src,
-                        previewSrc: asset.previewSrc ?? null,
-                      });
-                    })
-                    .finally(() => setReplacing(false));
-                }}
-              />
-            </div>
-          ) : null}
           {loaded && displaySrc ? (
             <img
               ref={imageRef}
@@ -315,7 +206,15 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               alt={alt}
               title={title || undefined}
               style={dragWidth ? { width: dragWidth } : imageStyle(width)}
-              onError={() => setLoaded(false)}
+              onError={() => {
+                const nextSrc = assetResolver?.(src);
+                if (nextSrc && nextSrc !== displaySrc) {
+                  setResolvedSrc(nextSrc);
+                  setLoaded(true);
+                  return;
+                }
+                setLoaded(false);
+              }}
             />
           ) : (
             <div className={styles.error} style={imageStyle(width)}>
@@ -366,34 +265,9 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
             />
           ) : null}
         </div>
+        {caption ? <figcaption className={styles.caption}>{caption}</figcaption> : null}
         {selected ? (
-          <input
-            className={styles.captionEditor}
-            value={caption}
-            placeholder="添加图片说明"
-            onChange={(event) =>
-              updateAttributes({ caption: normalizeNullableText(event.target.value) })
-            }
-          />
-        ) : caption ? (
-          <figcaption className={styles.caption}>{caption}</figcaption>
-        ) : null}
-        {selected ? (
-          <div className={styles.metadata}>
-            <input
-              className={styles.metaInput}
-              value={alt}
-              placeholder="alt"
-              onChange={(event) => updateAttributes({ alt: event.target.value })}
-            />
-            <input
-              className={styles.metaInput}
-              value={title}
-              placeholder="title"
-              onChange={(event) => updateAttributes({ title: event.target.value })}
-            />
-            <span className={styles.widthBadge}>{imageWidthLabel(width, dragWidth)}</span>
-          </div>
+          <span className={styles.widthBadge}>{imageWidthLabel(width, dragWidth)}</span>
         ) : null}
       </div>
     </NodeViewWrapper>
@@ -420,25 +294,4 @@ function imageAlign(element: HTMLElement): string | null {
 
 function styleTextAlign(style: string): string | null {
   return /(?:^|;)\s*text-align\s*:\s*([^;]+)/i.exec(style)?.[1]?.trim() ?? null;
-}
-
-function imageSaveFromExtension(
-  extension: { options?: { onImageSave?: unknown } } | null | undefined,
-): ImageSaveHandler | undefined {
-  const handler = extension?.options?.onImageSave;
-  return typeof handler === "function" ? (handler as ImageSaveHandler) : undefined;
-}
-
-function imageRevealFromExtension(
-  extension: { options?: { onImageReveal?: unknown } } | null | undefined,
-): ImagePathActionHandler | undefined {
-  const handler = extension?.options?.onImageReveal;
-  return typeof handler === "function" ? (handler as ImagePathActionHandler) : undefined;
-}
-
-function imagePathCopyFromExtension(
-  extension: { options?: { onImagePathCopy?: unknown } } | null | undefined,
-): ImagePathActionHandler | undefined {
-  const handler = extension?.options?.onImagePathCopy;
-  return typeof handler === "function" ? (handler as ImagePathActionHandler) : undefined;
 }

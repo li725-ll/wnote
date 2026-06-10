@@ -9,6 +9,7 @@ import styles from "./Editor.module.css";
 import { FloatingToolbar } from "./FloatingToolbar";
 import { SlashMenu } from "./SlashMenu";
 import { TableToolbar } from "./TableToolbar";
+import { ImageToolbar } from "./ImageToolbar";
 import { writingFocusState } from "./writing-focus-state";
 
 export type { HeadingItem } from "@wnote/contracts";
@@ -248,6 +249,13 @@ export function Editor({
       <FloatingToolbar editor={editor} containerRef={containerRef} />
       <SlashMenu editor={editor} containerRef={containerRef} />
       <TableToolbar editor={editor} containerRef={containerRef} />
+      <ImageToolbar
+        editor={editor}
+        containerRef={containerRef}
+        onImageSave={onImageSave}
+        onImageReveal={onImageReveal}
+        onImagePathCopy={onImagePathCopy}
+      />
       <EditorContent editor={editor} className={styles.wrap} />
     </div>
   );

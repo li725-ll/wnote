@@ -3,7 +3,11 @@ import type { Editor as TiptapEditor } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import type { Selection } from "@tiptap/pm/state";
 import { tableCommands, type EditorCommandDefinition } from "./editor-commands";
-import { centeredFloatingPoint } from "./floating-position";
+import {
+  nearbyFloatingPoint,
+  type FloatingPlacementSide,
+  type RectLike,
+} from "./floating-position";
 import styles from "./TableToolbar.module.css";
 
 interface TableToolbarProps {
@@ -15,7 +19,7 @@ interface TableState {
   visible: boolean;
   left: number;
   top: number;
-  placement: "top" | "bottom";
+  placement: FloatingPlacementSide;
   pos: number;
   size: number;
   summary: string;
@@ -36,7 +40,7 @@ const hiddenState: TableState = {
   summary: "",
 };
 
-const tableToolbarBox = { width: 672, height: 32 };
+const tableToolbarBox = { width: 520, height: 40 };
 
 export const tableToolbarCommandGroups = [
   ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
@@ -70,9 +74,11 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
     }
 
     const tableRect = table.getBoundingClientRect();
+    const focusRect = tableFocusRect(editor) ?? tableRect;
     const containerRect = container.getBoundingClientRect();
-    const position = centeredFloatingPoint(
-      tableRect,
+    const position = nearbyFloatingPoint(
+      focusRect,
+      rectCenter(focusRect),
       {
         ...containerRect,
         scrollLeft: container.scrollLeft,
@@ -196,6 +202,28 @@ function tableElement(editor: TiptapEditor, pos: number): HTMLElement | null {
   if (dom instanceof HTMLTableElement) return dom;
   if (dom instanceof HTMLElement) return dom.querySelector("table") ?? dom;
   return null;
+}
+
+function tableFocusRect(editor: TiptapEditor): RectLike | null {
+  const { from, to } = editor.state.selection;
+  try {
+    const start = editor.view.coordsAtPos(from);
+    const end = editor.view.coordsAtPos(to);
+    return {
+      left: Math.min(start.left, end.left),
+      right: Math.max(start.right, end.right),
+      top: Math.min(start.top, end.top),
+      bottom: Math.max(start.bottom, end.bottom),
+      width: Math.abs(end.right - start.left),
+      height: Math.abs(end.bottom - start.top),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function rectCenter(rect: RectLike) {
+  return { left: (rect.left + rect.right) / 2, top: (rect.top + rect.bottom) / 2 };
 }
 
 export function tableToolbarLabel(id: string): string {

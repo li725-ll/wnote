@@ -82,6 +82,64 @@ test("opens documents from a workspace tree", async () => {
   }
 });
 
+test("loads local markdown images with URL syntax characters in file names", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "wnote-image-e2e-"));
+  const assetDir = join(dir, "image-note.assets");
+  mkdirSync(assetDir);
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="2" height="2" fill="red"/></svg>';
+  writeFileSync(join(assetDir, "a#1.svg"), svg);
+  writeFileSync(join(assetDir, "a?1.svg"), svg);
+  const documentPath = join(dir, "image-note.md");
+  writeFileSync(
+    documentPath,
+    '# Images\n\n<img src="image-note.assets/a#1.svg" alt="Hash">\n\n![Query](<image-note.assets/a?1.svg>)',
+  );
+
+  const app = await launchWNote(documentPath);
+
+  try {
+    await expect(app.page.locator(".ProseMirror")).toContainText("Images");
+    await expect
+      .poll(() =>
+        app.page.evaluate(
+          async (path) => {
+            const response = await fetch(`wnote-asset://local/${encodeURIComponent(path)}`);
+            return { ok: response.ok, text: await response.text() };
+          },
+          join(assetDir, "a#1.svg"),
+        ),
+      )
+      .toEqual({ ok: true, text: svg });
+    await expect(app.page.getByText("图片无法加载")).toHaveCount(0);
+    const images = app.page.locator(".ProseMirror img");
+    await expect(images).toHaveCount(2);
+    await expect
+      .poll(async () =>
+        images.evaluateAll((items) =>
+          items.map((item) => ({
+            complete: (item as HTMLImageElement).complete,
+            naturalWidth: (item as HTMLImageElement).naturalWidth,
+          })),
+        ),
+      )
+      .toEqual([
+        { complete: true, naturalWidth: 2 },
+        { complete: true, naturalWidth: 2 },
+      ]);
+    await images.first().click();
+    const imageBox = await images.first().boundingBox();
+    const toolbarBox = await app.page.getByTitle("适应页面宽度").boundingBox();
+    expect(imageBox).not.toBeNull();
+    expect(toolbarBox).not.toBeNull();
+    expect(Math.abs((toolbarBox?.x ?? 0) - (imageBox?.x ?? 0))).toBeLessThan(420);
+    expect(Math.abs((toolbarBox?.y ?? 0) - (imageBox?.y ?? 0))).toBeLessThan(180);
+    expect(app.errors).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
 test("creates files and folders from the workspace panel", async () => {
   const dir = mkdtempSync(join(tmpdir(), "wnote-workspace-create-e2e-"));
 

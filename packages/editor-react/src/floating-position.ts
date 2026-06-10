@@ -22,11 +22,18 @@ export interface FloatingBox {
   height: number;
 }
 
+const defaultPadding = 8;
+
+export type FloatingPlacementSide = "top" | "bottom" | "left" | "right";
+export type VerticalFloatingPlacementSide = "top" | "bottom";
+
 export interface FloatingPlacement extends FloatingPoint {
-  placement: "top" | "bottom";
+  placement: VerticalFloatingPlacementSide;
 }
 
-const defaultPadding = 8;
+export interface NearbyFloatingPlacement extends FloatingPoint {
+  placement: FloatingPlacementSide;
+}
 
 export function finiteNumber(value: number): number | null {
   return Number.isFinite(value) ? value : null;
@@ -98,6 +105,25 @@ export function centeredFloatingPoint(
   };
 }
 
+export function nearbyFloatingPoint(
+  anchor: RectLike,
+  focus: FloatingPoint | null,
+  container: RectLike & ScrollLike,
+  box: FloatingBox,
+  gap = 8,
+): NearbyFloatingPlacement {
+  const target = focus && pointInRect(focus, anchor) ? focus : rectCenter(anchor);
+  const options: Array<NearbyFloatingPlacement & { overflow: number; distance: number }> = [
+    placementCandidate("top", target, anchor, container, box, gap),
+    placementCandidate("bottom", target, anchor, container, box, gap),
+    placementCandidate("right", target, anchor, container, box, gap),
+    placementCandidate("left", target, anchor, container, box, gap),
+  ];
+  options.sort((left, right) => left.overflow - right.overflow || left.distance - right.distance);
+  const best = options[0]!;
+  return { left: best.left, top: best.top, placement: best.placement };
+}
+
 export function belowFloatingPoint(
   anchor: RectLike,
   container: RectLike & ScrollLike,
@@ -134,4 +160,75 @@ export function sideHandlePoint(
     container,
   );
   return clampFloatingPoint(viewport, container, handle, 2);
+}
+
+function pointInRect(point: FloatingPoint, rect: RectLike): boolean {
+  return (
+    point.left >= rect.left &&
+    point.left <= rect.right &&
+    point.top >= rect.top &&
+    point.top <= rect.bottom
+  );
+}
+
+function rectCenter(rect: RectLike): FloatingPoint {
+  return { left: (rect.left + rect.right) / 2, top: (rect.top + rect.bottom) / 2 };
+}
+
+function placementCandidate(
+  placement: FloatingPlacementSide,
+  target: FloatingPoint,
+  anchor: RectLike,
+  container: RectLike & ScrollLike,
+  box: FloatingBox,
+  gap: number,
+): NearbyFloatingPlacement & { overflow: number; distance: number } {
+  const viewport = viewportPoint(
+    candidateViewportPoint(placement, target, anchor, box, gap),
+    container,
+  );
+  const clamped = clampFloatingPoint(viewport, container, box);
+  return {
+    ...clamped,
+    placement,
+    overflow: overflowAmount(viewport, container, box),
+    distance: Math.abs(clamped.left - viewport.left) + Math.abs(clamped.top - viewport.top),
+  };
+}
+
+function candidateViewportPoint(
+  placement: FloatingPlacementSide,
+  target: FloatingPoint,
+  anchor: RectLike,
+  box: FloatingBox,
+  gap: number,
+): FloatingPoint {
+  switch (placement) {
+    case "bottom":
+      return { left: target.left - box.width / 2, top: anchor.bottom + gap };
+    case "left":
+      return { left: anchor.left - box.width - gap, top: target.top - box.height / 2 };
+    case "right":
+      return { left: anchor.right + gap, top: target.top - box.height / 2 };
+    case "top":
+    default:
+      return { left: target.left - box.width / 2, top: anchor.top - box.height - gap };
+  }
+}
+
+function overflowAmount(
+  point: FloatingPoint,
+  container: RectLike & ScrollLike,
+  box: FloatingBox,
+): number {
+  const minLeft = container.scrollLeft + defaultPadding;
+  const minTop = container.scrollTop + defaultPadding;
+  const maxLeft = container.scrollLeft + container.width - box.width - defaultPadding;
+  const maxTop = container.scrollTop + container.height - box.height - defaultPadding;
+  return (
+    Math.max(0, minLeft - point.left) +
+    Math.max(0, point.left - maxLeft) +
+    Math.max(0, minTop - point.top) +
+    Math.max(0, point.top - maxTop)
+  );
 }
