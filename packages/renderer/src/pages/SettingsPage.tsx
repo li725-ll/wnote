@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { IpcChannel, type AppSettings, defaultSettings } from "@wnote/contracts";
+import { type AppSettings } from "@wnote/contracts";
+import { useSettingsStore } from "../stores/settings-store";
 import styles from "./SettingsPage.module.css";
 
 type Section = "general" | "update" | "about";
@@ -109,38 +110,27 @@ function AboutSection() {
 
 export function SettingsPage({ onBack, onThemeChange }: SettingsPageProps) {
   const { t, i18n } = useTranslation();
+  const settings = useSettingsStore((state) => state.settings);
+  const loadSettings = useSettingsStore((state) => state.loadSettings);
+  const updateSettings = useSettingsStore((state) => state.updateSettings);
   const [section, setSection] = useState<Section>("general");
-  const [locale, setLocale] = useState<"zh" | "en">(defaultSettings.locale);
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(defaultSettings.theme);
-  const [autoUpdate, setAutoUpdate] = useState(defaultSettings.autoUpdate);
 
   useEffect(() => {
-    (window.electronAPI.invoke(IpcChannel.SettingsGet) as Promise<AppSettings>).then((s) => {
-      setLocale(s.locale);
-      setTheme(s.theme);
-      setAutoUpdate(s.autoUpdate);
-    });
-  }, []);
-
-  const updateSetting = (partial: Partial<AppSettings>) => {
-    window.electronAPI.invoke(IpcChannel.SettingsSet, partial);
-  };
+    void loadSettings();
+  }, [loadSettings]);
 
   const handleLocaleChange = (v: "zh" | "en") => {
-    setLocale(v);
-    updateSetting({ locale: v });
+    void updateSettings({ locale: v });
     i18n.changeLanguage(v);
   };
 
   const handleThemeChange = (v: "light" | "dark" | "system") => {
-    setTheme(v);
-    updateSetting({ theme: v });
+    void updateSettings({ theme: v });
     onThemeChange?.(v);
   };
 
   const handleAutoUpdateChange = (v: boolean) => {
-    setAutoUpdate(v);
-    updateSetting({ autoUpdate: v });
+    void updateSettings({ autoUpdate: v });
   };
 
   return (
@@ -175,14 +165,17 @@ export function SettingsPage({ onBack, onThemeChange }: SettingsPageProps) {
       <div className={styles.content}>
         {section === "general" && (
           <GeneralSection
-            locale={locale}
-            theme={theme}
+            locale={settings.locale}
+            theme={settings.theme}
             onLocaleChange={handleLocaleChange}
             onThemeChange={handleThemeChange}
           />
         )}
         {section === "update" && (
-          <UpdateSection autoUpdate={autoUpdate} onAutoUpdateChange={handleAutoUpdateChange} />
+          <UpdateSection
+            autoUpdate={settings.autoUpdate}
+            onAutoUpdateChange={handleAutoUpdateChange}
+          />
         )}
         {section === "about" && <AboutSection />}
       </div>

@@ -1,14 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  IpcChannel,
-  type OpenDocumentResult,
-  type WorkspaceCreateFileResult,
-  type WorkspaceDeleteResult,
-  type WorkspaceMoveResult,
-  type WorkspaceOpenResult,
-  type WorkspaceRenameResult,
-  type WorkspaceTreeNode,
-} from "@wnote/contracts";
+import { useCallback, useEffect } from "react";
+import type { OpenDocumentResult, WorkspaceTreeNode } from "@wnote/contracts";
+import { useWorkspaceStore } from "../stores/workspace-store";
 
 export function useWorkspace({
   onDocumentOpen,
@@ -23,179 +15,105 @@ export function useWorkspace({
   onRenamePath?(oldPath: string, newPath: string, nodeType: WorkspaceTreeNode["type"]): void;
   onError?(message: string): void;
 }) {
-  const [workspace, setWorkspace] = useState<WorkspaceOpenResult | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const readWorkspace = useCallback(async () => {
-    const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-      IpcChannel.WorkspaceRead,
-    );
-    setWorkspace(result);
-  }, []);
-
-  const refreshWorkspace = useCallback(async () => {
-    if (!workspace) {
-      await readWorkspace();
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-        IpcChannel.WorkspaceRead,
-        { rootPath: workspace.rootPath },
-      );
-      if (result) setWorkspace(result);
-    } finally {
-      setLoading(false);
-    }
-  }, [readWorkspace, workspace]);
+  const workspace = useWorkspaceStore((state) => state.workspace);
+  const loading = useWorkspaceStore((state) => state.loading);
+  const readWorkspace = useWorkspaceStore((state) => state.readWorkspace);
+  const refreshWorkspaceAction = useWorkspaceStore((state) => state.refreshWorkspace);
+  const openWorkspaceAction = useWorkspaceStore((state) => state.openWorkspace);
+  const openWorkspacePathAction = useWorkspaceStore((state) => state.openWorkspacePath);
+  const openWorkspaceFileAction = useWorkspaceStore((state) => state.openWorkspaceFile);
+  const createWorkspaceFileAction = useWorkspaceStore((state) => state.createWorkspaceFile);
+  const createWorkspaceDirectoryAction = useWorkspaceStore(
+    (state) => state.createWorkspaceDirectory,
+  );
+  const renameWorkspaceEntryAction = useWorkspaceStore((state) => state.renameWorkspaceEntry);
+  const moveWorkspaceEntryAction = useWorkspaceStore((state) => state.moveWorkspaceEntry);
+  const deleteWorkspaceEntryAction = useWorkspaceStore((state) => state.deleteWorkspaceEntry);
 
   useEffect(() => {
     void readWorkspace();
   }, [readWorkspace]);
 
-  const openWorkspace = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-        IpcChannel.WorkspaceOpen,
-      );
-      if (result) setWorkspace(result);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const refreshWorkspace = useCallback(async () => {
+    await refreshWorkspaceAction();
+  }, [refreshWorkspaceAction]);
 
-  const openWorkspacePath = useCallback(async (rootPath: string) => {
-    setLoading(true);
-    try {
-      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-        IpcChannel.WorkspaceOpen,
-        { rootPath },
-      );
-      if (result) setWorkspace(result);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const openWorkspace = useCallback(async () => {
+    await openWorkspaceAction();
+  }, [openWorkspaceAction]);
+
+  const openWorkspacePath = useCallback(
+    async (rootPath: string) => {
+      await openWorkspacePathAction(rootPath);
+    },
+    [openWorkspacePathAction],
+  );
 
   const openWorkspaceFile = useCallback(
     async (filePath: string) => {
-      const result = await window.electronAPI.invoke<OpenDocumentResult | null>(
-        IpcChannel.WorkspaceFileOpen,
-        filePath,
-      );
+      const result = await openWorkspaceFileAction(filePath);
       if (result) onDocumentOpen(result);
     },
-    [onDocumentOpen],
+    [onDocumentOpen, openWorkspaceFileAction],
   );
 
   const createWorkspaceFile = useCallback(
     async (name: string, parentPath?: string) => {
-      if (!workspace) return;
       try {
-        const result = await window.electronAPI.invoke<WorkspaceCreateFileResult | null>(
-          IpcChannel.WorkspaceCreateFile,
-          {
-            rootPath: workspace.rootPath,
-            parentPath,
-            name,
-          },
-        );
-        if (!result) return;
-        setWorkspace(result.workspace);
-        onDocumentOpen(result.document);
+        const result = await createWorkspaceFileAction(name, parentPath);
+        if (result) onDocumentOpen(result.document);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
     },
-    [onDocumentOpen, onError, workspace],
+    [createWorkspaceFileAction, onDocumentOpen, onError],
   );
 
   const createWorkspaceDirectory = useCallback(
     async (name: string, parentPath?: string) => {
-      if (!workspace) return;
       try {
-        const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
-          IpcChannel.WorkspaceCreateDirectory,
-          {
-            rootPath: workspace.rootPath,
-            parentPath,
-            name,
-          },
-        );
-        if (result) setWorkspace(result);
+        await createWorkspaceDirectoryAction(name, parentPath);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
     },
-    [onError, workspace],
+    [createWorkspaceDirectoryAction, onError],
   );
 
   const renameWorkspaceEntry = useCallback(
     async (targetPath: string, name: string) => {
-      if (!workspace) return;
       try {
-        const result = await window.electronAPI.invoke<WorkspaceRenameResult | null>(
-          IpcChannel.WorkspaceRename,
-          {
-            rootPath: workspace.rootPath,
-            targetPath,
-            name,
-          },
-        );
-        if (!result) return;
-        setWorkspace(result.workspace);
-        onRenamePath?.(result.oldPath, result.newPath, result.nodeType);
+        const result = await renameWorkspaceEntryAction(targetPath, name);
+        if (result) onRenamePath?.(result.oldPath, result.newPath, result.nodeType);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
     },
-    [onError, onRenamePath, workspace],
+    [onError, onRenamePath, renameWorkspaceEntryAction],
   );
 
   const moveWorkspaceEntry = useCallback(
     async (sourcePath: string, targetDirectoryPath?: string) => {
-      if (!workspace) return;
       try {
-        const result = await window.electronAPI.invoke<WorkspaceMoveResult | null>(
-          IpcChannel.WorkspaceMove,
-          {
-            rootPath: workspace.rootPath,
-            sourcePath,
-            targetDirectoryPath,
-          },
-        );
-        if (!result) return;
-        setWorkspace(result.workspace);
-        onMovePath?.(result.oldPath, result.newPath, result.nodeType);
+        const result = await moveWorkspaceEntryAction(sourcePath, targetDirectoryPath);
+        if (result) onMovePath?.(result.oldPath, result.newPath, result.nodeType);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
     },
-    [onError, onMovePath, workspace],
+    [moveWorkspaceEntryAction, onError, onMovePath],
   );
 
   const deleteWorkspaceEntry = useCallback(
     async (targetPath: string, recursive?: boolean) => {
-      if (!workspace) return;
       try {
-        const result = await window.electronAPI.invoke<WorkspaceDeleteResult | null>(
-          IpcChannel.WorkspaceDelete,
-          {
-            rootPath: workspace.rootPath,
-            targetPath,
-            recursive,
-          },
-        );
-        if (!result) return;
-        setWorkspace(result.workspace);
-        onDeletePath?.(result.deletedPath, result.nodeType);
+        const result = await deleteWorkspaceEntryAction(targetPath, recursive);
+        if (result) onDeletePath?.(result.deletedPath, result.nodeType);
       } catch (error) {
         onError?.(workspaceErrorMessage(error));
       }
     },
-    [onDeletePath, onError, workspace],
+    [deleteWorkspaceEntryAction, onDeletePath, onError],
   );
 
   return {

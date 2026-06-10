@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { IpcChannel, type AppSettings } from "@wnote/contracts";
+import { useSettingsStore } from "../stores/settings-store";
 
 export function useAppSettingsSync({
   onAutoSaveChange,
@@ -8,15 +9,20 @@ export function useAppSettingsSync({
   onAutoSaveChange(autoSave: boolean): void;
   onThemeChange(theme: AppSettings["theme"]): void;
 }) {
+  const loadSettings = useSettingsStore((state) => state.loadSettings);
+  const setSettings = useSettingsStore((state) => state.setSettings);
+
   useEffect(() => {
-    window.electronAPI.invoke<AppSettings>(IpcChannel.SettingsGet).then((settings) => {
+    loadSettings().then((settings) => {
       onAutoSaveChange(settings.autoSave);
+      onThemeChange(settings.theme);
     });
-  }, [onAutoSaveChange]);
+  }, [loadSettings, onAutoSaveChange, onThemeChange]);
 
   useEffect(() => {
     const handler = (...args: unknown[]) => {
       const settings = args[0] as AppSettings;
+      setSettings(settings);
       onAutoSaveChange(settings.autoSave);
       onThemeChange(settings.theme);
     };

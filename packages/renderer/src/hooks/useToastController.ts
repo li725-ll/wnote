@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { ToastState } from "../components/Toast";
+import { useUiStore } from "../stores/ui-store";
 
 export function useToastController() {
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const toast = useUiStore((state) => state.toast);
+  const setToast = useUiStore((state) => state.setToast);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearToastTimer = useCallback(() => {

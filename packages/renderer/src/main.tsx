@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { HashRouter } from "react-router-dom";
 import "./global.css";
 import App from "./App";
 import { IpcChannel, type AppSettings } from "@wnote/contracts";
@@ -21,7 +22,9 @@ async function bootstrap() {
 
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <App />
+      <HashRouter>
+        <App />
+      </HashRouter>
     </React.StrictMode>,
   );
 }

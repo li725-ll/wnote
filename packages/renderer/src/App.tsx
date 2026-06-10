@@ -1,34 +1,11 @@
-import { Suspense, lazy, useEffect, useRef, useState, useCallback, useMemo } from "react";
-import type { EditorRef, HeadingItem } from "@wnote/editor-react";
-import type { SaveDocumentResult } from "@wnote/contracts";
-import { AppLayout } from "./layout/AppLayout";
-import { DocumentOutline } from "./panels/FileTree";
-import { WorkspacePanel } from "./panels/WorkspacePanel";
-import { useTheme } from "./hooks/useTheme";
-import { useTabs } from "./hooks/useTabs";
+import { lazy, Suspense, useCallback, useEffect } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import styles from "./App.module.css";
-import { TabBar } from "./components/TabBar";
 import { TitleBar } from "./components/TitleBar";
-import type { ExportFormat } from "./export/export-state";
-import { Toast } from "./components/Toast";
-import { defaultExportOptions } from "./export/export-state";
-import { buildDocumentAssetIndex } from "./assets/asset-state";
-import type { PaletteCommandActions } from "./commands/palette-commands";
-import { useToastController } from "./hooks/useToastController";
-import { useAutoSave } from "./hooks/useAutoSave";
-import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
 import { useNavigationIpc } from "./hooks/useNavigationIpc";
-import { useFileIpc } from "./hooks/useFileIpc";
-import { useMenuActionIpc } from "./hooks/useMenuActionIpc";
-import { useFormatIpc } from "./hooks/useFormatIpc";
-import { useCommandPaletteShortcut } from "./hooks/useCommandPaletteShortcut";
-import { useActiveTabEditorSync } from "./hooks/useActiveTabEditorSync";
-import { useDocumentSave } from "./hooks/useDocumentSave";
-import { useEditorAssetActions } from "./hooks/useEditorAssetActions";
-import { useExportActions } from "./hooks/useExportActions";
-import { useWindowTitle } from "./hooks/useWindowTitle";
-import { useDocumentOpen } from "./hooks/useDocumentOpen";
-import { useWorkspace } from "./hooks/useWorkspace";
+import { useWorkspaceStore } from "./stores/workspace-store";
+import { useTheme } from "./hooks/useTheme";
+import { useAppSettingsSync } from "./hooks/useAppSettingsSync";
 
 const STORAGE_KEY = "wnote:welcomed";
 
@@ -38,426 +15,97 @@ const WelcomePage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage").then((module) => ({ default: module.SettingsPage })),
 );
-const CommandPalette = lazy(() =>
-  import("./components/CommandPalette").then((module) => ({ default: module.CommandPalette })),
-);
-const ExportDialog = lazy(() =>
-  import("./components/ExportDialog").then((module) => ({ default: module.ExportDialog })),
-);
-const ResourcePanel = lazy(() =>
-  import("./panels/ResourcePanel").then((module) => ({ default: module.ResourcePanel })),
-);
-const Editor = lazy(() =>
-  import("@wnote/editor-react").then((module) => ({ default: module.Editor })),
+const EditorPage = lazy(() =>
+  import("./pages/EditorPage").then((module) => ({ default: module.EditorPage })),
 );
 
-export default function App() {
-  const [view, setView] = useState<"welcome" | "editor" | "settings">(() => {
-    return localStorage.getItem(STORAGE_KEY) ? "editor" : "welcome";
-  });
-  const [headings, setHeadings] = useState<HeadingItem[]>([]);
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("html");
-  const [exportOptions, setExportOptions] = useState(defaultExportOptions);
-  const [toggleOutlineSignal, setToggleOutlineSignal] = useState(0);
-  const editorRef = useRef<EditorRef>(null);
-  const [editorReadySignal, setEditorReadySignal] = useState(0);
-  const exportingRef = useRef(false);
-  const { setTheme } = useTheme();
-  const { toast, showToast, closeToast } = useToastController();
-  const [autoSave, setAutoSave] = useState(true);
+function DefaultRoute() {
+  const welcomed = localStorage.getItem(STORAGE_KEY);
+  return <Navigate to={welcomed ? "/editor" : "/welcome"} replace />;
+}
 
-  const {
-    tabs,
-    activeTab,
-    activeTabId,
-    newTab,
-    closeTab,
-    closePath,
-    closePathPrefix,
-    switchTab,
-    updateContent,
-    openFile,
-    markSaved,
-    renamePath,
-    renamePathPrefix,
-    setAssets,
-    setContentSnapshot,
-  } = useTabs();
+function WelcomeRoute() {
+  const navigate = useNavigate();
+  const openWorkspacePath = useWorkspaceStore((state) => state.openWorkspacePath);
 
-  const appTitle = useMemo(() => {
-    if (view === "welcome") return "欢迎";
-    if (view === "settings") return "设置";
-    if (activeTab.path) {
-      const parts = activeTab.path.split(/[/\\]/);
-      return parts[parts.length - 1] || "未命名";
-    }
-    return "未命名";
-  }, [activeTab.path, view]);
-
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-
-  const newTabRef = useRef(newTab);
-  newTabRef.current = newTab;
-  const closeTabRef = useRef(closeTab);
-  closeTabRef.current = closeTab;
-  const activeTabIdRef = useRef(activeTabId);
-  activeTabIdRef.current = activeTabId;
-  const markSavedRef = useRef(markSaved);
-  markSavedRef.current = markSaved;
-  const setAssetsRef = useRef(setAssets);
-  setAssetsRef.current = setAssets;
-  useEffect(() => {
-    setContentSnapshot(() => editorRef.current?.getContent() ?? "");
-  }, [setContentSnapshot]);
-
-  const getEditorContent = useCallback(async () => {
-    const tab = activeTabRef.current;
-    return editorRef.current?.getContentAsync() ?? tab.content;
-  }, []);
-  const getCurrentTab = useCallback(() => activeTabRef.current, []);
-  const getActiveTabId = useCallback(() => activeTabIdRef.current, []);
-  const setWindowTitle = useWindowTitle();
-  const showEditor = useCallback(() => {
+  const enterEditor = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, "1");
-    setView("editor");
-  }, []);
-  const setEditorInstance = useCallback((instance: EditorRef | null) => {
-    editorRef.current = instance;
-    if (instance) setEditorReadySignal((value) => value + 1);
-  }, []);
-  const { applyOpenedDocument, openDocumentDialog } = useDocumentOpen({
-    editorRef,
-    getActiveTabId,
-    onDocumentOpen: showEditor,
-    openFile,
-    setWindowTitle,
-  });
-  const {
-    workspace,
-    loading: workspaceLoading,
-    openWorkspace,
-    openWorkspacePath,
-    refreshWorkspace,
-    openWorkspaceFile,
-    createWorkspaceFile,
-    createWorkspaceDirectory,
-    renameWorkspaceEntry,
-    moveWorkspaceEntry,
-    deleteWorkspaceEntry,
-  } = useWorkspace({
-    onDocumentOpen: applyOpenedDocument,
-    onDeletePath: (path, nodeType) => {
-      if (nodeType === "directory") closePathPrefix(path);
-      else closePath(path);
-    },
-    onMovePath: (oldPath, newPath, nodeType) => {
-      if (nodeType === "directory") renamePathPrefix(oldPath, newPath);
-      else renamePath(oldPath, newPath);
-    },
-    onRenamePath: (oldPath, newPath, nodeType) => {
-      if (nodeType === "directory") renamePathPrefix(oldPath, newPath);
-      else renamePath(oldPath, newPath);
-    },
-    onError: (message) => {
-      showToast({ kind: "error", title: "工作区操作失败", message }, 5200);
-    },
-  });
-
-  useAppSettingsSync({
-    onAutoSaveChange: setAutoSave,
-    onThemeChange: setTheme,
-  });
-
-  const handleNavigate = useCallback((page: string) => {
-    if (page === "settings") setView("settings");
-  }, []);
-  useNavigationIpc(handleNavigate);
-
-  const handleIpcNewFile = useCallback(() => newTabRef.current(), []);
-  const handleIpcCloseFile = useCallback(() => closeTabRef.current(activeTabIdRef.current), []);
-  useFileIpc({
-    onOpened: applyOpenedDocument,
-    onNew: handleIpcNewFile,
-    onClose: handleIpcCloseFile,
-  });
-
-  useActiveTabEditorSync({ activeTab, activeTabId, editorRef, editorReadySignal, setWindowTitle });
-
-  const handleSaved = useCallback(
-    (result: SaveDocumentResult, content: string) => {
-      markSavedRef.current(result.filePath, content, result.stat, result.assets);
-      setWindowTitle(result.name);
-    },
-    [setWindowTitle],
-  );
-  const handleSave = useDocumentSave({
-    getCurrentTab,
-    getEditorContent,
-    onError: (message) => showToast({ kind: "error", title: "保存失败", message }, 5200),
-    onReloadFromDisk: applyOpenedDocument,
-    onSaved: handleSaved,
-  });
-  const { scheduleAutoSave } = useAutoSave(autoSave, () => handleSave(false));
-
-  const { openExportDialog, handleExport, handleExportPreview } = useExportActions({
-    editorRef,
-    exportingRef,
-    getCurrentTab,
-    getEditorContent,
-    closeToast,
-    showToast,
-    onDialogOpenChange: setExportDialogOpen,
-    onFormatChange: setExportFormat,
-    onOptionsChange: setExportOptions,
-  });
-
-  const handleIpcSave = useCallback(() => {
-    void handleSave(false);
-  }, [handleSave]);
-  const handleIpcSaveAs = useCallback(() => {
-    void handleSave(true);
-  }, [handleSave]);
-  const handleIpcExportHtml = useCallback(() => openExportDialog("html"), [openExportDialog]);
-  const handleIpcExportPdf = useCallback(() => openExportDialog("pdf"), [openExportDialog]);
-  useMenuActionIpc({
-    onSave: handleIpcSave,
-    onSaveAs: handleIpcSaveAs,
-    onExportHtml: handleIpcExportHtml,
-    onExportPdf: handleIpcExportPdf,
-  });
-  const getFormatEditorView = useCallback(() => editorRef.current?.getView() ?? null, []);
-  useFormatIpc(getFormatEditorView);
-
-  const toggleCommandPalette = useCallback(() => {
-    setPaletteOpen((open) => !open);
-  }, []);
-  useCommandPaletteShortcut(toggleCommandPalette);
-
-  // Auto-save
-  const handleChange = useCallback(
-    (content: string) => {
-      updateContent(content, buildDocumentAssetIndex(content, activeTabRef.current.path));
-      scheduleAutoSave(activeTabRef.current.path);
-    },
-    [updateContent, scheduleAutoSave],
-  );
-  const handleAssetsChange = useCallback((assets: Parameters<typeof setAssets>[0]) => {
-    setAssetsRef.current(assets);
-  }, []);
-
-  const handleNewTab = useCallback(() => {
-    newTab();
-  }, [newTab]);
-
-  const {
-    handleImageSave,
-    handleImageReveal,
-    handleImagePathCopy,
-    resolveEditorAsset,
-    handleResourceClick,
-    handleResourceDelete,
-    handleResourceRelocate,
-    handleUnusedDelete,
-    handleUnusedDeleteAll,
-  } = useEditorAssetActions({
-    editorRef,
-    getCurrentTab,
-    getEditorContent,
-    onContentChange: handleChange,
-    onAssetsChange: handleAssetsChange,
-  });
-
-  const handleSwitchTab = useCallback(
-    (id: string) => {
-      switchTab(id);
-    },
-    [switchTab],
-  );
-
-  const handleCloseTab = useCallback((id: string) => {
-    closeTabRef.current(id);
-  }, []);
-
-  const runFormat = useCallback(
-    (fn: (view: NonNullable<ReturnType<EditorRef["getView"]>>) => boolean) => {
-      const view = editorRef.current?.getView();
-      if (view) fn(view);
-      editorRef.current?.focus();
-    },
-    [],
-  );
-
-  const toggleOutline = useCallback(() => {
-    setToggleOutlineSignal((value) => value + 1);
-    editorRef.current?.focus();
-  }, []);
-
-  const commandActions = useMemo<PaletteCommandActions>(
-    () => ({
-      newFile: () => {
-        newTabRef.current();
-        editorRef.current?.focus();
-      },
-      openFile: openDocumentDialog,
-      openWorkspace,
-      save: handleSave,
-      openExportDialog,
-      toggleOutline,
-      runFormat,
-    }),
-    [handleSave, openDocumentDialog, openExportDialog, openWorkspace, runFormat, toggleOutline],
-  );
-
-  const handleWelcomeStart = () => {
-    showEditor();
-  };
-
-  if (view === "welcome") {
-    return (
-      <div className={styles.shell}>
-        <TitleBar title={appTitle} />
-        <div className={styles.content}>
-          <Suspense fallback={null}>
-            <WelcomePage
-              onStart={handleWelcomeStart}
-              onOpenWorkspacePath={(path) => {
-                void openWorkspacePath(path).then(() => setView("editor"));
-              }}
-            />
-          </Suspense>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "settings") {
-    return (
-      <div className={styles.shell}>
-        <TitleBar title={appTitle} />
-        <div className={styles.content}>
-          <Suspense fallback={null}>
-            <SettingsPage onBack={() => setView("editor")} onThemeChange={setTheme} />
-          </Suspense>
-        </div>
-      </div>
-    );
-  }
+    navigate("/editor");
+  }, [navigate]);
 
   return (
     <div className={styles.shell}>
-      <TitleBar
-        title={appTitle}
-        dirty={activeTab.dirty}
-        onToggleSidebar={() => setToggleOutlineSignal((value) => value + 1)}
-      />
+      <TitleBar title="欢迎" />
       <div className={styles.content}>
-        <AppLayout
-          toggleLeftSignal={toggleOutlineSignal}
-          left={
-            <>
-              <WorkspacePanel
-                name={workspace?.name}
-                tree={workspace?.tree ?? []}
-                activePath={activeTab.path}
-                loading={workspaceLoading}
-                onOpenWorkspace={openWorkspace}
-                onOpenFile={(filePath) => {
-                  void openWorkspaceFile(filePath);
-                }}
-                onCreateFile={(name, parentPath) => {
-                  void createWorkspaceFile(name, parentPath);
-                }}
-                onCreateDirectory={(name, parentPath) => {
-                  void createWorkspaceDirectory(name, parentPath);
-                }}
-                onRefresh={() => {
-                  void refreshWorkspace();
-                }}
-                onRename={(path, name) => {
-                  void renameWorkspaceEntry(path, name);
-                }}
-                onMove={(sourcePath, targetDirectoryPath) => {
-                  void moveWorkspaceEntry(sourcePath, targetDirectoryPath);
-                }}
-                onDelete={(path, recursive) => {
-                  void deleteWorkspaceEntry(path, recursive);
-                }}
-              />
-              <DocumentOutline
-                headings={headings}
-                onHeadingClick={(h) => editorRef.current?.scrollToPos(h.from)}
-              />
-              <Suspense fallback={null}>
-                <ResourcePanel
-                  assets={activeTab.assets}
-                  onReferenceClick={handleResourceClick}
-                  onReferenceDelete={handleResourceDelete}
-                  onReferenceRelocate={handleResourceRelocate}
-                  onUnusedDelete={handleUnusedDelete}
-                  onUnusedDeleteAll={handleUnusedDeleteAll}
-                />
-              </Suspense>
-            </>
-          }
-          center={
-            <div style={{ position: "relative", height: "100%" }}>
-              <TabBar
-                tabs={tabs}
-                activeTabId={activeTabId}
-                onSwitch={handleSwitchTab}
-                onClose={handleCloseTab}
-                onNew={handleNewTab}
-              />
-              <div style={{ height: "100%", overflow: "hidden" }}>
-                <Suspense fallback={null}>
-                  <Editor
-                    ref={setEditorInstance}
-                    onHeadingsChange={setHeadings}
-                    onChange={handleChange}
-                    onImageSave={handleImageSave}
-                    onImageReveal={handleImageReveal}
-                    onImagePathCopy={handleImagePathCopy}
-                    assetResolver={resolveEditorAsset}
-                  />
-                </Suspense>
-              </div>
-              <Suspense fallback={null}>
-                {paletteOpen ? (
-                  <CommandPalette
-                    open={paletteOpen}
-                    actions={commandActions}
-                    onClose={() => {
-                      setPaletteOpen(false);
-                      editorRef.current?.focus();
-                    }}
-                  />
-                ) : null}
-                {exportDialogOpen ? (
-                  <ExportDialog
-                    open={exportDialogOpen}
-                    format={exportFormat}
-                    initialOptions={exportOptions}
-                    onCancel={() => {
-                      setExportDialogOpen(false);
-                      editorRef.current?.focus();
-                    }}
-                    onConfirm={(format, options) => {
-                      void handleExport(format, options);
-                    }}
-                    onPreview={(format, options) => {
-                      void handleExportPreview(format, options);
-                    }}
-                  />
-                ) : null}
-              </Suspense>
-              <Toast toast={toast} onClose={closeToast} />
-            </div>
-          }
-        />
+        <Suspense fallback={null}>
+          <WelcomePage
+            onStart={enterEditor}
+            onOpenWorkspacePath={(path) => {
+              void openWorkspacePath(path).then(() => enterEditor());
+            }}
+          />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+function SettingsRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <div className={styles.shell}>
+      <TitleBar title="设置" />
+      <div className={styles.content}>
+        <Suspense fallback={null}>
+          <SettingsPage onBack={() => navigate("/editor")} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+function NavigationIpcBridge() {
+  const navigate = useNavigate();
+
+  const handleNavigate = useCallback(
+    (page: string) => {
+      if (page === "settings") navigate("/settings");
+    },
+    [navigate],
+  );
+  useNavigationIpc(handleNavigate);
+  return null;
+}
+
+export default function App() {
+  useTheme();
+  useAppSettingsSync({
+    onAutoSaveChange: () => undefined,
+    onThemeChange: () => undefined,
+  });
+
+  useEffect(() => {
+    document.body.dataset.router = "hash";
+  }, []);
+
+  return (
+    <>
+      <NavigationIpcBridge />
+      <Routes>
+        <Route path="/" element={<DefaultRoute />} />
+        <Route path="/welcome" element={<WelcomeRoute />} />
+        <Route
+          path="/editor"
+          element={
+            <Suspense fallback={null}>
+              <EditorPage />
+            </Suspense>
+          }
+        />
+        <Route path="/settings" element={<SettingsRoute />} />
+        <Route path="*" element={<DefaultRoute />} />
+      </Routes>
+    </>
   );
 }

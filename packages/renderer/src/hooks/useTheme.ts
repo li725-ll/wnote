@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { IpcChannel, type AppSettings } from "@wnote/contracts";
+import { useEffect } from "react";
 import { applyThemeTokens, type ThemeName } from "../theme/theme-tokens";
+import { useSettingsStore } from "../stores/settings-store";
 
 type Theme = "light" | "dark" | "system";
 
@@ -13,16 +13,12 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const loaded = useSettingsStore((state) => state.loaded);
+  const theme = useSettingsStore((state) => state.theme);
+  const updateSettings = useSettingsStore((state) => state.updateSettings);
 
   useEffect(() => {
-    window.electronAPI.invoke<AppSettings>(IpcChannel.SettingsGet).then((s) => {
-      setTheme(s.theme);
-      applyTheme(s.theme === "system" ? getSystemTheme() : s.theme);
-    });
-  }, []);
-
-  useEffect(() => {
+    if (!loaded) return;
     if (theme !== "system") {
       applyTheme(theme);
       return;
@@ -32,7 +28,12 @@ export function useTheme() {
     const handler = (e: MediaQueryListEvent) => applyTheme(e.matches ? "dark" : "light");
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, [loaded, theme]);
 
-  return { theme, setTheme };
+  return {
+    theme,
+    setTheme: (nextTheme: Theme) => {
+      void updateSettings({ theme: nextTheme });
+    },
+  };
 }
