@@ -1,0 +1,28 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  border-top: 1px solid color-mix(in srgb, var(--sidebar-border) 58%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 94%, var(--sidebar-bg));
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 12px;
+  user-select: none;
+}
+
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.group span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

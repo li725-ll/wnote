@@ -9,6 +9,7 @@ import styles from "../App.module.css";
 import { TabBar } from "../components/TabBar";
 import { TitleBar } from "../components/TitleBar";
 import { Toast } from "../components/Toast";
+import { StatusBar } from "../components/StatusBar";
 import { buildDocumentAssetIndex } from "../assets/asset-state";
 import type { PaletteCommandActions } from "../commands/palette-commands";
 import { useToastController } from "../hooks/useToastController";
@@ -343,7 +344,7 @@ export function EditorPage() {
             </>
           }
           center={
-            <div style={{ position: "relative", height: "100%" }}>
+            <div className={styles.editorPane}>
               <TabBar
                 tabs={tabs}
                 activeTabId={activeTabId}
@@ -351,7 +352,7 @@ export function EditorPage() {
                 onClose={handleCloseTab}
                 onNew={handleNewTab}
               />
-              <div style={{ height: "100%", overflow: "hidden" }}>
+              <div className={styles.editorBody}>
                 <Suspense fallback={null}>
                   <Editor
                     ref={setEditorInstance}
@@ -364,6 +365,11 @@ export function EditorPage() {
                   />
                 </Suspense>
               </div>
+              <StatusBar
+                content={activeTab.content}
+                dirty={activeTab.dirty}
+                path={activeTab.path}
+              />
               <Suspense fallback={null}>
                 {paletteOpen ? (
                   <CommandPalette
