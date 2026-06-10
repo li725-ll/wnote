@@ -16,6 +16,7 @@ import {
   copyCodeBlockText,
   normalizeCodeLanguage,
 } from "./code-block-utils";
+import { withNodeViewErrorBoundary } from "./NodeViewErrorBoundary";
 import styles from "./CodeBlock.module.css";
 
 export const CodeBlock = CodeBlockLowlight.extend({
@@ -44,7 +45,7 @@ export const CodeBlock = CodeBlockLowlight.extend({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(CodeBlockView);
+    return ReactNodeViewRenderer(withNodeViewErrorBoundary(CodeBlockView));
   },
 });
 

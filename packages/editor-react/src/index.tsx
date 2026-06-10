@@ -1,30 +1,15 @@
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { EditorContent, useEditor, type Editor as TiptapEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Placeholder from "@tiptap/extension-placeholder";
-import { Table } from "@tiptap/extension-table";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
-import TableRow from "@tiptap/extension-table-row";
-import TaskItem from "@tiptap/extension-task-item";
-import TaskList from "@tiptap/extension-task-list";
-import Typography from "@tiptap/extension-typography";
 import type { EditorCommandId, HeadingItem } from "@wnote/contracts";
 import { BlockHandle } from "./BlockHandle";
-import { CodeBlock } from "./code-block";
 import { EditorContentSync, type EditorContentTarget } from "./content-sync";
+import { createEditorExtensions } from "./editor-extensions";
 import { runEditorCommand } from "./editor-commands";
 import styles from "./Editor.module.css";
 import { FloatingToolbar } from "./FloatingToolbar";
-import { Image } from "./image";
-import { MarkdownShortcuts } from "./markdown-shortcuts";
-import { BlockMath, InlineMath } from "./math";
-import { MermaidBlock } from "./mermaid";
 import { SlashMenu } from "./SlashMenu";
 import { TableToolbar } from "./TableToolbar";
 import { writingFocusState } from "./writing-focus-state";
-import { WriterKeyboardShortcuts } from "./writer-keyboard-shortcuts";
 
 export type { HeadingItem } from "@wnote/contracts";
 
@@ -89,35 +74,7 @@ export function Editor({
   onImageSaveRef.current = onImageSave;
 
   const extensions = useMemo(
-    () => [
-      StarterKit.configure({
-        codeBlock: false,
-        link: false,
-      }),
-      CodeBlock,
-      InlineMath,
-      BlockMath,
-      MermaidBlock,
-      MarkdownShortcuts,
-      WriterKeyboardShortcuts,
-      Link.configure({
-        openOnClick: false,
-        autolink: true,
-        defaultProtocol: "https",
-      }),
-      Image.configure({
-        allowBase64: true,
-        assetResolver,
-      }),
-      Placeholder.configure({ placeholder }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TaskList,
-      TaskItem.configure({ nested: true }),
-      Typography,
-    ],
+    () => createEditorExtensions({ assetResolver, placeholder }),
     [assetResolver, placeholder],
   );
 

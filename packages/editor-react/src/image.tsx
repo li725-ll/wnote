@@ -15,6 +15,7 @@ import {
   normalizeImageWidth,
   normalizeNullableText,
 } from "./image-utils";
+import { withNodeViewErrorBoundary } from "./NodeViewErrorBoundary";
 import styles from "./Image.module.css";
 
 declare module "@tiptap/extension-image" {
@@ -111,7 +112,7 @@ export const Image = ImageExtension.extend({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ImageView, {
+    return ReactNodeViewRenderer(withNodeViewErrorBoundary(ImageView), {
       as: "figure",
     });
   },

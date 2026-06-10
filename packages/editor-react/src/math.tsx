@@ -9,6 +9,7 @@ import {
   readyRenderState,
   type AsyncRenderState,
 } from "./async-render-state";
+import { withNodeViewErrorBoundary } from "./NodeViewErrorBoundary";
 import styles from "./Math.module.css";
 
 export const InlineMath = Node.create({
@@ -38,7 +39,7 @@ export const InlineMath = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MathView);
+    return ReactNodeViewRenderer(withNodeViewErrorBoundary(MathView));
   },
 });
 
@@ -69,7 +70,7 @@ export const BlockMath = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MathView);
+    return ReactNodeViewRenderer(withNodeViewErrorBoundary(MathView));
   },
 });
 

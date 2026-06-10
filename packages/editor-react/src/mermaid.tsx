@@ -9,6 +9,7 @@ import {
   readyRenderState,
   type AsyncRenderState,
 } from "./async-render-state";
+import { withNodeViewErrorBoundary } from "./NodeViewErrorBoundary";
 import styles from "./Mermaid.module.css";
 
 const defaultDiagram = "graph TD\n  A --> B";
@@ -40,7 +41,7 @@ export const MermaidBlock = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(MermaidView);
+    return ReactNodeViewRenderer(withNodeViewErrorBoundary(MermaidView));
   },
 });
 
