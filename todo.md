@@ -1,44 +1,47 @@
 # WNote Remaining TODO
 
-Last updated: 2026-06-06
+Last updated: 2026-06-10
 
 ## Current Baseline
 
 - Markdown editor has moved from the old CodeMirror trap toward the TipTap-based architecture.
 - Workspace tree can open directories, read supported documents, and open files.
-- Workspace can create files and folders at the workspace root.
-- Workspace can refresh, rename files/directories, and delete files/empty directories.
-- Open tabs are synchronized when workspace files are renamed or deleted.
+- Workspace can create files and folders at the workspace root and inside selected directories.
+- Workspace can refresh, rename, move, drag-and-drop move, and delete files/directories.
+- Workspace supports safe recursive directory deletion with explicit confirmation.
+- Open tabs are synchronized when workspace files or directories are renamed, moved, or deleted.
+- Editor node views are isolated by an error boundary, and TipTap extension names are covered by duplicate-name regression tests.
+- Startup regression fixtures cover representative editor blocks without runtime errors.
 - Export HTML/PDF, resource panel, asset indexing, table styling feedback, performance budgets, and e2e coverage are in place.
 
 ## P0 - Workspace File Operations
 
-- [ ] Create files/folders inside a selected directory, not only the workspace root.
-- [ ] Add file/folder move support within the workspace.
-- [ ] Add drag-and-drop move in the workspace tree.
-- [ ] Add safe recursive directory delete flow with explicit confirmation and clear copy.
-- [ ] Add error feedback for failed workspace operations, including duplicate names, non-empty directory deletion, unsupported extension, and permission errors.
-- [ ] Keep workspace tree selection/focus stable after rename, move, delete, refresh.
+- [x] Create files/folders inside a selected directory, not only the workspace root.
+- [x] Add file/folder move support within the workspace.
+- [x] Add drag-and-drop move in the workspace tree.
+- [x] Add safe recursive directory delete flow with explicit confirmation and clear copy.
+- [x] Add error feedback for failed workspace operations, including duplicate names, non-empty directory deletion, unsupported extension, and permission errors.
+- [x] Keep workspace tree selection/focus stable after rename, move, delete, refresh.
 
 Acceptance:
 
-- Storage-main has unit coverage for nested create, move, recursive delete guardrails, and path escape rejection.
-- Renderer has e2e coverage for nested create -> move -> rename -> delete.
-- Open document tabs stay correct after every file path mutation.
+- [x] Storage-main has unit coverage for nested create, move, recursive delete guardrails, and path escape rejection.
+- [x] Renderer has e2e coverage for nested create -> move -> rename -> delete.
+- [x] Open document tabs stay correct after every file path mutation.
 
 ## P0 - Editor Core Stability
 
-- [ ] Audit all custom TipTap extensions for duplicate extension names and schema conflicts.
-- [ ] Add an editor-level error boundary for node views so one broken block does not crash the whole editor.
-- [ ] Harden image node view defaults so missing attrs/options never throw.
-- [ ] Add regression coverage for documents containing images, tables, code blocks, math, mermaid, task lists, and mixed nested blocks.
-- [ ] Verify old CodeMirror markdown preview/decorations code is fully removed or isolated from runtime paths.
+- [x] Audit all custom TipTap extensions for duplicate extension names and schema conflicts.
+- [x] Add an editor-level error boundary for node views so one broken block does not crash the whole editor.
+- [x] Harden image node view defaults so missing attrs/options never throw.
+- [x] Add regression coverage for documents containing images, tables, code blocks, math, mermaid, task lists, and mixed nested blocks.
+- [x] Verify old CodeMirror markdown preview/decorations code is fully removed or isolated from runtime paths.
 
 Acceptance:
 
-- No runtime console errors when opening regression fixtures.
-- Startup e2e includes representative markdown fixtures.
-- TipTap warning for duplicate extension names is gone.
+- [x] No runtime console errors when opening regression fixtures.
+- [x] Startup e2e includes representative markdown fixtures.
+- [x] TipTap warning for duplicate extension names is gone.
 
 ## P1 - Typora-Like Editing Behavior
 
@@ -116,15 +119,15 @@ Acceptance:
 
 ## Suggested Next Batch
 
-Implement nested workspace operations:
+Implement Typora-like editing behavior:
 
-1. Add selected-directory target support to create file/folder.
-2. Add move operation in storage-main and IPC.
-3. Add simple UI action "move to..." before drag-and-drop.
-4. Add tests and e2e for nested create and move.
+1. Add inline markdown shortcut rendering for heading, list, quote, code block, and horizontal rule.
+2. Improve table, image, link, code block, task list, math, and mermaid editing affordances.
+3. Keep keyboard behavior predictable and avoid breaking normal text input.
+4. Add targeted regression tests for each block family.
 
 Suggested commit:
 
 ```text
-feat: support nested workspace operations
+feat: improve typora-like editing behavior
 ```
