@@ -146,8 +146,7 @@
 .editor :global(table) {
   width: 100%;
   margin: 0.9em 0;
-  border: 1px solid
-    color-mix(in srgb, var(--color-table-border, var(--color-border)) 78%, transparent);
+  border: 0;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -155,13 +154,34 @@
 .editor :global(.tableWrapper) {
   margin: 0.9em 0;
   overflow-x: auto;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px
-    color-mix(in srgb, var(--color-table-border, var(--color-border)) 78%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--color-table-border, var(--color-border)) 82%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-bg) 70%, transparent);
 }
 
 .editor :global(.tableWrapper table) {
   margin: 0;
+}
+
+.editor :global(.tableWrapper tr:first-child th),
+.editor :global(.tableWrapper tr:first-child td) {
+  border-top: 0;
+}
+
+.editor :global(.tableWrapper tr:last-child th),
+.editor :global(.tableWrapper tr:last-child td) {
+  border-bottom: 0;
+}
+
+.editor :global(.tableWrapper th:first-child),
+.editor :global(.tableWrapper td:first-child) {
+  border-left: 0;
+}
+
+.editor :global(.tableWrapper th:last-child),
+.editor :global(.tableWrapper td:last-child) {
+  border-right: 0;
 }
 
 .editor :global(th),
