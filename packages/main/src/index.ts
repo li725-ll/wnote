@@ -9,6 +9,10 @@ import { openFileInWindow as sendFileToWindow, rememberOpenedFile } from "./open
 import { registerIpcHandlers } from "./ipc";
 
 if (process.platform === "win32") {
+  app.commandLine.appendSwitch(
+    "enable-features",
+    "OverlayScrollbar,OverlayScrollbarFlashAfterAnyScrollUpdate,OverlayScrollbarFlashWhenMouseEnter",
+  );
   app.disableDomainBlockingFor3DAPIs(); // 禁用3D API的域名阻塞
   app.disableHardwareAcceleration(); // 禁用硬件加速 （issue: 解决圆角白角）
 }

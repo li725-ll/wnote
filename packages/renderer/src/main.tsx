@@ -8,6 +8,8 @@ import { initI18n } from "./i18n";
 import { applyThemeTokens } from "./theme/theme-tokens";
 
 async function bootstrap() {
+  document.documentElement.dataset.platform = window.electronAPI.platform;
+
   const settings = (await window.electronAPI.invoke(IpcChannel.SettingsGet)) as AppSettings;
 
   const resolved =
