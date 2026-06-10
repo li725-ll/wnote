@@ -13,13 +13,18 @@ export function useDocumentOpen({
   editorRef: RefObject<EditorRef | null>;
   getActiveTabId(): string;
   onDocumentOpen?: () => void;
-  openFile(path: string, content: string, assets: OpenDocumentResult["assets"]): string;
+  openFile(
+    path: string,
+    content: string,
+    assets: OpenDocumentResult["assets"],
+    stat: OpenDocumentResult["stat"],
+  ): string;
   setWindowTitle(title: string): void;
 }) {
   const applyOpenedDocument = useCallback(
     (data: OpenDocumentResult) => {
       onDocumentOpen?.();
-      const tabId = openFile(data.filePath, data.content, data.assets);
+      const tabId = openFile(data.filePath, data.content, data.assets, data.stat);
       if (shouldApplyOpenedDocument(tabId, getActiveTabId())) {
         editorRef.current?.setContent(data.content);
         setWindowTitle(data.name);

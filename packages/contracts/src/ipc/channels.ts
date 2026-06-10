@@ -38,6 +38,8 @@ export enum IpcChannel {
 
   RecentFilesGet = "recent-files:get",
   RecentFilesClear = "recent-files:clear",
+  RecentWorkspacesGet = "recent-workspaces:get",
+  RecentWorkspacesClear = "recent-workspaces:clear",
   LastOpenedFileGet = "last-opened-file:get",
 
   WorkspaceOpen = "workspace:open",

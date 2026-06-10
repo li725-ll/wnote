@@ -75,3 +75,38 @@
 .startBtn:hover {
   opacity: 0.85;
 }
+
+.recent {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.recentTitle {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.recentItem {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: 0.8rem/1.2 var(--editor-font);
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentItem:hover {
+  background: var(--color-hover-bg);
+  color: var(--color-accent);
+}

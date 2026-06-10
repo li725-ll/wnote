@@ -1,12 +1,22 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { IpcChannel, type RecentWorkspaceEntry } from "@wnote/contracts";
 import styles from "./WelcomePage.module.css";
 
 interface WelcomePageProps {
   onStart: () => void;
+  onOpenWorkspacePath?: (path: string) => void;
 }
 
-export function WelcomePage({ onStart }: WelcomePageProps) {
+export function WelcomePage({ onStart, onOpenWorkspacePath }: WelcomePageProps) {
   const { t } = useTranslation();
+  const [recentWorkspaces, setRecentWorkspaces] = useState<RecentWorkspaceEntry[]>([]);
+
+  useEffect(() => {
+    void window.electronAPI
+      .invoke<RecentWorkspaceEntry[]>(IpcChannel.RecentWorkspacesGet)
+      .then(setRecentWorkspaces);
+  }, []);
 
   return (
     <div className={styles.root}>
@@ -31,6 +41,22 @@ export function WelcomePage({ onStart }: WelcomePageProps) {
         <button className={styles.startBtn} onClick={onStart}>
           {t("welcome.start")}
         </button>
+        {recentWorkspaces.length > 0 ? (
+          <div className={styles.recent} aria-label="最近工作区">
+            <span className={styles.recentTitle}>最近工作区</span>
+            {recentWorkspaces.map((workspace) => (
+              <button
+                key={workspace.path}
+                className={styles.recentItem}
+                type="button"
+                title={workspace.path}
+                onClick={() => onOpenWorkspacePath?.(workspace.path)}
+              >
+                {workspace.path.split(/[/\\]/).pop() || workspace.path}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

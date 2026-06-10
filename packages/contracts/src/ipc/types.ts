@@ -25,6 +25,7 @@ export interface SaveDocumentRequest {
   filePath?: string;
   content: string;
   defaultName?: string;
+  expectedStat?: FileStatDTO;
 }
 
 export interface SaveDocumentResult {
@@ -47,8 +48,17 @@ export interface WorkspaceOpenResult {
   tree: WorkspaceTreeNode[];
 }
 
+export interface WorkspaceOpenRequest {
+  rootPath?: string;
+}
+
 export interface WorkspaceReadRequest {
   rootPath?: string;
+}
+
+export interface RecentWorkspaceEntry {
+  path: string;
+  openedAt: number;
 }
 
 export interface WorkspaceCreateFileRequest {

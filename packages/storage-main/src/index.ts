@@ -218,7 +218,8 @@ export async function deleteWorkspaceEntry(
 export async function saveDocument(
   payload: SaveDocumentRequest & { filePath: string },
 ): Promise<SaveDocumentResult> {
-  await writeFile(payload.filePath, payload.content, "utf-8");
+  await assertSaveConflictFree(payload.filePath, payload.expectedStat);
+  await saveDocumentWithBackup(payload.filePath, payload.content);
   return {
     filePath: payload.filePath,
     name: basename(payload.filePath),
@@ -322,6 +323,39 @@ export async function deleteAssets(payload: {
 async function getFileStat(filePath: string): Promise<FileStatDTO> {
   const s = await stat(filePath);
   return { mtimeMs: s.mtimeMs, size: s.size };
+}
+
+async function assertSaveConflictFree(
+  filePath: string,
+  expectedStat: FileStatDTO | undefined,
+): Promise<void> {
+  if (!expectedStat || !existsSync(filePath)) return;
+  const current = await getFileStat(filePath);
+  if (current.mtimeMs !== expectedStat.mtimeMs || current.size !== expectedStat.size) {
+    throw new Error("Document changed on disk");
+  }
+}
+
+async function saveDocumentWithBackup(filePath: string, content: string): Promise<void> {
+  const backupPath = `${filePath}.wnote-bak`;
+  const tempPath = `${filePath}.${randomUUID()}.tmp`;
+  try {
+    if (existsSync(filePath)) await copyFile(filePath, backupPath);
+    await writeFile(tempPath, content, "utf-8");
+    await rename(tempPath, filePath);
+  } catch (error) {
+    if (existsSync(tempPath)) {
+      try {
+        await unlink(tempPath);
+      } catch {
+        // Leave the original error intact if temporary cleanup fails.
+      }
+    }
+    if (existsSync(backupPath)) {
+      throw new Error(`Document save failed; backup available at ${backupPath}`, { cause: error });
+    }
+    throw error;
+  }
 }
 
 async function buildDocumentAssetIndex(content: string, documentPath: string) {

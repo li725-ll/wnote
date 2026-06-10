@@ -66,6 +66,19 @@ export function useWorkspace({
     }
   }, []);
 
+  const openWorkspacePath = useCallback(async (rootPath: string) => {
+    setLoading(true);
+    try {
+      const result = await window.electronAPI.invoke<WorkspaceOpenResult | null>(
+        IpcChannel.WorkspaceOpen,
+        { rootPath },
+      );
+      if (result) setWorkspace(result);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const openWorkspaceFile = useCallback(
     async (filePath: string) => {
       const result = await window.electronAPI.invoke<OpenDocumentResult | null>(
@@ -189,6 +202,7 @@ export function useWorkspace({
     workspace,
     loading,
     openWorkspace,
+    openWorkspacePath,
     refreshWorkspace,
     openWorkspaceFile,
     createWorkspaceFile,

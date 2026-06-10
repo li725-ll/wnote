@@ -12,6 +12,7 @@ import {
   readWorkspace,
   renameWorkspaceEntry,
   saveAsset,
+  saveDocument,
 } from ".";
 import {
   exportHtmlDocument,
@@ -275,6 +276,34 @@ describe("@wnote/storage-main assets", () => {
     expect(asset.url).toContain("wnote-asset://");
     expect(asset.size).toBe(3);
     await expect(stat(asset.absolutePath)).resolves.toMatchObject({ size: 3 });
+  });
+
+  it("rejects saves when the file changed since it was opened", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-save-conflict-"));
+    const filePath = join(dir, "note.md");
+    await writeFile(filePath, "old");
+    const expected = await stat(filePath);
+    await writeFile(filePath, "external");
+
+    await expect(
+      saveDocument({
+        filePath,
+        content: "mine",
+        expectedStat: { mtimeMs: expected.mtimeMs, size: expected.size },
+      }),
+    ).rejects.toThrow("changed on disk");
+  });
+
+  it("keeps a backup when overwriting an existing document", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "wnote-save-backup-"));
+    const filePath = join(dir, "note.md");
+    await writeFile(filePath, "old");
+
+    const result = await saveDocument({ filePath, content: "new" });
+
+    expect(result.stat?.size).toBe(3);
+    await expect(readFile(filePath, "utf-8")).resolves.toBe("new");
+    await expect(readFile(`${filePath}.wnote-bak`, "utf-8")).resolves.toBe("old");
   });
 
   it("imports external images into the document asset directory", async () => {

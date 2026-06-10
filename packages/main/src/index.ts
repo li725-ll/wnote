@@ -10,11 +10,13 @@ import {
   type ExportPdfRequest,
   type ExportPreviewRequest,
   type LayoutState,
+  type SaveDocumentRequest,
   type ShellPathRequest,
   type WorkspaceCreateDirectoryRequest,
   type WorkspaceCreateFileRequest,
   type WorkspaceDeleteRequest,
   type WorkspaceMoveRequest,
+  type WorkspaceOpenRequest,
   type WorkspaceReadRequest,
   type WorkspaceRenameRequest,
 } from "@wnote/contracts";
@@ -42,8 +44,11 @@ import { kvGet, kvSet } from "./db";
 import {
   getRecentFiles,
   clearRecentFiles,
+  getRecentWorkspaces,
+  clearRecentWorkspaces,
   getLastOpenedFile,
   addRecentFile,
+  addRecentWorkspace,
   setLastOpenedFile,
 } from "./recent-files";
 import { loadSettings, saveSettings, getDataDirectory } from "./settings";
@@ -130,6 +135,8 @@ ipcMain.handle(IpcChannel.RecentFilesClear, async () => {
   const settings = await loadSettings();
   for (const w of windowManager.getAll()) createAppMenu(w, settings);
 });
+ipcMain.handle(IpcChannel.RecentWorkspacesGet, () => getRecentWorkspaces());
+ipcMain.handle(IpcChannel.RecentWorkspacesClear, () => clearRecentWorkspaces());
 
 ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
   const filePath = getLastOpenedFile();
@@ -137,11 +144,12 @@ ipcMain.handle(IpcChannel.LastOpenedFileGet, async () => {
   return openDocument(filePath);
 });
 
-ipcMain.handle(IpcChannel.WorkspaceOpen, async (event) => {
+ipcMain.handle(IpcChannel.WorkspaceOpen, async (event, payload: WorkspaceOpenRequest = {}) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
   const overridePath = e2ePath("WNOTE_E2E_WORKSPACE_PATH");
   const rootPath =
+    payload.rootPath ??
     overridePath ??
     (
       await dialog.showOpenDialog(win, {
@@ -151,6 +159,7 @@ ipcMain.handle(IpcChannel.WorkspaceOpen, async (event) => {
   if (!rootPath) return null;
   const workspace = await readWorkspace(rootPath);
   kvSet("workspacePath", rootPath);
+  addRecentWorkspace(rootPath);
   log.info("Workspace opened:", rootPath);
   return workspace;
 });
@@ -226,32 +235,29 @@ ipcMain.handle(IpcChannel.FileOpen, async (event) => {
   return data;
 });
 
-ipcMain.handle(
-  IpcChannel.FileSave,
-  async (event, payload: { filePath?: string; content: string; defaultName?: string }) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return null;
-    let targetPath = payload.filePath;
+ipcMain.handle(IpcChannel.FileSave, async (event, payload: SaveDocumentRequest) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  let targetPath = payload.filePath;
+  if (!targetPath) {
+    targetPath = e2ePath("WNOTE_E2E_SAVE_PATH") ?? undefined;
     if (!targetPath) {
-      targetPath = e2ePath("WNOTE_E2E_SAVE_PATH") ?? undefined;
-      if (!targetPath) {
-        const result = await dialog.showSaveDialog(win, {
-          defaultPath: payload.defaultName ?? "untitled.md",
-          filters: [{ name: "Markdown", extensions: ["md"] }],
-        });
-        if (result.canceled || !result.filePath) return null;
-        targetPath = result.filePath;
-      }
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: payload.defaultName ?? "untitled.md",
+        filters: [{ name: "Markdown", extensions: ["md"] }],
+      });
+      if (result.canceled || !result.filePath) return null;
+      targetPath = result.filePath;
     }
-    const saved = await saveDocument({ ...payload, filePath: targetPath });
-    log.info("File saved:", targetPath);
-    addRecentFile(targetPath);
-    setLastOpenedFile(targetPath);
-    const settings = await loadSettings();
-    for (const w of windowManager.getAll()) createAppMenu(w, settings);
-    return saved;
-  },
-);
+  }
+  const saved = await saveDocument({ ...payload, filePath: targetPath });
+  log.info("File saved:", targetPath);
+  addRecentFile(targetPath);
+  setLastOpenedFile(targetPath);
+  const settings = await loadSettings();
+  for (const w of windowManager.getAll()) createAppMenu(w, settings);
+  return saved;
+});
 
 ipcMain.handle(IpcChannel.ExportHtml, async (event, payload: ExportHtmlRequest) => {
   const win = BrowserWindow.fromWebContents(event.sender);

@@ -139,6 +139,7 @@ export default function App() {
     workspace,
     loading: workspaceLoading,
     openWorkspace,
+    openWorkspacePath,
     refreshWorkspace,
     openWorkspaceFile,
     createWorkspaceFile,
@@ -186,8 +187,8 @@ export default function App() {
   useActiveTabEditorSync({ activeTab, activeTabId, editorRef, editorReadySignal, setWindowTitle });
 
   const handleSaved = useCallback(
-    (result: SaveDocumentResult) => {
-      markSavedRef.current(result.filePath, result.assets);
+    (result: SaveDocumentResult, content: string) => {
+      markSavedRef.current(result.filePath, content, result.stat, result.assets);
       setWindowTitle(result.name);
     },
     [setWindowTitle],
@@ -195,6 +196,8 @@ export default function App() {
   const handleSave = useDocumentSave({
     getCurrentTab,
     getEditorContent,
+    onError: (message) => showToast({ kind: "error", title: "保存失败", message }, 5200),
+    onReloadFromDisk: applyOpenedDocument,
     onSaved: handleSaved,
   });
   const { scheduleAutoSave } = useAutoSave(autoSave, () => handleSave(false));
@@ -318,7 +321,12 @@ export default function App() {
         <TitleBar title={appTitle} />
         <div className={styles.content}>
           <Suspense fallback={null}>
-            <WelcomePage onStart={handleWelcomeStart} />
+            <WelcomePage
+              onStart={handleWelcomeStart}
+              onOpenWorkspacePath={(path) => {
+                void openWorkspacePath(path).then(() => setView("editor"));
+              }}
+            />
           </Suspense>
         </div>
       </div>

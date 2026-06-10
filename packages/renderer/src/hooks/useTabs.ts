@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import type { AssetIndex } from "@wnote/contracts";
+import type { AssetIndex, FileStatDTO } from "@wnote/contracts";
 import {
   activeTab as getActiveTab,
   closeTab as closeTabState,
@@ -84,11 +84,12 @@ export function useTabs() {
   );
 
   const openFile = useCallback(
-    (path: string, content: string, assets?: AssetIndex) => {
+    (path: string, content: string, assets?: AssetIndex, stat?: FileStatDTO) => {
       const next = openFileTab(stateRef.current, {
         path,
         content,
         assets,
+        stat,
         createId: genId,
         snapshot: contentSnapshotRef.current?.(),
       });
@@ -99,8 +100,8 @@ export function useTabs() {
   );
 
   const markSaved = useCallback(
-    (path: string, assets?: AssetIndex) => {
-      applyState(markActiveTabSaved(stateRef.current, path, assets));
+    (path: string, content: string, stat?: FileStatDTO, assets?: AssetIndex) => {
+      applyState(markActiveTabSaved(stateRef.current, path, content, stat, assets));
     },
     [applyState],
   );

@@ -3,9 +3,15 @@ import { kvGet, kvSet } from "./db";
 
 const MAX_RECENT = 10;
 const KV_KEY_RECENT = "recentFiles";
+const KV_KEY_RECENT_WORKSPACES = "recentWorkspaces";
 const KV_KEY_LAST = "lastOpenedFile";
 
 export interface RecentFileEntry {
+  path: string;
+  openedAt: number;
+}
+
+export interface RecentWorkspaceEntry {
   path: string;
   openedAt: number;
 }
@@ -23,6 +29,23 @@ export function addRecentFile(filePath: string): void {
 
 export function clearRecentFiles(): void {
   kvSet(KV_KEY_RECENT, []);
+}
+
+export function getRecentWorkspaces(): RecentWorkspaceEntry[] {
+  return kvGet<RecentWorkspaceEntry[]>(KV_KEY_RECENT_WORKSPACES, []).filter((f) =>
+    existsSync(f.path),
+  );
+}
+
+export function addRecentWorkspace(workspacePath: string): void {
+  const list = kvGet<RecentWorkspaceEntry[]>(KV_KEY_RECENT_WORKSPACES, []);
+  const filtered = list.filter((f) => f.path !== workspacePath);
+  filtered.unshift({ path: workspacePath, openedAt: Date.now() });
+  kvSet(KV_KEY_RECENT_WORKSPACES, filtered.slice(0, MAX_RECENT));
+}
+
+export function clearRecentWorkspaces(): void {
+  kvSet(KV_KEY_RECENT_WORKSPACES, []);
 }
 
 export function getLastOpenedFile(): string | null {

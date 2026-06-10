@@ -12,6 +12,17 @@ export function shouldApplyOpenedDocument(openedTabId: string, activeTabId: stri
   return openedTabId === activeTabId;
 }
 
+export function normalizeDocumentContent(content: string): string {
+  return content
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+$/gm, "")
+    .trimEnd();
+}
+
+export function isDocumentDirty(content: string, savedContent: string): boolean {
+  return normalizeDocumentContent(content) !== normalizeDocumentContent(savedContent);
+}
+
 function getPathBasename(path: string): string {
   return path.split(/[/\\]/).pop() ?? "";
 }

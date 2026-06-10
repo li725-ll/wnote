@@ -1,10 +1,13 @@
-import type { AssetIndex } from "@wnote/contracts";
+import type { AssetIndex, FileStatDTO } from "@wnote/contracts";
+import { isDocumentDirty } from "../files/file-state";
 
 export interface DocumentTab {
   id: string;
   path: string | null;
   content: string;
+  savedContent: string;
   dirty: boolean;
+  stat?: FileStatDTO;
   assets?: AssetIndex;
 }
 
@@ -16,7 +19,7 @@ export interface TabsState {
 export type TabIdFactory = () => string;
 
 export function createEmptyTab(createId: TabIdFactory): DocumentTab {
-  return { id: createId(), path: null, content: "", dirty: false };
+  return { id: createId(), path: null, content: "", savedContent: "", dirty: false };
 }
 
 export function createInitialTabsState(createId: TabIdFactory): TabsState {
@@ -32,7 +35,11 @@ export function snapshotActiveTab(state: TabsState, content: string | undefined)
   if (content === undefined) return state;
   return {
     ...state,
-    tabs: state.tabs.map((tab) => (tab.id === state.activeTabId ? { ...tab, content } : tab)),
+    tabs: state.tabs.map((tab) =>
+      tab.id === state.activeTabId
+        ? { ...tab, content, dirty: isDocumentDirty(content, tab.savedContent) }
+        : tab,
+    ),
   };
 }
 
@@ -113,7 +120,9 @@ export function updateActiveTabContent(
   return {
     ...state,
     tabs: state.tabs.map((tab) =>
-      tab.id === state.activeTabId ? { ...tab, content, assets, dirty: true } : tab,
+      tab.id === state.activeTabId
+        ? { ...tab, content, assets, dirty: isDocumentDirty(content, tab.savedContent) }
+        : tab,
     ),
   };
 }
@@ -124,12 +133,14 @@ export function openFileTab(
     path,
     content,
     assets,
+    stat,
     createId,
     snapshot,
   }: {
     path: string;
     content: string;
     assets?: AssetIndex;
+    stat?: FileStatDTO;
     createId: TabIdFactory;
     snapshot?: string;
   },
@@ -139,7 +150,9 @@ export function openFileTab(
   if (existing) {
     return {
       tabs: current.tabs.map((tab) =>
-        tab.id === existing.id ? { ...tab, content, assets, dirty: false } : tab,
+        tab.id === existing.id
+          ? { ...tab, content, savedContent: content, stat, assets, dirty: false }
+          : tab,
       ),
       activeTabId: existing.id,
     };
@@ -154,21 +167,39 @@ export function openFileTab(
   ) {
     return {
       tabs: current.tabs.map((tab) =>
-        tab.id === currentActive.id ? { ...tab, path, content, assets, dirty: false } : tab,
+        tab.id === currentActive.id
+          ? { ...tab, path, content, savedContent: content, stat, assets, dirty: false }
+          : tab,
       ),
       activeTabId: currentActive.id,
     };
   }
 
-  const tab: DocumentTab = { id: createId(), path, content, assets, dirty: false };
+  const tab: DocumentTab = {
+    id: createId(),
+    path,
+    content,
+    savedContent: content,
+    stat,
+    assets,
+    dirty: false,
+  };
   return { tabs: [...current.tabs, tab], activeTabId: tab.id };
 }
 
-export function markActiveTabSaved(state: TabsState, path: string, assets?: AssetIndex): TabsState {
+export function markActiveTabSaved(
+  state: TabsState,
+  path: string,
+  content: string,
+  stat?: FileStatDTO,
+  assets?: AssetIndex,
+): TabsState {
   return {
     ...state,
     tabs: state.tabs.map((tab) =>
-      tab.id === state.activeTabId ? { ...tab, path, assets, dirty: false } : tab,
+      tab.id === state.activeTabId
+        ? { ...tab, path, content, savedContent: content, stat, assets, dirty: false }
+        : tab,
     ),
   };
 }

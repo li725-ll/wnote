@@ -32,7 +32,9 @@ describe("tabs state", () => {
     const state = createInitialTabsState(ids("a"));
 
     expect(state.activeTabId).toBe("a");
-    expect(state.tabs).toEqual([{ id: "a", path: null, content: "", dirty: false }]);
+    expect(state.tabs).toEqual([
+      { id: "a", path: null, content: "", savedContent: "", dirty: false },
+    ]);
     expect(activeTab(state).id).toBe("a");
   });
 
@@ -52,6 +54,7 @@ describe("tabs state", () => {
       id: "a",
       path: "/docs/a.md",
       content: "# A",
+      savedContent: "# A",
       assets,
       dirty: false,
     });
@@ -69,8 +72,22 @@ describe("tabs state", () => {
 
     expect(next.activeTabId).toBe("b");
     expect(next.tabs).toEqual([
-      { id: "a", path: null, content: "current draft", dirty: true, assets: undefined },
-      { id: "b", path: "/docs/a.md", content: "# A", dirty: false, assets: undefined },
+      {
+        id: "a",
+        path: null,
+        content: "current draft",
+        savedContent: "",
+        dirty: true,
+        assets: undefined,
+      },
+      {
+        id: "b",
+        path: "/docs/a.md",
+        content: "# A",
+        savedContent: "# A",
+        dirty: false,
+        assets: undefined,
+      },
     ]);
   });
 
@@ -128,7 +145,7 @@ describe("tabs state", () => {
     expect(closeInactive.activeTabId).toBe("b");
     expect(closeInactive.tabs.map((tab) => tab.id)).toEqual(["b"]);
     expect(closeLast).toEqual({
-      tabs: [{ id: "fresh", path: null, content: "", dirty: false }],
+      tabs: [{ id: "fresh", path: null, content: "", savedContent: "", dirty: false }],
       activeTabId: "fresh",
     });
   });
@@ -221,16 +238,33 @@ describe("tabs state", () => {
 
   it("updates content, save state, and asset index on the active tab", () => {
     const changed = updateActiveTabContent(createInitialTabsState(ids("a")), "# Draft", assets);
-    const saved = markActiveTabSaved(changed, "/docs/draft.md");
+    const saved = markActiveTabSaved(changed, "/docs/draft.md", "# Draft");
     const withoutAssets = setActiveTabAssets(saved, undefined);
 
     expect(changed.tabs[0]).toMatchObject({ content: "# Draft", assets, dirty: true });
     expect(saved.tabs[0]).toMatchObject({
       path: "/docs/draft.md",
       content: "# Draft",
+      savedContent: "# Draft",
       assets: undefined,
       dirty: false,
     });
     expect(withoutAssets.tabs[0]?.assets).toBeUndefined();
+  });
+
+  it("does not mark normalized-equivalent content dirty", () => {
+    const state = openFileTab(createInitialTabsState(ids("a")), {
+      path: "/docs/a.md",
+      content: "A\nB",
+      createId: ids("unused"),
+    });
+
+    const next = updateActiveTabContent(state, "A  \r\nB\n");
+
+    expect(next.tabs[0]).toMatchObject({
+      content: "A  \r\nB\n",
+      savedContent: "A\nB",
+      dirty: false,
+    });
   });
 });
