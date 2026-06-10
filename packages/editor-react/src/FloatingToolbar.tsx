@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor as TiptapEditor } from "@tiptap/react";
 import { centeredFloatingPoint } from "./floating-position";
+import { createLinkOpenTarget } from "./link-tools";
 import styles from "./FloatingToolbar.module.css";
 
 interface FloatingToolbarProps {
@@ -185,6 +186,24 @@ export function FloatingToolbar({ editor, containerRef }: FloatingToolbarProps) 
           <button
             className={styles.apply}
             type="button"
+            disabled={!createLinkOpenTarget(linkHref)}
+            onClick={() => openCurrentLink(linkHref)}
+          >
+            打开
+          </button>
+          <button
+            className={styles.apply}
+            type="button"
+            onClick={() => {
+              setLinkHref("");
+              removeLink(editor);
+            }}
+          >
+            移除
+          </button>
+          <button
+            className={styles.apply}
+            type="button"
             onClick={() => {
               setLinkOpen(false);
               editor.commands.focus();
@@ -214,6 +233,16 @@ export function FloatingToolbar({ editor, containerRef }: FloatingToolbarProps) 
     else chain.setLink({ href }).run();
     setLinkOpen(false);
   }
+}
+
+function openCurrentLink(href: string) {
+  const target = createLinkOpenTarget(href);
+  if (!target) return;
+  window.open(target.href, target.target, target.features);
+}
+
+function removeLink(editor: TiptapEditor) {
+  editor.chain().focus().unsetLink().run();
 }
 
 function ToolbarButton({

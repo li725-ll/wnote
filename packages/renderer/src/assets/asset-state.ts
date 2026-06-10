@@ -23,6 +23,13 @@ export function resolveDocumentAssetPreview(
   return resolveAssetPreviewSrc(src, documentPath ?? undefined);
 }
 
+export function resolveDocumentAssetPath(src: string, assets: AssetIndex | undefined): string {
+  const reference = assets?.references.find((item) => item.src === src);
+  if (reference?.absolutePath) return reference.absolutePath;
+  const unused = assets?.unused.find((item) => item.markdownPath === src);
+  return unused?.absolutePath ?? src;
+}
+
 export function removeDocumentAssetReference(
   content: string,
   reference: AssetReference,

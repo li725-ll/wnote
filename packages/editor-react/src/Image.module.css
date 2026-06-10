@@ -79,6 +79,10 @@
   opacity: 0.45;
 }
 
+.fileInput {
+  display: none;
+}
+
 .divider {
   width: 1px;
   height: 1rem;

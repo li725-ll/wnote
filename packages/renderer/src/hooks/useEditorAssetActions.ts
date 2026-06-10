@@ -15,6 +15,7 @@ import {
   getUnusedAssetDeleteConfirmMessage,
   getUnusedAssetDeleteFailureMessage,
   relocateDocumentAssetReference,
+  resolveDocumentAssetPath,
   removeDocumentAssetReference,
   resolveDocumentAssetPreview,
 } from "../assets/asset-state";
@@ -54,6 +55,26 @@ export function useEditorAssetActions({
     (src: string) => {
       const tab = getCurrentTab();
       return resolveDocumentAssetPreview(src, tab.assets, tab.path);
+    },
+    [getCurrentTab],
+  );
+
+  const handleImageReveal = useCallback(
+    (src: string) => {
+      const tab = getCurrentTab();
+      const filePath = resolveDocumentAssetPath(src, tab.assets);
+      void window.electronAPI.invoke(IpcChannel.ShellShowItemInFolder, { filePath });
+    },
+    [getCurrentTab],
+  );
+
+  const handleImagePathCopy = useCallback(
+    (src: string) => {
+      const tab = getCurrentTab();
+      const filePath = resolveDocumentAssetPath(src, tab.assets);
+      void navigator.clipboard.writeText(filePath).catch(() => {
+        window.alert("复制图片路径失败。");
+      });
     },
     [getCurrentTab],
   );
@@ -143,6 +164,8 @@ export function useEditorAssetActions({
 
   return {
     handleImageSave,
+    handleImageReveal,
+    handleImagePathCopy,
     resolveEditorAsset,
     handleResourceClick,
     handleResourceDelete,

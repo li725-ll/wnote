@@ -3,7 +3,7 @@ import { mergeAttributes } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
-import type { AssetResolver } from "./index";
+import type { AssetResolver, ImagePathActionHandler, ImageSaveHandler } from "./index";
 import {
   clampImageWidth,
   imageAssetResolverFromExtension,
@@ -21,6 +21,9 @@ import styles from "./Image.module.css";
 declare module "@tiptap/extension-image" {
   interface ImageOptions {
     assetResolver?: AssetResolver;
+    onImageSave?: ImageSaveHandler;
+    onImageReveal?: ImagePathActionHandler;
+    onImagePathCopy?: ImagePathActionHandler;
   }
 }
 
@@ -33,6 +36,9 @@ export const Image = ImageExtension.extend({
       HTMLAttributes: {},
       resize: false,
       assetResolver: undefined as AssetResolver | undefined,
+      onImageSave: undefined as ImageSaveHandler | undefined,
+      onImageReveal: undefined as ImagePathActionHandler | undefined,
+      onImagePathCopy: undefined as ImagePathActionHandler | undefined,
     };
   },
 
@@ -128,9 +134,11 @@ function imageHtmlAttrs(attributes: Record<string, unknown>) {
 
 function ImageView({ node, selected, updateAttributes, deleteNode, extension }: NodeViewProps) {
   const [loaded, setLoaded] = useState(true);
+  const [replacing, setReplacing] = useState(false);
   const [dragWidth, setDragWidth] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const figureRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const src = String(node.attrs.src ?? "");
   const previewSrc = String(node.attrs.previewSrc ?? "");
   const alt = String(node.attrs.alt ?? "");
@@ -139,6 +147,9 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
   const align = normalizeImageAlign(node.attrs.align);
   const caption = String(node.attrs.caption ?? "");
   const assetResolver = imageAssetResolverFromExtension(extension);
+  const imageSave = imageSaveFromExtension(extension);
+  const imageReveal = imageRevealFromExtension(extension);
+  const imagePathCopy = imagePathCopyFromExtension(extension);
   const displaySrc = imageDisplaySource(src, previewSrc, assetResolver);
 
   useEffect(() => {
@@ -238,12 +249,62 @@ function ImageView({ node, selected, updateAttributes, deleteNode, extension }: 
               <span className={styles.divider} />
               <button
                 className={styles.toolButton}
+                disabled={!imageSave || replacing}
+                title="替换图片"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Rep
+              </button>
+              <button
+                className={styles.toolButton}
+                disabled={!src || !imageReveal}
+                title="在文件夹中显示"
+                type="button"
+                onClick={() => imageReveal?.(src)}
+              >
+                Rev
+              </button>
+              <button
+                className={styles.toolButton}
+                disabled={!src || !imagePathCopy}
+                title="复制路径"
+                type="button"
+                onClick={() => imagePathCopy?.(src)}
+              >
+                Path
+              </button>
+              <span className={styles.divider} />
+              <button
+                className={styles.toolButton}
                 title="删除图片"
                 type="button"
                 onClick={deleteNode}
               >
                 Del
               </button>
+              <input
+                ref={fileInputRef}
+                className={styles.fileInput}
+                type="file"
+                accept="image/*"
+                tabIndex={-1}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file || !imageSave) return;
+                  setReplacing(true);
+                  void imageSave(file)
+                    .then((asset) => {
+                      if (!asset) return;
+                      updateAttributes({
+                        src: asset.src,
+                        previewSrc: asset.previewSrc ?? null,
+                      });
+                    })
+                    .finally(() => setReplacing(false));
+                }}
+              />
             </div>
           ) : null}
           {loaded && displaySrc ? (
@@ -359,4 +420,25 @@ function imageAlign(element: HTMLElement): string | null {
 
 function styleTextAlign(style: string): string | null {
   return /(?:^|;)\s*text-align\s*:\s*([^;]+)/i.exec(style)?.[1]?.trim() ?? null;
+}
+
+function imageSaveFromExtension(
+  extension: { options?: { onImageSave?: unknown } } | null | undefined,
+): ImageSaveHandler | undefined {
+  const handler = extension?.options?.onImageSave;
+  return typeof handler === "function" ? (handler as ImageSaveHandler) : undefined;
+}
+
+function imageRevealFromExtension(
+  extension: { options?: { onImageReveal?: unknown } } | null | undefined,
+): ImagePathActionHandler | undefined {
+  const handler = extension?.options?.onImageReveal;
+  return typeof handler === "function" ? (handler as ImagePathActionHandler) : undefined;
+}
+
+function imagePathCopyFromExtension(
+  extension: { options?: { onImagePathCopy?: unknown } } | null | undefined,
+): ImagePathActionHandler | undefined {
+  const handler = extension?.options?.onImagePathCopy;
+  return typeof handler === "function" ? (handler as ImagePathActionHandler) : undefined;
 }

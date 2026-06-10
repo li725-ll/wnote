@@ -28,7 +28,7 @@
   left: 50%;
   display: flex;
   gap: 4px;
-  width: min(22rem, calc(100vw - 2rem));
+  width: min(28rem, calc(100vw - 2rem));
   border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
   border-radius: 16px;
   background: color-mix(in srgb, var(--color-bg) 92%, transparent);
@@ -97,4 +97,9 @@
 
 .apply:hover {
   background: var(--color-hover-bg);
+}
+
+.apply:disabled {
+  cursor: default;
+  opacity: 0.5;
 }

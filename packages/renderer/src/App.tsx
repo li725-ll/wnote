@@ -251,6 +251,8 @@ export default function App() {
 
   const {
     handleImageSave,
+    handleImageReveal,
+    handleImagePathCopy,
     resolveEditorAsset,
     handleResourceClick,
     handleResourceDelete,
@@ -408,6 +410,8 @@ export default function App() {
                     onHeadingsChange={setHeadings}
                     onChange={handleChange}
                     onImageSave={handleImageSave}
+                    onImageReveal={handleImageReveal}
+                    onImagePathCopy={handleImagePathCopy}
                     assetResolver={resolveEditorAsset}
                   />
                 </Suspense>

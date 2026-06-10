@@ -9,6 +9,7 @@ import {
   getUnusedAssetDeleteFailureMessage,
   relocateDocumentAssetReference,
   removeDocumentAssetReference,
+  resolveDocumentAssetPath,
   resolveDocumentAssetPreview,
 } from "./asset-state";
 
@@ -36,6 +37,34 @@ describe("asset state", () => {
       "wnote-asset:///docs/assets/a.png",
     );
     expect(resolveDocumentAssetPreview("https://example.com/a.png", assets, "/docs/note.md")).toBe(
+      "https://example.com/a.png",
+    );
+  });
+
+  it("resolves absolute paths from the active asset index", () => {
+    const local = reference("assets/a.png", "ok");
+    local.absolutePath = "/docs/assets/a.png";
+    const assets: AssetIndex = {
+      references: [local],
+      missing: [],
+      unused: [
+        {
+          id: "/docs/note.assets/unused.png",
+          absolutePath: "/docs/note.assets/unused.png",
+          markdownPath: "note.assets/unused.png",
+          url: "wnote-asset:///docs/note.assets/unused.png",
+          ext: "png",
+          size: 1,
+          createdAt: 1,
+        },
+      ],
+    };
+
+    expect(resolveDocumentAssetPath("assets/a.png", assets)).toBe("/docs/assets/a.png");
+    expect(resolveDocumentAssetPath("note.assets/unused.png", assets)).toBe(
+      "/docs/note.assets/unused.png",
+    );
+    expect(resolveDocumentAssetPath("https://example.com/a.png", assets)).toBe(
       "https://example.com/a.png",
     );
   });

@@ -20,12 +20,15 @@ export interface SavedImageRef {
 
 export type ImageSaveHandler = (file: File) => Promise<SavedImageRef | null>;
 export type AssetResolver = (src: string) => string | null;
+export type ImagePathActionHandler = (src: string) => void;
 
 export interface EditorProps {
   initialContent?: string;
   onChange?: (markdown: string) => void;
   onHeadingsChange?: (headings: HeadingItem[]) => void;
   onImageSave?: ImageSaveHandler;
+  onImageReveal?: ImagePathActionHandler;
+  onImagePathCopy?: ImagePathActionHandler;
   assetResolver?: AssetResolver;
   placeholder?: string;
   ref?: React.Ref<EditorRef>;
@@ -50,6 +53,8 @@ export function Editor({
   onChange,
   onHeadingsChange,
   onImageSave,
+  onImageReveal,
+  onImagePathCopy,
   assetResolver,
   placeholder = "开始写作...",
   ref,
@@ -74,8 +79,15 @@ export function Editor({
   onImageSaveRef.current = onImageSave;
 
   const extensions = useMemo(
-    () => createEditorExtensions({ assetResolver, placeholder }),
-    [assetResolver, placeholder],
+    () =>
+      createEditorExtensions({
+        assetResolver,
+        onImagePathCopy,
+        onImageReveal,
+        onImageSave,
+        placeholder,
+      }),
+    [assetResolver, onImagePathCopy, onImageReveal, onImageSave, placeholder],
   );
 
   const editor = useEditor({
