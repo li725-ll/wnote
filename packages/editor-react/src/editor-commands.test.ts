@@ -122,6 +122,9 @@ describe("editor commands", () => {
       "tableToggleHeaderRow",
       "tableMergeCells",
       "tableSplitCell",
+      "tableAlignLeft",
+      "tableAlignCenter",
+      "tableAlignRight",
     ]);
   });
 
@@ -130,6 +133,7 @@ describe("editor commands", () => {
       ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
       ["tableAddColumnBefore", "tableAddColumnAfter", "tableDeleteColumn"],
       ["tableToggleHeaderRow", "tableMergeCells", "tableSplitCell"],
+      ["tableAlignLeft", "tableAlignCenter", "tableAlignRight"],
       ["tableDelete"],
     ]);
   });
@@ -146,6 +150,9 @@ describe("editor commands", () => {
       "表头",
       "合并",
       "拆分",
+      "左",
+      "中",
+      "右",
     ]);
   });
 

@@ -42,6 +42,7 @@ export const tableToolbarCommandGroups = [
   ["tableAddRowBefore", "tableAddRowAfter", "tableDeleteRow"],
   ["tableAddColumnBefore", "tableAddColumnAfter", "tableDeleteColumn"],
   ["tableToggleHeaderRow", "tableMergeCells", "tableSplitCell"],
+  ["tableAlignLeft", "tableAlignCenter", "tableAlignRight"],
   ["tableDelete"],
 ] as const;
 
@@ -133,7 +134,7 @@ export function TableToolbar({ editor, containerRef }: TableToolbarProps) {
         <div
           key={group.join(":")}
           className={styles.group}
-          data-danger={index === 3 ? "true" : "false"}
+          data-danger={index === tableToolbarCommandGroups.length - 1 ? "true" : "false"}
         >
           {group.map((id) => {
             const command = tableCommands.find((item) => item.id === id);
@@ -209,6 +210,9 @@ export function tableToolbarLabel(id: string): string {
     tableToggleHeaderRow: "表头",
     tableMergeCells: "合并",
     tableSplitCell: "拆分",
+    tableAlignLeft: "左",
+    tableAlignCenter: "中",
+    tableAlignRight: "右",
   };
   return labels[id] ?? id;
 }

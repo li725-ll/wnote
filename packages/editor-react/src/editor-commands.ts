@@ -398,6 +398,30 @@ export const editorCommands: EditorCommandDefinition[] = [
     canRun: (editor) => editor.can().splitCell(),
     run: (editor) => editor.chain().focus().splitCell().run(),
   },
+  {
+    id: "tableAlignLeft",
+    label: "左对齐",
+    hint: "当前单元格左对齐",
+    group: "table",
+    canRun: (editor) => editor.can().setCellAttribute("textAlign", "left"),
+    run: (editor) => editor.chain().focus().setCellAttribute("textAlign", "left").run(),
+  },
+  {
+    id: "tableAlignCenter",
+    label: "居中",
+    hint: "当前单元格居中",
+    group: "table",
+    canRun: (editor) => editor.can().setCellAttribute("textAlign", "center"),
+    run: (editor) => editor.chain().focus().setCellAttribute("textAlign", "center").run(),
+  },
+  {
+    id: "tableAlignRight",
+    label: "右对齐",
+    hint: "当前单元格右对齐",
+    group: "table",
+    canRun: (editor) => editor.can().setCellAttribute("textAlign", "right"),
+    run: (editor) => editor.chain().focus().setCellAttribute("textAlign", "right").run(),
+  },
 ];
 
 export const blockMenuCommands = editorCommands.filter((command) => command.blockMenu);

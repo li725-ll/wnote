@@ -57,7 +57,19 @@ export function createEditorExtensions({
     Table.configure({ resizable: true }),
     TableRow,
     TableHeader,
-    TableCell,
+    TableCell.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          textAlign: {
+            default: null,
+            parseHTML: (element) => element.style.textAlign || null,
+            renderHTML: (attributes) =>
+              attributes.textAlign ? { style: `text-align: ${attributes.textAlign}` } : {},
+          },
+        };
+      },
+    }),
     TaskList,
     TaskItem.configure({ nested: true }),
     Typography,
