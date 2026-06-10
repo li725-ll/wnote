@@ -8,6 +8,11 @@ import { loadSettings } from "./settings";
 import { openFileInWindow as sendFileToWindow, rememberOpenedFile } from "./open-file";
 import { registerIpcHandlers } from "./ipc";
 
+if (process.platform === "win32") {
+  app.disableDomainBlockingFor3DAPIs(); // 禁用3D API的域名阻塞
+  app.disableHardwareAcceleration(); // 禁用硬件加速 （issue: 解决圆角白角）
+}
+
 const log = createLog("app");
 const isE2E = process.env.WNOTE_E2E === "1";
 
