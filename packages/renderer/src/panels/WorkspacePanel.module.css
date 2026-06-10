@@ -87,6 +87,25 @@
   padding: 5px 7px;
 }
 
+.searchRow {
+  padding: 0 12px 8px;
+}
+
+.searchRow input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 500 0.76rem/1.2 var(--editor-font);
+  outline: none;
+  padding: 5px 7px;
+}
+
+.searchRow input:focus {
+  border-color: var(--color-accent);
+}
+
 .createForm input:focus,
 .createForm select:focus {
   border-color: var(--color-accent);

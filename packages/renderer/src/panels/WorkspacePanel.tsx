@@ -1,12 +1,17 @@
 import { useMemo, useState } from "react";
 import type { WorkspaceTreeNode } from "@wnote/contracts";
-import { flattenWorkspaceTree, hasWorkspaceEntries } from "./workspace-panel-state";
+import {
+  filterWorkspaceTree,
+  flattenWorkspaceTree,
+  hasWorkspaceEntries,
+} from "./workspace-panel-state";
 import styles from "./WorkspacePanel.module.css";
 
 type CreateMode = "file" | "directory";
 type RenameTarget = { path: string; name: string };
 type CreateTarget = { parentPath?: string; label: string };
 type MoveTarget = { path: string; name: string };
+const collapsedStorageKey = "wnote.workspace.collapsed";
 
 interface WorkspacePanelProps {
   name?: string;
@@ -46,6 +51,9 @@ export function WorkspacePanel({
   const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null);
   const [moveDestination, setMoveDestination] = useState("");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => readCollapsedPaths());
+  const visibleTree = useMemo(() => filterWorkspaceTree(tree, query), [query, tree]);
   const directories = useMemo(
     () => flattenWorkspaceTree(tree).filter((node) => node.type === "directory"),
     [tree],
@@ -128,6 +136,16 @@ export function WorkspacePanel({
     setMoveDestination("");
   };
 
+  const setDirectoryCollapsed = (path: string, collapsed: boolean) => {
+    setCollapsedPaths((current) => {
+      const next = new Set(current);
+      if (collapsed) next.add(path);
+      else next.delete(path);
+      writeCollapsedPaths(next);
+      return next;
+    });
+  };
+
   return (
     <section
       className={styles.root}
@@ -142,6 +160,25 @@ export function WorkspacePanel({
         event.preventDefault();
         onMove(sourcePath);
       }}
+      onKeyDown={(event) => {
+        if (event.defaultPrevented || event.target instanceof HTMLInputElement) return;
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "n") {
+          event.preventDefault();
+          startCreate("file");
+        }
+        if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "n") {
+          event.preventDefault();
+          startCreate("directory");
+        }
+        if (event.key === "F2" && selectedNode) {
+          event.preventDefault();
+          startRename(selectedNode);
+        }
+        if ((event.key === "Delete" || event.key === "Backspace") && selectedNode) {
+          event.preventDefault();
+          submitDelete(selectedNode);
+        }
+      }}
     >
       <div className={styles.header}>
         <span className={styles.heading}>{name ?? "工作区"}</span>
@@ -151,19 +188,29 @@ export function WorkspacePanel({
               <button
                 className={styles.actionButton}
                 type="button"
+                aria-label="+ 文件"
+                title="新建文件"
                 onClick={() => startCreate("file")}
               >
-                + 文件
+                +
               </button>
               <button
                 className={styles.actionButton}
                 type="button"
+                aria-label="+ 文件夹"
+                title="新建文件夹"
                 onClick={() => startCreate("directory")}
               >
-                + 文件夹
+                ⊕
               </button>
-              <button className={styles.actionButton} type="button" onClick={onRefresh}>
-                刷新
+              <button
+                className={styles.actionButton}
+                type="button"
+                aria-label="刷新"
+                title="刷新"
+                onClick={onRefresh}
+              >
+                ↻
               </button>
             </>
           ) : null}
@@ -172,6 +219,16 @@ export function WorkspacePanel({
           </button>
         </div>
       </div>
+      {canCreate ? (
+        <div className={styles.searchRow}>
+          <input
+            aria-label="搜索工作区"
+            value={query}
+            placeholder="搜索"
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
+      ) : null}
       {createMode || renameTarget ? (
         <div className={styles.createForm}>
           {createMode ? <span className={styles.createTarget}>{createTarget.label}</span> : null}
@@ -234,13 +291,15 @@ export function WorkspacePanel({
         </div>
       ) : (
         <ul className={styles.tree}>
-          {tree.map((node) => (
+          {visibleTree.map((node) => (
             <WorkspaceNode
               key={node.path}
               node={node}
               depth={0}
               activePath={activePath}
               selectedPath={selectedPath}
+              collapsedPaths={collapsedPaths}
+              forceOpen={Boolean(query.trim())}
               onOpenFile={onOpenFile}
               onRename={startRename}
               onMove={startMove}
@@ -250,6 +309,7 @@ export function WorkspacePanel({
               onDropMove={(sourcePath, targetDirectoryPath) =>
                 onMove?.(sourcePath, targetDirectoryPath)
               }
+              onDirectoryCollapsed={setDirectoryCollapsed}
             />
           ))}
         </ul>
@@ -263,6 +323,8 @@ function WorkspaceNode({
   depth,
   activePath,
   selectedPath,
+  collapsedPaths,
+  forceOpen,
   onOpenFile,
   onRename,
   onMove,
@@ -270,11 +332,14 @@ function WorkspaceNode({
   onCreate,
   onSelect,
   onDropMove,
+  onDirectoryCollapsed,
 }: {
   node: WorkspaceTreeNode;
   depth: number;
   activePath?: string | null;
   selectedPath?: string | null;
+  collapsedPaths: Set<string>;
+  forceOpen: boolean;
   onOpenFile: (filePath: string) => void;
   onRename: (node: WorkspaceTreeNode) => void;
   onMove: (node: WorkspaceTreeNode) => void;
@@ -282,12 +347,17 @@ function WorkspaceNode({
   onCreate: (mode: CreateMode, target?: CreateTarget) => void;
   onSelect: (path: string) => void;
   onDropMove: (sourcePath: string, targetDirectoryPath?: string) => void;
+  onDirectoryCollapsed: (path: string, collapsed: boolean) => void;
 }) {
   if (node.type === "directory") {
     const target = { parentPath: node.path, label: node.name };
+    const open = forceOpen || !collapsedPaths.has(node.path);
     return (
       <li>
-        <details open>
+        <details
+          open={open}
+          onToggle={(event) => onDirectoryCollapsed(node.path, !event.currentTarget.open)}
+        >
           <summary
             className={styles.directory}
             data-active={node.path === selectedPath ? "true" : "false"}
@@ -373,6 +443,8 @@ function WorkspaceNode({
                 depth={depth + 1}
                 activePath={activePath}
                 selectedPath={selectedPath}
+                collapsedPaths={collapsedPaths}
+                forceOpen={forceOpen}
                 onOpenFile={onOpenFile}
                 onRename={onRename}
                 onMove={onMove}
@@ -380,6 +452,7 @@ function WorkspaceNode({
                 onCreate={onCreate}
                 onSelect={onSelect}
                 onDropMove={onDropMove}
+                onDirectoryCollapsed={onDirectoryCollapsed}
               />
             ))}
           </ul>
@@ -489,4 +562,17 @@ function pathInDirectory(path: string, directory: string): boolean {
   return (
     path === directory || path.startsWith(`${directory}/`) || path.startsWith(`${directory}\\`)
   );
+}
+
+function readCollapsedPaths(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(collapsedStorageKey);
+    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCollapsedPaths(paths: Set<string>): void {
+  window.localStorage.setItem(collapsedStorageKey, JSON.stringify([...paths]));
 }

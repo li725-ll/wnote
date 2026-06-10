@@ -16,3 +16,19 @@ export function hasWorkspaceDocuments(nodes: WorkspaceTreeNode[]): boolean {
 export function hasWorkspaceEntries(nodes: WorkspaceTreeNode[]): boolean {
   return nodes.length > 0;
 }
+
+export function filterWorkspaceTree(
+  nodes: WorkspaceTreeNode[],
+  query: string,
+): WorkspaceTreeNode[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return nodes;
+  return nodes.flatMap((node) => {
+    const children =
+      node.type === "directory" ? filterWorkspaceTree(node.children ?? [], query) : [];
+    if (node.name.toLowerCase().includes(normalized) || children.length > 0) {
+      return [{ ...node, children: node.type === "directory" ? children : undefined }];
+    }
+    return [];
+  });
+}

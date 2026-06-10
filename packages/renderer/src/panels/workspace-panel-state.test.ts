@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { WorkspaceTreeNode } from "@wnote/contracts";
 import {
   flattenWorkspaceTree,
+  filterWorkspaceTree,
   hasWorkspaceDocuments,
   hasWorkspaceEntries,
 } from "./workspace-panel-state";
@@ -45,5 +46,23 @@ describe("workspace panel state", () => {
   it("detects empty directory entries separately from documents", () => {
     expect(hasWorkspaceEntries([{ name: "empty", path: "/empty", type: "directory" }])).toBe(true);
     expect(hasWorkspaceEntries([])).toBe(false);
+  });
+
+  it("filters workspace trees while preserving matching parents", () => {
+    expect(filterWorkspaceTree(tree, "daily")).toEqual([
+      {
+        name: "notes",
+        path: "/workspace/notes",
+        type: "directory",
+        children: [
+          {
+            name: "daily.md",
+            path: "/workspace/notes/daily.md",
+            type: "file",
+            children: undefined,
+          },
+        ],
+      },
+    ]);
   });
 });
