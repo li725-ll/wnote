@@ -16,7 +16,9 @@
     "i18next": "^26.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-i18next": "^17.0.8"
+    "react-i18next": "^17.0.8",
+    "react-router-dom": "^7.17.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@types/react": "^19.1.4",
