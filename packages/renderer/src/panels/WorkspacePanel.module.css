@@ -268,3 +268,33 @@ details[open] > .directory .icon {
 .emptyState button {
   justify-self: start;
 }
+
+.contextMenu {
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  min-width: 132px;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-text) 18%, transparent);
+  padding: 4px;
+}
+
+.contextMenu button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font: 0.76rem/1 var(--editor-font);
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.contextMenu button:hover {
+  background: var(--color-hover-bg);
+  color: var(--color-accent);
+}

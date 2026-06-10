@@ -11,6 +11,7 @@ type CreateMode = "file" | "directory";
 type RenameTarget = { path: string; name: string };
 type CreateTarget = { parentPath?: string; label: string };
 type MoveTarget = { path: string; name: string };
+type ContextTarget = { node: WorkspaceTreeNode; x: number; y: number };
 const collapsedStorageKey = "wnote.workspace.collapsed";
 
 interface WorkspacePanelProps {
@@ -53,6 +54,7 @@ export function WorkspacePanel({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => readCollapsedPaths());
+  const [contextTarget, setContextTarget] = useState<ContextTarget | null>(null);
   const visibleTree = useMemo(() => filterWorkspaceTree(tree, query), [query, tree]);
   const directories = useMemo(
     () => flattenWorkspaceTree(tree).filter((node) => node.type === "directory"),
@@ -109,6 +111,7 @@ export function WorkspacePanel({
     setRenameTarget({ path: node.path, name: node.name });
     setDraftName(node.name);
     setSelectedPath(node.path);
+    setContextTarget(null);
   };
 
   const submitDelete = (node: WorkspaceTreeNode) => {
@@ -119,6 +122,7 @@ export function WorkspacePanel({
     if (!window.confirm(message)) return;
     onDelete?.(node.path, recursive);
     setSelectedPath(null);
+    setContextTarget(null);
   };
 
   const startMove = (node: WorkspaceTreeNode) => {
@@ -127,6 +131,7 @@ export function WorkspacePanel({
     setMoveTarget({ path: node.path, name: node.name });
     setMoveDestination("");
     setSelectedPath(node.path);
+    setContextTarget(null);
   };
 
   const submitMove = () => {
@@ -160,6 +165,7 @@ export function WorkspacePanel({
         event.preventDefault();
         onMove(sourcePath);
       }}
+      onClick={() => setContextTarget(null)}
       onKeyDown={(event) => {
         if (event.defaultPrevented || event.target instanceof HTMLInputElement) return;
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "n") {
@@ -281,6 +287,49 @@ export function WorkspacePanel({
           </button>
         </div>
       ) : null}
+      {contextTarget ? (
+        <div
+          className={styles.contextMenu}
+          style={{ left: contextTarget.x, top: contextTarget.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {contextTarget.node.type === "directory" ? (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  startCreate("file", {
+                    parentPath: contextTarget.node.path,
+                    label: contextTarget.node.name,
+                  })
+                }
+              >
+                新建文件
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  startCreate("directory", {
+                    parentPath: contextTarget.node.path,
+                    label: contextTarget.node.name,
+                  })
+                }
+              >
+                新建文件夹
+              </button>
+            </>
+          ) : null}
+          <button type="button" onClick={() => startRename(contextTarget.node)}>
+            重命名
+          </button>
+          <button type="button" onClick={() => startMove(contextTarget.node)}>
+            移动到
+          </button>
+          <button type="button" onClick={() => submitDelete(contextTarget.node)}>
+            删除
+          </button>
+        </div>
+      ) : null}
       {loading ? <p className={styles.empty}>正在读取...</p> : null}
       {!loading && !hasEntries ? (
         <div className={styles.emptyState}>
@@ -310,6 +359,7 @@ export function WorkspacePanel({
                 onMove?.(sourcePath, targetDirectoryPath)
               }
               onDirectoryCollapsed={setDirectoryCollapsed}
+              onContext={(node, x, y) => setContextTarget({ node, x, y })}
             />
           ))}
         </ul>
@@ -333,6 +383,7 @@ function WorkspaceNode({
   onSelect,
   onDropMove,
   onDirectoryCollapsed,
+  onContext,
 }: {
   node: WorkspaceTreeNode;
   depth: number;
@@ -348,6 +399,7 @@ function WorkspaceNode({
   onSelect: (path: string) => void;
   onDropMove: (sourcePath: string, targetDirectoryPath?: string) => void;
   onDirectoryCollapsed: (path: string, collapsed: boolean) => void;
+  onContext: (node: WorkspaceTreeNode, x: number, y: number) => void;
 }) {
   if (node.type === "directory") {
     const target = { parentPath: node.path, label: node.name };
@@ -364,6 +416,12 @@ function WorkspaceNode({
             draggable
             style={{ paddingLeft: `${depth * 12 + 8}px` }}
             onClick={() => onSelect(node.path)}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onSelect(node.path);
+              onContext(node, event.clientX, event.clientY);
+            }}
             onDragStart={(event) => {
               event.dataTransfer.setData("application/x-wnote-workspace-path", node.path);
               event.dataTransfer.effectAllowed = "move";
@@ -453,6 +511,7 @@ function WorkspaceNode({
                 onSelect={onSelect}
                 onDropMove={onDropMove}
                 onDirectoryCollapsed={onDirectoryCollapsed}
+                onContext={onContext}
               />
             ))}
           </ul>
@@ -472,6 +531,12 @@ function WorkspaceNode({
         onClick={() => {
           onSelect(node.path);
           onOpenFile(node.path);
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onSelect(node.path);
+          onContext(node, event.clientX, event.clientY);
         }}
         onDragStart={(event) => {
           event.dataTransfer.setData("application/x-wnote-workspace-path", node.path);
