@@ -1,5 +1,7 @@
 import { _electron as electron, type ElectronApplication, type Page } from "@playwright/test";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -75,6 +77,8 @@ export async function launchWNote(
       ...options.env,
       NODE_ENV: "development",
       WNOTE_E2E: "1",
+      WNOTE_E2E_DATA_DIR:
+        options.env?.WNOTE_E2E_DATA_DIR ?? mkdtempSync(resolve(tmpdir(), "wnote-e2e-data-")),
       WNOTE_RENDERER_PORT: rendererPort,
     },
   });

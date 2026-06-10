@@ -63,6 +63,19 @@ describe("assets", () => {
     });
   });
 
+  it("extracts html image sources containing URL syntax characters", () => {
+    const index = buildAssetIndex('<img src="note.assets/a#1.png" alt="A">', {
+      documentPath: "/docs/note.md",
+      exists: (path) => path === "/docs/note.assets/a#1.png",
+    });
+
+    expect(index.references[0]).toMatchObject({
+      src: "note.assets/a#1.png",
+      absolutePath: "/docs/note.assets/a#1.png",
+      status: "ok",
+    });
+  });
+
   it("extracts figure html images without losing their source position", () => {
     const markdown =
       'before\n<figure data-wnote-image="true"><img src="note.assets/a.png" alt="A"><figcaption>A</figcaption></figure>\nafter';
@@ -84,7 +97,18 @@ describe("assets", () => {
   });
 
   it("resolves preview urls only for local assets", () => {
-    expect(resolveAssetPreviewSrc("a.png", "/docs/note.md")).toBe("wnote-asset:///docs/a.png");
+    expect(resolveAssetPreviewSrc("a.png", "/docs/note.md")).toBe(
+      "wnote-asset://local/%2Fdocs%2Fa.png",
+    );
+    expect(resolveAssetPreviewSrc("a#1.png", "/docs/note.md")).toBe(
+      "wnote-asset://local/%2Fdocs%2Fa%231.png",
+    );
+    expect(resolveAssetPreviewSrc("a?1.png", "/docs/note.md")).toBe(
+      "wnote-asset://local/%2Fdocs%2Fa%3F1.png",
+    );
+    expect(resolveAssetPreviewSrc("中文 图片.png", "/docs/note.md")).toBe(
+      "wnote-asset://local/%2Fdocs%2F%E4%B8%AD%E6%96%87%20%E5%9B%BE%E7%89%87.png",
+    );
     expect(resolveAssetPreviewSrc("https://example.com/a.png", "/docs/note.md")).toBe(
       "https://example.com/a.png",
     );
@@ -239,7 +263,7 @@ function asset(absolutePath: string, markdownPath: string) {
     id: absolutePath,
     absolutePath,
     markdownPath,
-    url: `wnote-asset://${absolutePath}`,
+    url: `wnote-asset://local/${encodeURIComponent(absolutePath)}`,
     ext: "png",
     size: 10,
     createdAt: 1,

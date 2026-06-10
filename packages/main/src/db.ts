@@ -8,6 +8,7 @@ const log = createLog("db");
 const isDev = process.env.NODE_ENV === "development";
 
 function getDataDir(): string {
+  if (process.env.WNOTE_E2E_DATA_DIR) return process.env.WNOTE_E2E_DATA_DIR;
   if (isDev) {
     return join(process.cwd(), ".wnote");
   }

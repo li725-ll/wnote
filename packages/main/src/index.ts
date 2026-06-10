@@ -1,12 +1,13 @@
 import { createLog } from "@wnote/logger/main";
-import { app, BrowserWindow, nativeTheme, net, protocol } from "electron";
-import { pathToFileURL } from "url";
+import { readFile } from "fs/promises";
+import { app, BrowserWindow, nativeTheme, protocol } from "electron";
 import { extractDocumentPathFromArgs } from "@wnote/storage-main";
 import { createAppMenu } from "./menu";
 import { windowManager } from "./window-manager";
 import { loadSettings } from "./settings";
 import { openFileInWindow as sendFileToWindow, rememberOpenedFile } from "./open-file";
 import { registerIpcHandlers } from "./ipc";
+import { assetMimeFromPath, filePathFromAssetUrl } from "./asset-protocol";
 
 if (process.platform === "win32") {
   app.disableDomainBlockingFor3DAPIs(); // 禁用3D API的域名阻塞
@@ -74,22 +75,23 @@ app.whenReady().then(async () => {
   log.info("App ready, platform:", process.platform, "version:", app.getVersion());
 
   protocol.handle("wnote-asset", (request) => {
-    const url = new URL(request.url);
-    const filePath = decodeURIComponent(url.pathname);
-    return net.fetch(pathToFileURL(filePath).toString());
+    const filePath = filePathFromAssetUrl(request.url);
+    return readFile(filePath).then(
+      (body) => new Response(body, { headers: { "content-type": assetMimeFromPath(filePath) } }),
+    );
   });
 
   const settings = await loadSettings();
   nativeTheme.themeSource = settings.theme;
   log.info("Theme:", settings.theme, "| Locale:", settings.locale);
+  const startupFile = pendingFilePath ?? extractDocumentPathFromArgs(process.argv.slice(1));
+  if (startupFile) rememberOpenedFile(startupFile);
   const win = windowManager.create();
   createAppMenu(win, settings);
 
-  const startupFile = pendingFilePath ?? extractDocumentPathFromArgs(process.argv.slice(1));
   if (startupFile) {
     log.info("Startup file:", startupFile);
     pendingFilePath = null;
-    rememberOpenedFile(startupFile);
     await openFileInWindow(startupFile, win);
   }
 

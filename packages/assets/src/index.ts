@@ -65,7 +65,7 @@ export function resolveAssetPreviewSrc(src: string, documentPath?: string): stri
 }
 
 export function toAssetUrl(absolutePath: string): string {
-  return `wnote-asset://${absolutePath}`;
+  return `wnote-asset://local/${encodeURIComponent(absolutePath)}`;
 }
 
 export function toMarkdownAssetPath(absolutePath: string, documentPath?: string): string {

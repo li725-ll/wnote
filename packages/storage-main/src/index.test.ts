@@ -273,7 +273,7 @@ describe("@wnote/storage-main assets", () => {
     );
 
     expect(asset.markdownPath).toMatch(/^note\.assets[/\\].+\.png$/);
-    expect(asset.url).toContain("wnote-asset://");
+    expect(asset.url).toContain("wnote-asset://local/");
     expect(asset.size).toBe(3);
     await expect(stat(asset.absolutePath)).resolves.toMatchObject({ size: 3 });
   });

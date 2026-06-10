@@ -48,6 +48,15 @@ describe("@wnote/markdown", () => {
     );
   });
 
+  it("keeps local image sources with URL syntax characters in rendered html", () => {
+    const html = markdownToHtml(
+      '<img src="note.assets/a#1.png" alt="Hash">\n\n![Query](<note.assets/a?1.png>)',
+    );
+
+    expect(html).toContain('src="note.assets/a#1.png"');
+    expect(html).toContain('src="note.assets/a?1.png"');
+  });
+
   it("persists editor image width as html image", () => {
     expect(
       htmlToMarkdown('<img src="asset.png" alt="Alt" title="Title" data-width="480px">').trim(),

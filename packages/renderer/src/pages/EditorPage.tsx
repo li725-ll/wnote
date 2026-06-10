@@ -115,7 +115,6 @@ export function EditorPage() {
     return editorRef.current?.getContentAsync() ?? tab.content;
   }, []);
   const getCurrentTab = useCallback(() => activeTabRef.current, []);
-  const getActiveTabId = useCallback(() => activeTabIdRef.current, []);
   const setWindowTitle = useWindowTitle();
   const setEditorInstance = useCallback(
     (instance: EditorRef | null) => {
@@ -126,7 +125,6 @@ export function EditorPage() {
   );
   const { applyOpenedDocument, openDocumentDialog } = useDocumentOpen({
     editorRef,
-    getActiveTabId,
     onDocumentOpen: () => localStorage.setItem(STORAGE_KEY, "1"),
     openFile,
     setWindowTitle,

@@ -34,7 +34,7 @@ describe("asset state", () => {
 
     expect(resolveDocumentAssetPreview("assets/missing.png", assets, "/docs/note.md")).toBeNull();
     expect(resolveDocumentAssetPreview("assets/a.png", assets, "/docs/note.md")).toBe(
-      "wnote-asset:///docs/assets/a.png",
+      "wnote-asset://local/%2Fdocs%2Fassets%2Fa.png",
     );
     expect(resolveDocumentAssetPreview("https://example.com/a.png", assets, "/docs/note.md")).toBe(
       "https://example.com/a.png",
@@ -52,7 +52,7 @@ describe("asset state", () => {
           id: "/docs/note.assets/unused.png",
           absolutePath: "/docs/note.assets/unused.png",
           markdownPath: "note.assets/unused.png",
-          url: "wnote-asset:///docs/note.assets/unused.png",
+          url: "wnote-asset://local/%2Fdocs%2Fnote.assets%2Funused.png",
           ext: "png",
           size: 1,
           createdAt: 1,
@@ -108,6 +108,6 @@ function reference(src: string, status: AssetReference["status"]): AssetReferenc
     position: 0,
     status,
     absolutePath: `/docs/${src}`,
-    previewSrc: `wnote-asset:///docs/${src}`,
+    previewSrc: `wnote-asset://local/${encodeURIComponent(`/docs/${src}`)}`,
   };
 }
