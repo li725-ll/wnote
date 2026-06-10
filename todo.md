@@ -12,6 +12,10 @@ Last updated: 2026-06-10
 - Open tabs are synchronized when workspace files or directories are renamed, moved, or deleted.
 - Editor node views are isolated by an error boundary, and TipTap extension names are covered by duplicate-name regression tests.
 - Startup regression fixtures cover representative editor blocks without runtime errors.
+- Typora-like editing controls cover shortcuts, tables, images, links, code, tasks, math, and Mermaid.
+- Save flows include backup, disk-conflict detection, reload/keep choices, autosave feedback, and recent workspaces.
+- Workspace UI includes icon actions, context menus, shortcuts, search, empty directories, and collapse persistence.
+- Production build budgets, CSP checks, large markdown fixtures, and Electron smoke coverage are in place.
 - Export HTML/PDF, resource panel, asset indexing, table styling feedback, performance budgets, and e2e coverage are in place.
 
 ## P0 - Workspace File Operations
@@ -45,14 +49,14 @@ Acceptance:
 
 ## P1 - Typora-Like Editing Behavior
 
-- [ ] Inline markdown shortcut rendering: heading, list, quote, code block, horizontal rule.
-- [ ] Table editing parity: insert/delete row/column, align column, resize behavior, active cell toolbar.
-- [ ] Image editing parity: resize, align, caption, replace, reveal file, copy path.
-- [ ] Link editing parity: edit target, open target, remove link.
-- [ ] Code block parity: language selector, copy code, syntax theme consistency.
-- [ ] Task list parity: checkbox toggling, nested task indentation.
-- [ ] Math parity: inline/block editing affordance and render fallback.
-- [ ] Mermaid parity: edit source, render preview, error state.
+- [x] Inline markdown shortcut rendering: heading, list, quote, code block, horizontal rule.
+- [x] Table editing parity: insert/delete row/column, align column, resize behavior, active cell toolbar.
+- [x] Image editing parity: resize, align, caption, replace, reveal file, copy path.
+- [x] Link editing parity: edit target, open target, remove link.
+- [x] Code block parity: language selector, copy code, syntax theme consistency.
+- [x] Task list parity: checkbox toggling, nested task indentation.
+- [x] Math parity: inline/block editing affordance and render fallback.
+- [x] Mermaid parity: edit source, render preview, error state.
 
 Acceptance:
 
@@ -62,11 +66,11 @@ Acceptance:
 
 ## P1 - Document Model And Markdown Fidelity
 
-- [ ] Formalize markdown <-> editor document conversion contracts.
-- [ ] Add golden tests for markdown round trip fidelity.
-- [ ] Preserve frontmatter, HTML blocks, comments, escaped characters, and unknown markdown where possible.
-- [ ] Define unsupported markdown fallback behavior.
-- [ ] Track document dirty state from normalized content, not only editor change events.
+- [x] Formalize markdown <-> editor document conversion contracts.
+- [x] Add golden tests for markdown round trip fidelity.
+- [x] Preserve frontmatter, HTML blocks, comments, escaped characters, and unknown markdown where possible.
+- [x] Define unsupported markdown fallback behavior.
+- [x] Track document dirty state from normalized content, not only editor change events.
 
 Acceptance:
 
@@ -76,11 +80,11 @@ Acceptance:
 
 ## P1 - File Storage And Recovery
 
-- [ ] Add backup/recovery strategy for failed saves.
-- [ ] Add conflict detection when a file changes externally while open.
-- [ ] Add reload-from-disk and keep-editor-version choices.
-- [ ] Add autosave status feedback.
-- [ ] Add recent workspace list.
+- [x] Add backup/recovery strategy for failed saves.
+- [x] Add conflict detection when a file changes externally while open.
+- [x] Add reload-from-disk and keep-editor-version choices.
+- [x] Add autosave status feedback.
+- [x] Add recent workspace list.
 
 Acceptance:
 
@@ -90,12 +94,12 @@ Acceptance:
 
 ## P2 - Workspace UX Polish
 
-- [ ] Replace text-only workspace node actions with icon buttons and tooltips.
-- [ ] Add context menu for workspace nodes.
-- [ ] Add keyboard shortcuts for rename/delete/new file/new folder.
-- [ ] Add empty-directory rendering so directories without markdown files are still visible when useful.
-- [ ] Add file filtering/search in the workspace panel.
-- [ ] Add collapse/expand persistence.
+- [x] Replace text-only workspace node actions with icon buttons and tooltips.
+- [x] Add context menu for workspace nodes.
+- [x] Add keyboard shortcuts for rename/delete/new file/new folder.
+- [x] Add empty-directory rendering so directories without markdown files are still visible when useful.
+- [x] Add file filtering/search in the workspace panel.
+- [x] Add collapse/expand persistence.
 
 Acceptance:
 
@@ -105,11 +109,11 @@ Acceptance:
 
 ## P2 - Performance And Packaging
 
-- [ ] Continue reducing initial renderer entry size after workspace/editor features settle.
-- [ ] Lazy-load heavy block tools where practical.
-- [ ] Audit Electron CSP and remove development-only unsafe settings for packaged builds.
-- [ ] Add performance fixture for large markdown files.
-- [ ] Add package smoke test.
+- [x] Continue reducing initial renderer entry size after workspace/editor features settle.
+- [x] Lazy-load heavy block tools where practical.
+- [x] Audit Electron CSP and remove development-only unsafe settings for packaged builds.
+- [x] Add performance fixture for large markdown files.
+- [x] Add package smoke test.
 
 Acceptance:
 
@@ -119,15 +123,15 @@ Acceptance:
 
 ## Suggested Next Batch
 
-Implement Typora-like editing behavior:
+Prepare the next release stabilization pass:
 
-1. Add inline markdown shortcut rendering for heading, list, quote, code block, and horizontal rule.
-2. Improve table, image, link, code block, task list, math, and mermaid editing affordances.
-3. Keep keyboard behavior predictable and avoid breaking normal text input.
-4. Add targeted regression tests for each block family.
+1. Run the full unit, typecheck, lint, build budget, and e2e suites.
+2. Smoke-test packaged builds on target platforms.
+3. Review any UX rough edges found during manual editing sessions.
+4. Keep `todo.md` focused on newly discovered issues after release validation.
 
 Suggested commit:
 
 ```text
-feat: improve typora-like editing behavior
+chore: stabilize release candidate
 ```
