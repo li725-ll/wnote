@@ -27,13 +27,14 @@
   gap: 0.9rem;
   min-width: 0;
   padding-left: 1rem;
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
 }
 
 .controls {
   display: flex;
   align-items: center;
   min-width: 0;
+  -webkit-app-region: no-drag;
 }
 
 .controls[data-platform="mac"] {
@@ -188,6 +189,7 @@
   color: var(--color-muted);
   cursor: pointer;
   padding: 0;
+  -webkit-app-region: no-drag;
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
@@ -266,5 +268,5 @@
   justify-content: flex-end;
   min-width: 0;
   height: 100%;
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
 }
