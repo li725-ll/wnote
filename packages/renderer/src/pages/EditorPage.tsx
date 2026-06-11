@@ -25,6 +25,7 @@ import { useExportActions } from "../hooks/useExportActions";
 import { useWindowTitle } from "../hooks/useWindowTitle";
 import { useDocumentOpen } from "../hooks/useDocumentOpen";
 import { useWorkspace } from "../hooks/useWorkspace";
+import { isDocumentDirty } from "../files/file-state";
 import { useSettingsStore } from "../stores/settings-store";
 import { useEditorMetaStore } from "../stores/editor-meta-store";
 import { useUiStore } from "../stores/ui-store";
@@ -217,8 +218,9 @@ export function EditorPage() {
 
   const handleChange = useCallback(
     (content: string) => {
-      updateContent(content, buildDocumentAssetIndex(content, activeTabRef.current.path));
-      scheduleAutoSave(activeTabRef.current.path);
+      const tab = activeTabRef.current;
+      updateContent(content, buildDocumentAssetIndex(content, tab.path));
+      scheduleAutoSave(tab.path, isDocumentDirty(content, tab.savedContent));
     },
     [updateContent, scheduleAutoSave],
   );

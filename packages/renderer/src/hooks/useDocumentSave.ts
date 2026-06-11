@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { IpcChannel, type OpenDocumentResult, type SaveDocumentResult } from "@wnote/contracts";
-import { getSaveDefaultName } from "../files/file-state";
+import { getSaveDefaultName, isDocumentDirty } from "../files/file-state";
 import type { DocumentTab } from "./useTabs";
 
 export function useDocumentSave({
@@ -10,7 +10,7 @@ export function useDocumentSave({
   onReloadFromDisk,
   onError,
 }: {
-  getCurrentTab(): Pick<DocumentTab, "path" | "stat">;
+  getCurrentTab(): Pick<DocumentTab, "path" | "savedContent" | "stat">;
   getEditorContent(): Promise<string>;
   onSaved(result: SaveDocumentResult, content: string): void;
   onReloadFromDisk(data: OpenDocumentResult): void;
@@ -20,6 +20,7 @@ export function useDocumentSave({
     async (saveAs = false) => {
       const tab = getCurrentTab();
       const content = await getEditorContent();
+      if (!saveAs && tab.path && !isDocumentDirty(content, tab.savedContent)) return;
       try {
         const result = await window.electronAPI.invoke<SaveDocumentResult | null>(
           IpcChannel.FileSave,

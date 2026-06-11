@@ -17,9 +17,9 @@ export function useAutoSave(enabled: boolean, save: () => void | Promise<void>, 
   useEffect(() => clearAutoSave, [clearAutoSave]);
 
   const scheduleAutoSave = useCallback(
-    (documentPath: string | null) => {
+    (documentPath: string | null, dirty: boolean) => {
       clearAutoSave();
-      if (!shouldScheduleAutoSave(enabledRef.current, documentPath)) return;
+      if (!shouldScheduleAutoSave(enabledRef.current, documentPath, dirty)) return;
       timerRef.current = setTimeout(() => {
         void saveRef.current();
       }, delay);
