@@ -28,7 +28,9 @@ const api: ElectronAPI = {
   invoke: <T = unknown>(channel: IpcChannel, ...args: unknown[]) =>
     ipcRenderer.invoke(channel, ...args) as Promise<T>,
   on: (channel: IpcChannel, listener: (...args: unknown[]) => void) => {
-    ipcRenderer.on(channel, wrappedListener(channel, listener));
+    const wrapped = wrappedListener(channel, listener);
+    ipcRenderer.on(channel, wrapped);
+    return () => ipcRenderer.removeListener(channel, wrapped);
   },
   off: (channel: IpcChannel, listener: (...args: unknown[]) => void) => {
     const wrapped = listenerMap.get(channel)?.get(listener);

@@ -26,7 +26,6 @@ export function useAppSettingsSync({
       onAutoSaveChange(settings.autoSave);
       onThemeChange(settings.theme);
     };
-    window.electronAPI.on(IpcChannel.SettingsChanged, handler);
-    return () => window.electronAPI.off(IpcChannel.SettingsChanged, handler);
+    return window.electronAPI.on(IpcChannel.SettingsChanged, handler);
   }, [onAutoSaveChange, onThemeChange]);
 }

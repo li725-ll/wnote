@@ -6,7 +6,6 @@ export function useNavigationIpc(onNavigate: (page: string) => void) {
     const handler = (...args: unknown[]) => {
       onNavigate(args[0] as string);
     };
-    window.electronAPI.on(IpcChannel.Navigate, handler);
-    return () => window.electronAPI.off(IpcChannel.Navigate, handler);
+    return window.electronAPI.on(IpcChannel.Navigate, handler);
   }, [onNavigate]);
 }

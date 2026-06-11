@@ -67,8 +67,7 @@ export function AppLayout({ left, center, toggleLeftSignal = 0 }: AppLayoutProps
         });
       }
     };
-    window.electronAPI.on(IpcChannel.ToggleSidebar, handler);
-    return () => window.electronAPI.off(IpcChannel.ToggleSidebar, handler);
+    return window.electronAPI.on(IpcChannel.ToggleSidebar, handler);
   }, []);
 
   useEffect(() => {

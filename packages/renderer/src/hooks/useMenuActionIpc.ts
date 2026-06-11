@@ -13,22 +13,18 @@ export function useMenuActionIpc({
   onExportPdf(): void;
 }) {
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.FileSaveTrigger, onSave);
-    return () => window.electronAPI.off(IpcChannel.FileSaveTrigger, onSave);
+    return window.electronAPI.on(IpcChannel.FileSaveTrigger, onSave);
   }, [onSave]);
 
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.FileSaveAsTrigger, onSaveAs);
-    return () => window.electronAPI.off(IpcChannel.FileSaveAsTrigger, onSaveAs);
+    return window.electronAPI.on(IpcChannel.FileSaveAsTrigger, onSaveAs);
   }, [onSaveAs]);
 
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.ExportHtmlTrigger, onExportHtml);
-    return () => window.electronAPI.off(IpcChannel.ExportHtmlTrigger, onExportHtml);
+    return window.electronAPI.on(IpcChannel.ExportHtmlTrigger, onExportHtml);
   }, [onExportHtml]);
 
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.ExportPdfTrigger, onExportPdf);
-    return () => window.electronAPI.off(IpcChannel.ExportPdfTrigger, onExportPdf);
+    return window.electronAPI.on(IpcChannel.ExportPdfTrigger, onExportPdf);
   }, [onExportPdf]);
 }

@@ -14,8 +14,7 @@ export function useFileIpc({
     const handler = (...args: unknown[]) => {
       onOpened(args[0] as OpenDocumentResult);
     };
-    window.electronAPI.on(IpcChannel.FileOpened, handler);
-    return () => window.electronAPI.off(IpcChannel.FileOpened, handler);
+    return window.electronAPI.on(IpcChannel.FileOpened, handler);
   }, [onOpened]);
 
   useEffect(() => {
@@ -27,12 +26,10 @@ export function useFileIpc({
   }, [onOpened]);
 
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.FileNew, onNew);
-    return () => window.electronAPI.off(IpcChannel.FileNew, onNew);
+    return window.electronAPI.on(IpcChannel.FileNew, onNew);
   }, [onNew]);
 
   useEffect(() => {
-    window.electronAPI.on(IpcChannel.FileClose, onClose);
-    return () => window.electronAPI.off(IpcChannel.FileClose, onClose);
+    return window.electronAPI.on(IpcChannel.FileClose, onClose);
   }, [onClose]);
 }
