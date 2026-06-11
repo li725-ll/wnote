@@ -149,10 +149,12 @@
 }
 
 .highlight {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
 
-.highlight :global(pre) {
+.wrapper .highlight :global(pre) {
   box-sizing: border-box;
   min-height: 0;
   margin: 0;
@@ -167,7 +169,7 @@
   tab-size: inherit;
 }
 
-.highlight :global(code) {
+.wrapper .highlight :global(code) {
   padding: 0;
   background: transparent;
   font: inherit;
@@ -177,15 +179,17 @@
 }
 
 .highlightFallback {
+  position: absolute;
+  inset: 0;
   color: transparent;
 }
 
 .content {
-  position: absolute;
-  inset: 0;
+  position: relative;
   color: transparent;
   caret-color: var(--color-text);
   outline: none;
+  z-index: 1;
 }
 
 .content :global(code) {

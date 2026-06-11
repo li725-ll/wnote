@@ -79,6 +79,27 @@ test("keeps collapsed sidebar hidden and code block caret layer aligned", async 
           const highlightStyle = getComputedStyle(highlight);
           const contentStyle = getComputedStyle(content);
           const visibleStyle = getComputedStyle(visibleCode);
+          const firstTextRect = (root: Element): DOMRect | null => {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            let text: Text | null = null;
+            for (;;) {
+              const next = walker.nextNode();
+              if (!(next instanceof Text)) break;
+              if (next.nodeValue?.trim()) {
+                text = next;
+                break;
+              }
+            }
+            if (!text?.nodeValue?.trim()) return null;
+            const range = document.createRange();
+            const start = text.nodeValue.length - text.nodeValue.trimStart().length;
+            range.setStart(text, start);
+            range.setEnd(text, Math.min(text.nodeValue.length, start + 1));
+            return range.getClientRects()[0] ?? null;
+          };
+          const highlightTextRect = firstTextRect(highlight);
+          const contentTextRect = firstTextRect(content);
+
           return {
             sameBlockTop:
               Math.abs(
@@ -90,6 +111,10 @@ test("keeps collapsed sidebar hidden and code block caret layer aligned", async 
             samePaddingLeft: highlightStyle.paddingLeft === contentStyle.paddingLeft,
             sameCodeFont: visibleStyle.fontFamily === contentStyle.fontFamily,
             sameCodeLineHeight: visibleStyle.lineHeight === contentStyle.lineHeight,
+            sameFirstLineTop:
+              !!highlightTextRect &&
+              !!contentTextRect &&
+              Math.abs(highlightTextRect.top - contentTextRect.top) < 0.75,
           };
         }),
       )
@@ -101,6 +126,58 @@ test("keeps collapsed sidebar hidden and code block caret layer aligned", async 
         samePaddingLeft: true,
         sameCodeFont: true,
         sameCodeLineHeight: true,
+        sameFirstLineTop: true,
+      });
+
+    expect(app.errors).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
+test("keeps code block presentation stable while editing", async () => {
+  const app = await launchWNote();
+
+  try {
+    const editor = app.page.locator(".ProseMirror");
+    await expect(editor).toBeVisible();
+    await editor.click();
+    await app.page.keyboard.type("```ts");
+    await app.page.keyboard.press("Enter");
+    await app.page.keyboard.type("type Stable = true;");
+
+    const codeBlock = app.page.locator('[data-code-block-layer="content"]').first();
+    await expect(codeBlock).toBeVisible();
+    await codeBlock.click();
+    await app.page.keyboard.press("End");
+    await app.page.keyboard.press("Enter");
+    await app.page.keyboard.press("Tab");
+    await app.page.keyboard.type("const value = 1;", { delay: 20 });
+
+    await expect
+      .poll(() =>
+        app.page.evaluate(() => {
+          const content = document.querySelector<HTMLElement>('[data-code-block-layer="content"]');
+          const highlight =
+            content?.previousElementSibling instanceof HTMLElement
+              ? content.previousElementSibling
+              : null;
+          if (!content || !highlight) return null;
+          const contentStyle = getComputedStyle(content);
+          const highlightStyle = getComputedStyle(highlight);
+          return {
+            contentTransparent: contentStyle.color === "rgba(0, 0, 0, 0)",
+            highlightVisible: highlightStyle.visibility === "visible",
+            highlightText: highlight.textContent,
+            text: content.textContent,
+          };
+        }),
+      )
+      .toEqual({
+        contentTransparent: true,
+        highlightVisible: true,
+        highlightText: "type Stable = true;\n\tconst value = 1;",
+        text: "type Stable = true;\n\tconst value = 1;",
       });
 
     expect(app.errors).toEqual([]);
