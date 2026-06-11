@@ -35,11 +35,15 @@ async function openFileInWindow(filePath: string, win?: BrowserWindow) {
   await sendFileToWindow(target, filePath);
 }
 
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-  log.warn("Another instance is running, quitting");
-  app.quit();
-} else {
+if (!isE2E) {
+  const gotLock = app.requestSingleInstanceLock();
+  if (!gotLock) {
+    log.warn("Another instance is running, quitting");
+    app.quit();
+  }
+}
+
+if (!isE2E) {
   app.on("second-instance", (_event, argv) => {
     log.info("Second instance detected, argv:", argv.slice(1).join(" "));
     const filePath = extractDocumentPathFromArgs(argv.slice(1));

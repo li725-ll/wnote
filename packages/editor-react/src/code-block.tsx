@@ -131,15 +131,20 @@ function CodeBlockView({ node, selected, updateAttributes }: NodeViewProps) {
         {renderState.status === "ready" ? (
           <div
             className={styles.highlight}
+            data-code-block-layer="highlight"
             contentEditable={false}
             dangerouslySetInnerHTML={{ __html: renderState.html }}
           />
         ) : (
-          <pre className={styles.highlightFallback} aria-hidden="true">
+          <pre
+            className={styles.highlightFallback}
+            data-code-block-layer="highlight"
+            aria-hidden="true"
+          >
             <code>{code}</code>
           </pre>
         )}
-        <NodeViewContent className={styles.content} />
+        <NodeViewContent className={styles.content} data-code-block-layer="content" />
         {!code ? (
           <div className={styles.placeholder} contentEditable={false}>
             输入代码

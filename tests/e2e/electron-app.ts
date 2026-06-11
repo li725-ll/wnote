@@ -83,6 +83,10 @@ export async function launchWNote(
     },
   });
   const page = await waitForRendererWindow(app);
+  await page.addInitScript(() => {
+    localStorage.setItem("wnote:welcomed", "1");
+  });
+  await page.reload();
   const errors: string[] = [];
   page.on("console", (message) => {
     const text = message.text();

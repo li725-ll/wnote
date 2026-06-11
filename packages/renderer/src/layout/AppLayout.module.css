@@ -42,6 +42,11 @@
   pointer-events: none;
 }
 
+.layout[data-left-open="false"] .resizer {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .center::-webkit-scrollbar {
   display: none;
 }
